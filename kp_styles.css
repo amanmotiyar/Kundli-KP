@@ -600,6 +600,35 @@ body {
 }
 .rp-card select option { background: var(--bg-card); color: var(--text-primary); }
 
+/* ── Field Validation Errors ── */
+.input-error {
+  border-color: var(--accent-red) !important;
+  box-shadow: 0 0 0 2px rgba(192,80,64,0.15) !important;
+}
+.field-error {
+  font-size: 10px;
+  color: var(--accent-red);
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.field-error::before {
+  content: '!';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(192,80,64,0.2);
+  color: var(--accent-red);
+  font-size: 9px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
 /* ── Score Bar ── */
 .score-bar {
   display: flex;

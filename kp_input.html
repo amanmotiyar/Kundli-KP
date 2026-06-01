@@ -105,8 +105,9 @@
           <input type="text" id="native-lon" placeholder="e.g. 73.3167">
         </div>
         <div class="field">
-          <label>KP Ayanamsa</label>
-          <input type="text" id="native-ayanamsa" placeholder="e.g. 23°39′17″">
+          <label>KP Ayanamsa <span class="info-tip" data-tip="Type 6 digits e.g. 233917 → 23°39′17″">?</span></label>
+          <input type="text" id="native-ayanamsa" class="deg-input" placeholder="DDMMSS"
+            maxlength="8" oninput="formatDegree(this)" onblur="formatDegreeOnBlur(this)">
         </div>
 
       </div>
@@ -305,7 +306,7 @@ function buildPlanetSigTable() {
 function buildCuspTable() {
   const tbody = document.getElementById('cusp-body');
   const signOpts = SIGNS.map(s=>`<option value="${s}">${s}</option>`).join('');
-  const pOpts = ['—',...PLANETS].map(p=>`<option value="${p}">${p}</option>`).join('');
+  const pOpts = PLANETS.map(p=>`<option value="${p}">${p}</option>`).join('');
   HOUSES.forEach(h => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -313,10 +314,10 @@ function buildCuspTable() {
       <td><select id="cusp-${h}-sign"><option value="">— sign —</option>${signOpts}</select></td>
       <td><input type="text" id="cusp-${h}-deg" class="deg-input" placeholder="DDMMSS" maxlength="8"
            oninput="formatDegree(this)" onblur="formatDegreeOnBlur(this)"></td>
-      <td><select id="cusp-${h}-rl"><option value="">—</option>${pOpts}</select></td>
-      <td><select id="cusp-${h}-nl"><option value="">—</option>${pOpts}</select></td>
-      <td><select id="cusp-${h}-sl"><option value="">—</option>${pOpts}</select></td>
-      <td><select id="cusp-${h}-ss"><option value="">—</option>${pOpts}</select></td>`;
+      <td><select id="cusp-${h}-rl"><option value="">— select —</option>${pOpts}</select></td>
+      <td><select id="cusp-${h}-nl"><option value="">— select —</option>${pOpts}</select></td>
+      <td><select id="cusp-${h}-sl"><option value="">— select —</option>${pOpts}</select></td>
+      <td><select id="cusp-${h}-ss"><option value="">— select —</option>${pOpts}</select></td>`;
     tbody.appendChild(tr);
   });
 }
@@ -358,18 +359,20 @@ function getDegreeDecimal(raw) {
 
 // ── DBA & RP ─────────────────────────────────────────
 function buildDBASelects() {
-  const opts = ['', ...PLANETS].map(p=>`<option value="${p}">${p||'—'}</option>`).join('');
-  ['dba-md','dba-ad','dba-pd'].forEach(id => document.getElementById(id).innerHTML = opts);
+  const opts = PLANETS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  ['dba-md','dba-ad','dba-pd'].forEach(id => {
+    document.getElementById(id).innerHTML = `<option value="">— select —</option>${opts}`;
+  });
 }
 
 function buildRPGrid() {
   const grid = document.getElementById('rp-grid');
-  const opts = ['', ...PLANETS].map(p=>`<option value="${p}">${p||'—'}</option>`).join('');
+  const opts = PLANETS.map(p=>`<option value="${p}">${p}</option>`).join('');
   RP_LABELS.forEach(rp => {
     const div = document.createElement('div');
     div.className = 'rp-card';
     div.innerHTML = `<span class="rp-label">${rp.label}</span>
-      <select id="${rp.id}">${opts}</select>`;
+      <select id="${rp.id}"><option value="">—</option>${opts}</select>`;
     grid.appendChild(div);
   });
 }
@@ -589,18 +592,49 @@ function collectData() {
 }
 
 // ── Validate ──────────────────────────────────────────
+function clearErrors() {
+  document.querySelectorAll('.field-error').forEach(el => el.remove());
+  document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+}
+
+function showFieldError(elementId, message) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.classList.add('input-error');
+  // Remove existing error
+  const existing = el.parentElement.querySelector('.field-error');
+  if (existing) existing.remove();
+  const err = document.createElement('div');
+  err.className = 'field-error';
+  err.textContent = message;
+  el.parentElement.appendChild(err);
+  // Scroll into view
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function validateData(data) {
   const issues = [];
-  if (!data.native.name)        issues.push('Native name missing');
-  if (!data.native.dob)         issues.push('Birth date missing');
-  if (data.native.tob_h === '') issues.push('Birth hour missing');
-  if (data.native.tob_m === '') issues.push('Birth minute missing');
-  if (!data.native.place)       issues.push('Birth place missing');
-  if (!data.dba.md)             issues.push('Mahadasha not selected');
-  if (!data.dba.ad)             issues.push('Antardasha not selected');
-  if (!data.dba.pd)             issues.push('Pratyantardasha not selected');
-  if (!data.cusps[1].sl)        issues.push('Cusp 1 Sub-lord missing');
-  if (!data.cusps[7].sl)        issues.push('Cusp 7 Sub-lord missing');
+  if (!data.native.name)        issues.push({ id:'native-name',   msg:'Native name is required' });
+  if (!data.native.dob)         issues.push({ id:'native-dob',    msg:'Birth date is required' });
+  if (data.native.tob_h === '') issues.push({ id:'tob-h',         msg:'Birth hour is required' });
+  if (data.native.tob_m === '') issues.push({ id:'tob-m',         msg:'Birth minute is required' });
+  if (!data.native.place)       issues.push({ id:'native-place',  msg:'Birth place is required' });
+  if (!data.native.ayanamsa)    issues.push({ id:'native-ayanamsa',msg:'KP Ayanamsa is required' });
+  if (!data.dba.md)             issues.push({ id:'dba-md',        msg:'Mahadasha is required' });
+  if (!data.dba.ad)             issues.push({ id:'dba-ad',        msg:'Antardasha is required' });
+  if (!data.dba.pd)             issues.push({ id:'dba-pd',        msg:'Pratyantardasha is required' });
+
+  // Check all 12 cusps have sign and sub-lord
+  for (let h = 1; h <= 12; h++) {
+    if (!data.cusps[h].sign) issues.push({ id:`cusp-${h}-sign`, msg:`Cusp ${h} sign missing` });
+    if (!data.cusps[h].sl)   issues.push({ id:`cusp-${h}-sl`,   msg:`Cusp ${h} Sub-lord missing` });
+    if (!data.cusps[h].nl)   issues.push({ id:`cusp-${h}-nl`,   msg:`Cusp ${h} Star-lord missing` });
+  }
+
+  // Check planet significations — at least one planet must have houses marked
+  const anyMarked = Object.values(data.planetSig).some(arr => arr.length > 0);
+  if (!anyMarked) issues.push({ id:'planet-sig-body', msg:'No planet significations entered' });
+
   return issues;
 }
 
@@ -613,14 +647,38 @@ function updateStatus() {
     el.textContent = '✓ All sections complete — ready to analyse';
     el.style.color = 'var(--gold)';
   } else {
-    el.textContent = '○ ' + issues[0];
+    el.textContent = `○ ${issues.length} field${issues.length > 1 ? 's' : ''} need attention`;
     el.style.color = 'var(--text-muted)';
   }
+}
+
+// ── Proceed ───────────────────────────────────────────
+function proceedToAnalysis() {
+  clearErrors();
+  const data = collectData();
+  const issues = validateData(data);
+  if (issues.length) {
+    // Show first 3 errors inline on their fields
+    issues.slice(0, 3).forEach(issue => showFieldError(issue.id, issue.msg));
+    // Open collapsed sections containing errors
+    issues.forEach(issue => {
+      const el = document.getElementById(issue.id);
+      if (el) {
+        const section = el.closest('.section');
+        if (section && section.classList.contains('collapsed'))
+          section.classList.remove('collapsed');
+      }
+    });
+    return;
+  }
+  sessionStorage.setItem('kp_input', JSON.stringify(data));
+  window.location.href = 'kp_output.html';
 }
 
 // ── Clear ─────────────────────────────────────────────
 function clearAll() {
   if (!confirm('Clear all entered data?')) return;
+  clearErrors();
   document.querySelectorAll('input:not([readonly])').forEach(el => {
     if (el.type === 'checkbox') el.checked = false;
     else el.value = '';
@@ -629,21 +687,6 @@ function clearAll() {
   setDefaults();
   updateStatus();
 }
-
-// ── Proceed ───────────────────────────────────────────
-function proceedToAnalysis() {
-  const data = collectData();
-  const issues = validateData(data);
-  if (issues.length) {
-    alert('Please fix before proceeding:\n\n• ' + issues.join('\n• '));
-    return;
-  }
-  // Save to sessionStorage — cleared on tab close, never persists
-  sessionStorage.setItem('kp_input', JSON.stringify(data));
-  window.location.href = 'kp_output.html';
-}
-
-// ── Init ──────────────────────────────────────────────
 // Clear any previously stored data — fresh start every load
 localStorage.removeItem('kp_chart_data');
 sessionStorage.clear();
