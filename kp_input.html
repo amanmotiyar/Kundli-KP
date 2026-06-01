@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KP Astrology — Chart Input</title>
+<link rel="stylesheet" href="kp_styles.css">
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="eyebrow">Krishnamurti Paddhati</div>
+    <h1>KP Astrology Analyser</h1>
+    <p class="subtitle">Chart Input &amp; Analysis Engine</p>
+    <div class="header-rule"><span>✦</span></div>
+  </header>
+
+  <div class="progress-bar">
+    <div class="progress-step active"></div>
+    <div class="progress-step"></div>
+    <div class="progress-step"></div>
+    <div class="progress-step"></div>
+  </div>
+
+  <!-- ══ SECTION 1 — NATIVE DETAILS ══ -->
+  <div class="section" id="sec-native">
+    <div class="section-header" onclick="toggleSection('sec-native')">
+      <span class="section-num">01</span>
+      <span class="section-title">Native Details</span>
+      <span class="section-badge">Basic Info</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="form-grid cols-3">
+
+        <div class="field span-2">
+          <label>Full Name</label>
+          <input type="text" id="native-name" placeholder="Enter native's full name">
+        </div>
+
+        <div class="field">
+          <label>Gender</label>
+          <select id="native-gender">
+            <option value="">— select —</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Birth Date</label>
+          <input type="date" id="native-dob">
+        </div>
+
+        <!-- Birth Time with separate H / M / S -->
+        <div class="field span-2">
+          <label>Birth Time <span class="info-tip" data-tip="Even 1 minute changes the Sub-lord">?</span></label>
+          <div class="time-row">
+            <div class="field">
+              <label style="text-align:center;">Hour (HH)</label>
+              <input type="number" id="tob-h" min="0" max="23" placeholder="HH" oninput="padTime(this,23)">
+            </div>
+            <div class="field">
+              <label style="text-align:center;">Min (MM)</label>
+              <input type="number" id="tob-m" min="0" max="59" placeholder="MM" oninput="padTime(this,59)">
+            </div>
+            <div class="field">
+              <label style="text-align:center;">Sec (SS)</label>
+              <input type="number" id="tob-s" min="0" max="59" placeholder="00" value="00" oninput="padTime(this,59)">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Timezone</label>
+          <select id="native-tz">
+            <option value="5.5">IST (GMT+5:30)</option>
+            <option value="0">UTC (GMT+0)</option>
+            <option value="-5">EST (GMT-5)</option>
+            <option value="-8">PST (GMT-8)</option>
+            <option value="1">CET (GMT+1)</option>
+            <option value="8">CST (GMT+8)</option>
+            <option value="5.75">NPT (GMT+5:45)</option>
+            <option value="6">BST (GMT+6)</option>
+          </select>
+        </div>
+
+        <!-- Birth Place with autocomplete -->
+        <div class="field span-2">
+          <label>Birth Place</label>
+          <div class="place-wrap">
+            <input type="text" id="native-place" placeholder="Type city name…" autocomplete="off" oninput="searchPlace(this.value, 'birth')">
+            <div class="autocomplete-list" id="ac-birth"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Latitude</label>
+          <input type="text" id="native-lat" placeholder="e.g. 28.0167">
+        </div>
+        <div class="field">
+          <label>Longitude</label>
+          <input type="text" id="native-lon" placeholder="e.g. 73.3167">
+        </div>
+        <div class="field">
+          <label>KP Ayanamsa</label>
+          <input type="text" id="native-ayanamsa" placeholder="e.g. 23°39′17″">
+        </div>
+
+      </div>
+
+      <div class="sub-divider"></div>
+      <div class="sub-label">Judgment Details</div>
+
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label>Today's Date</label>
+          <input type="date" id="today-date">
+        </div>
+        <div class="field">
+          <label>Today's Time</label>
+          <div class="time-row">
+            <input type="number" id="today-h" min="0" max="23" placeholder="HH" oninput="padTime(this,23)">
+            <input type="number" id="today-m" min="0" max="59" placeholder="MM" oninput="padTime(this,59)">
+            <input type="number" id="today-s" min="0" max="59" placeholder="00" value="00" oninput="padTime(this,59)">
+          </div>
+        </div>
+        <div class="field">
+          <label>Judgment Place</label>
+          <div class="place-wrap">
+            <input type="text" id="today-place" placeholder="Type city name…" autocomplete="off" oninput="searchPlace(this.value, 'today')">
+            <div class="autocomplete-list" id="ac-today"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 2 — PLANET SIGNIFICATIONS ══ -->
+  <div class="section" id="sec-planets">
+    <div class="section-header" onclick="toggleSection('sec-planets')">
+      <span class="section-num">02</span>
+      <span class="section-title">Planet Significations</span>
+      <span class="section-badge">House Ownership</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-box">
+        Mark which houses each planet signifies — as per your KP software (all 4 levels combined).
+        Each house is a separate checkbox — no comma errors in calculations.
+      </div>
+      <table class="planet-sig-table">
+        <thead>
+          <tr>
+            <th>Planet</th>
+            <th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th>
+            <th>H7</th><th>H8</th><th>H9</th><th>H10</th><th>H11</th><th>H12</th>
+          </tr>
+        </thead>
+        <tbody id="planet-sig-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 3 — CUSP DATA ══ -->
+  <div class="section" id="sec-cusps">
+    <div class="section-header" onclick="toggleSection('sec-cusps')">
+      <span class="section-num">03</span>
+      <span class="section-title">Cusp Data</span>
+      <span class="section-badge">12 Bhava Cusps</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-box">
+        Degree entry: type digits only — e.g. <strong>062639</strong> → auto-formats to <strong>06°26′39″</strong>.
+        Sub-lord decides if the house promise is ON or OFF.
+        Star-lord colors the nature and type of the result.
+      </div>
+      <table class="cusp-table">
+        <thead>
+          <tr>
+            <th style="width:34px; text-align:center;">Cusp</th>
+            <th style="min-width:110px;">Sign (Rashi)</th>
+            <th style="min-width:110px;">Degree</th>
+            <th style="min-width:100px;">Sign Lord <span style="font-size:8px;color:var(--text-hint)">(RL)</span></th>
+            <th style="min-width:100px;">Star Lord <span style="font-size:8px;color:var(--text-hint)">(NL)</span> <span class="info-tip" data-tip="Nakshatra lord — colors the result type">?</span></th>
+            <th style="min-width:100px;">Sub Lord <span style="font-size:8px;color:var(--text-hint)">(SL)</span> <span class="info-tip" data-tip="Decides if house promise is ON or OFF">?</span></th>
+            <th style="min-width:100px;">Sub-Sub <span style="font-size:8px;color:var(--text-hint)">(SS)</span> <span class="info-tip" data-tip="Refines timing accuracy">?</span></th>
+          </tr>
+        </thead>
+        <tbody id="cusp-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 4 — DBA PERIOD ══ -->
+  <div class="section" id="sec-dba">
+    <div class="section-header" onclick="toggleSection('sec-dba')">
+      <span class="section-num">04</span>
+      <span class="section-title">DBA Period</span>
+      <span class="section-badge">Vimshottari Dasha</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-box">
+        Current Dasha–Bhukti–Antara. Event fructifies only when DBA lords also signify the relevant houses — Sub-lord promise alone is not enough.
+      </div>
+      <div class="dba-grid">
+        <div class="dba-card">
+          <div class="dba-level">Mahadasha (MD)</div>
+          <select id="dba-md"><option value="">—</option></select>
+        </div>
+        <div class="dba-card">
+          <div class="dba-level">Antardasha (AD)</div>
+          <select id="dba-ad"><option value="">—</option></select>
+        </div>
+        <div class="dba-card">
+          <div class="dba-level">Pratyantardasha (PD)</div>
+          <select id="dba-pd"><option value="">—</option></select>
+        </div>
+      </div>
+      <div class="form-grid cols-2">
+        <div class="field">
+          <label>Period From</label>
+          <input type="date" id="dba-from">
+        </div>
+        <div class="field">
+          <label>Period To</label>
+          <input type="date" id="dba-to">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 5 — RULING PLANETS ══ -->
+  <div class="section" id="sec-rp">
+    <div class="section-header" onclick="toggleSection('sec-rp')">
+      <span class="section-num">05</span>
+      <span class="section-title">Ruling Planets</span>
+      <span class="section-badge">At Time of Judgment</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-box">
+        Ruling Planets at the time and place of judgment. Confirms promise, aids timing. As per Prof. Krishnamurti: Day Lord, Asc Rasi Lord, Asc Nakshatra Lord, Moon Rasi Lord, Moon Nakshatra Lord — plus Sub Lords for added precision.
+      </div>
+      <div class="rp-grid" id="rp-grid"></div>
+    </div>
+  </div>
+
+  <!-- Action bar -->
+  <div class="action-bar">
+    <span class="action-status" id="status-text">○ Fill all sections to proceed</span>
+    <div class="btn-group">
+      <button class="btn-secondary" onclick="clearAll()">Clear All</button>
+      <button class="btn-primary" onclick="proceedToAnalysis()">Proceed to Analysis →</button>
+    </div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<script>
+const PLANETS = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+const SIGNS   = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+const HOUSES  = [1,2,3,4,5,6,7,8,9,10,11,12];
+const PLANET_COLORS = {
+  Sun:'var(--planet-sun)', Moon:'var(--planet-moon)', Mars:'var(--planet-mars)',
+  Mercury:'var(--planet-mercury)', Jupiter:'var(--planet-jupiter)', Venus:'var(--planet-venus)',
+  Saturn:'var(--planet-saturn)', Rahu:'var(--planet-rahu)', Ketu:'var(--planet-ketu)'
+};
+const RP_LABELS = [
+  {id:'rp-day',     label:'Day Lord'},
+  {id:'rp-asc-rl',  label:'Asc Rasi Lord'},
+  {id:'rp-asc-nl',  label:'Asc Nakshatra Lord'},
+  {id:'rp-asc-sl',  label:'Asc Sub Lord'},
+  {id:'rp-moon-rl', label:'Moon Rasi Lord'},
+  {id:'rp-moon-nl', label:'Moon Nakshatra Lord'},
+  {id:'rp-moon-sl', label:'Moon Sub Lord'},
+];
+
+// ── Planet Sig Table ─────────────────────────────────
+function buildPlanetSigTable() {
+  const tbody = document.getElementById('planet-sig-body');
+  PLANETS.forEach(p => {
+    const tr = document.createElement('tr');
+    let html = `<td><div class="planet-name-cell">
+      <div class="planet-dot" style="background:${PLANET_COLORS[p]}"></div>
+      <span class="planet-label" style="color:${PLANET_COLORS[p]}">${p}</span>
+    </div></td>`;
+    HOUSES.forEach(h => {
+      html += `<td class="house-checkbox-cell">
+        <div class="house-cb-wrap">
+          <input type="checkbox" id="sig-${p}-H${h}" data-planet="${p}" data-house="${h}">
+          <span class="house-num">${h}</span>
+        </div></td>`;
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Cusp Table ───────────────────────────────────────
+function buildCuspTable() {
+  const tbody = document.getElementById('cusp-body');
+  const signOpts = SIGNS.map(s=>`<option value="${s}">${s}</option>`).join('');
+  const pOpts = ['—',...PLANETS].map(p=>`<option value="${p}">${p}</option>`).join('');
+  HOUSES.forEach(h => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="cusp-num">${h}</td>
+      <td><select id="cusp-${h}-sign"><option value="">— sign —</option>${signOpts}</select></td>
+      <td><input type="text" id="cusp-${h}-deg" class="deg-input" placeholder="DDMMSS" maxlength="8"
+           oninput="formatDegree(this)" onblur="formatDegreeOnBlur(this)"></td>
+      <td><select id="cusp-${h}-rl"><option value="">—</option>${pOpts}</select></td>
+      <td><select id="cusp-${h}-nl"><option value="">—</option>${pOpts}</select></td>
+      <td><select id="cusp-${h}-sl"><option value="">—</option>${pOpts}</select></td>
+      <td><select id="cusp-${h}-ss"><option value="">—</option>${pOpts}</select></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Degree formatting ────────────────────────────────
+// User types: 062639 → displays 06°26′39″
+// Internally stores raw digits, formats on display
+
+function formatDegree(input) {
+  // Strip non-digits
+  let raw = input.value.replace(/\D/g, '').slice(0, 6);
+  input.dataset.raw = raw;
+  // Show formatted preview while typing
+  if (raw.length <= 2) {
+    input.value = raw;
+  } else if (raw.length <= 4) {
+    input.value = raw.slice(0,2) + '°' + raw.slice(2);
+  } else {
+    input.value = raw.slice(0,2) + '°' + raw.slice(2,4) + '′' + raw.slice(4);
+  }
+}
+
+function formatDegreeOnBlur(input) {
+  let raw = (input.dataset.raw || input.value.replace(/\D/g,'')).padEnd(6,'0').slice(0,6);
+  input.dataset.raw = raw;
+  const d = raw.slice(0,2);
+  const m = raw.slice(2,4);
+  const s = raw.slice(4,6);
+  input.value = `${d}°${m}′${s}″`;
+}
+
+function getDegreeDecimal(raw) {
+  if (!raw || raw.length < 6) return null;
+  const d = parseInt(raw.slice(0,2));
+  const m = parseInt(raw.slice(2,4));
+  const s = parseInt(raw.slice(4,6));
+  return d + m/60 + s/3600;
+}
+
+// ── DBA & RP ─────────────────────────────────────────
+function buildDBASelects() {
+  const opts = ['', ...PLANETS].map(p=>`<option value="${p}">${p||'—'}</option>`).join('');
+  ['dba-md','dba-ad','dba-pd'].forEach(id => document.getElementById(id).innerHTML = opts);
+}
+
+function buildRPGrid() {
+  const grid = document.getElementById('rp-grid');
+  const opts = ['', ...PLANETS].map(p=>`<option value="${p}">${p||'—'}</option>`).join('');
+  RP_LABELS.forEach(rp => {
+    const div = document.createElement('div');
+    div.className = 'rp-card';
+    div.innerHTML = `<span class="rp-label">${rp.label}</span>
+      <select id="${rp.id}">${opts}</select>`;
+    grid.appendChild(div);
+  });
+}
+
+// ── Place Autocomplete ────────────────────────────────
+// Tries Nominatim directly, then via two CORS proxies as fallback.
+// If all fail, shows manual lat/lon entry prompt.
+let acTimers = {};
+
+const NOMINATIM_ENDPOINTS = [
+  q => `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&addressdetails=1`,
+  q => `https://corsproxy.io/?${encodeURIComponent(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&addressdetails=1`)}`,
+  q => `https://api.allorigins.win/get?url=${encodeURIComponent(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6`)}`,
+];
+
+async function fetchNominatim(query) {
+  const q = encodeURIComponent(query);
+  for (let i = 0; i < NOMINATIM_ENDPOINTS.length; i++) {
+    try {
+      const url = NOMINATIM_ENDPOINTS[i](q);
+      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+      if (!res.ok) continue;
+      const data = await res.json();
+      // allorigins wraps in { contents: "..." }
+      if (data && data.contents) return JSON.parse(data.contents);
+      if (Array.isArray(data)) return data;
+    } catch(e) { continue; }
+  }
+  return null; // all failed
+}
+
+function showManualLatLon(key) {
+  const listEl = document.getElementById(`ac-${key}`);
+  listEl.innerHTML = `
+    <div style="padding:12px 14px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;letter-spacing:0.5px;">
+        Auto-search unavailable — enter coordinates manually:
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-hint);margin-bottom:4px;">Latitude</div>
+          <input type="text" id="manual-lat-${key}" placeholder="e.g. 28.0167"
+            style="background:var(--bg-input);border:1px solid var(--border);border-radius:2px;
+                   color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:12px;
+                   padding:6px 8px;outline:none;width:100%;">
+        </div>
+        <div>
+          <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-hint);margin-bottom:4px;">Longitude</div>
+          <input type="text" id="manual-lon-${key}" placeholder="e.g. 73.3167"
+            style="background:var(--bg-input);border:1px solid var(--border);border-radius:2px;
+                   color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:12px;
+                   padding:6px 8px;outline:none;width:100%;">
+        </div>
+      </div>
+      <button onclick="applyManualLatLon('${key}')"
+        style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;
+               color:#1a1e2a;background:var(--gold);border:none;padding:7px 16px;
+               border-radius:2px;cursor:pointer;width:100%;letter-spacing:1px;">
+        Apply Coordinates
+      </button>
+    </div>`;
+  listEl.classList.add('open');
+}
+
+function applyManualLatLon(key) {
+  const lat = document.getElementById(`manual-lat-${key}`).value.trim();
+  const lon = document.getElementById(`manual-lon-${key}`).value.trim();
+  if (key === 'birth') {
+    if (lat) document.getElementById('native-lat').value = lat;
+    if (lon) document.getElementById('native-lon').value = lon;
+  }
+  document.getElementById(`ac-${key}`).classList.remove('open');
+  updateStatus();
+}
+
+function searchPlace(query, key) {
+  const listEl = document.getElementById(`ac-${key}`);
+  clearTimeout(acTimers[key]);
+  if (query.length < 3) { listEl.classList.remove('open'); return; }
+  listEl.innerHTML = '<div class="ac-loading">Searching…</div>';
+  listEl.classList.add('open');
+  acTimers[key] = setTimeout(async () => {
+    const results = await fetchNominatim(query);
+    if (results === null) {
+      showManualLatLon(key);
+      return;
+    }
+    if (!results.length) {
+      listEl.innerHTML = '<div class="ac-loading">No results found — try a different spelling</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    results.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'ac-item';
+      const parts = r.display_name.split(', ');
+      const main  = parts.slice(0, 2).join(', ');
+      const sub   = parts.slice(2).join(', ');
+      div.innerHTML = `<div class="ac-main">${main}</div><div class="ac-sub">${sub}</div>`;
+      div.onclick = () => selectPlace(r, key);
+      listEl.appendChild(div);
+    });
+  }, 400);
+}
+
+function selectPlace(result, key) {
+  const listEl = document.getElementById(`ac-${key}`);
+  const parts = result.display_name.split(', ');
+  const label = parts.slice(0, 3).join(', ');
+  if (key === 'birth') {
+    document.getElementById('native-place').value = label;
+    document.getElementById('native-lat').value   = parseFloat(result.lat).toFixed(4);
+    document.getElementById('native-lon').value   = parseFloat(result.lon).toFixed(4);
+  } else {
+    document.getElementById('today-place').value = label;
+  }
+  listEl.classList.remove('open');
+  updateStatus();
+}
+
+// Close autocomplete on outside click
+document.addEventListener('click', e => {
+  document.querySelectorAll('.autocomplete-list').forEach(el => {
+    if (!el.closest('.place-wrap').contains(e.target)) el.classList.remove('open');
+  });
+});
+
+// ── Time helper ──────────────────────────────────────
+function padTime(input, max) {
+  let v = parseInt(input.value);
+  if (isNaN(v)) return;
+  if (v < 0)   input.value = 0;
+  if (v > max) input.value = max;
+  updateStatus();
+}
+
+// ── Toggle sections ──────────────────────────────────
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ── Defaults ─────────────────────────────────────────
+function setDefaults() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('today-date').value =
+    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById('today-h').value = pad(now.getHours());
+  document.getElementById('today-m').value = pad(now.getMinutes());
+  document.getElementById('today-s').value = '00';
+  document.getElementById('tob-s').value   = '00';
+}
+
+// ── Collect ───────────────────────────────────────────
+function collectData() {
+  const data = {
+    native: {
+      name:      document.getElementById('native-name').value.trim(),
+      gender:    document.getElementById('native-gender').value,
+      dob:       document.getElementById('native-dob').value,
+      tob_h:     document.getElementById('tob-h').value,
+      tob_m:     document.getElementById('tob-m').value,
+      tob_s:     document.getElementById('tob-s').value,
+      tz:        document.getElementById('native-tz').value,
+      place:     document.getElementById('native-place').value.trim(),
+      lat:       document.getElementById('native-lat').value,
+      lon:       document.getElementById('native-lon').value,
+      ayanamsa:  document.getElementById('native-ayanamsa').value.trim(),
+      todayDate: document.getElementById('today-date').value,
+      today_h:   document.getElementById('today-h').value,
+      today_m:   document.getElementById('today-m').value,
+      today_s:   document.getElementById('today-s').value,
+      todayPlace:document.getElementById('today-place').value.trim(),
+    },
+    planetSig: {},
+    cusps: {},
+    dba: {
+      md:   document.getElementById('dba-md').value,
+      ad:   document.getElementById('dba-ad').value,
+      pd:   document.getElementById('dba-pd').value,
+      from: document.getElementById('dba-from').value,
+      to:   document.getElementById('dba-to').value,
+    },
+    rp: {}
+  };
+
+  // Planet significations as clean arrays
+  PLANETS.forEach(p => {
+    data.planetSig[p] = [];
+    HOUSES.forEach(h => {
+      const cb = document.getElementById(`sig-${p}-H${h}`);
+      if (cb && cb.checked) data.planetSig[p].push(h);
+    });
+  });
+
+  // Cusps — store raw deg digits separately for calculations
+  HOUSES.forEach(h => {
+    const rawDeg = document.getElementById(`cusp-${h}-deg`).dataset.raw || '';
+    data.cusps[h] = {
+      sign:    document.getElementById(`cusp-${h}-sign`).value,
+      deg_raw: rawDeg,
+      deg_dec: getDegreeDecimal(rawDeg),
+      deg_fmt: document.getElementById(`cusp-${h}-deg`).value,
+      rl:      document.getElementById(`cusp-${h}-rl`).value,
+      nl:      document.getElementById(`cusp-${h}-nl`).value,
+      sl:      document.getElementById(`cusp-${h}-sl`).value,
+      ss:      document.getElementById(`cusp-${h}-ss`).value,
+    };
+  });
+
+  // Ruling planets
+  RP_LABELS.forEach(rp => {
+    data.rp[rp.id] = document.getElementById(rp.id).value;
+  });
+
+  return data;
+}
+
+// ── Validate ──────────────────────────────────────────
+function validateData(data) {
+  const issues = [];
+  if (!data.native.name)        issues.push('Native name missing');
+  if (!data.native.dob)         issues.push('Birth date missing');
+  if (data.native.tob_h === '') issues.push('Birth hour missing');
+  if (data.native.tob_m === '') issues.push('Birth minute missing');
+  if (!data.native.place)       issues.push('Birth place missing');
+  if (!data.dba.md)             issues.push('Mahadasha not selected');
+  if (!data.dba.ad)             issues.push('Antardasha not selected');
+  if (!data.dba.pd)             issues.push('Pratyantardasha not selected');
+  if (!data.cusps[1].sl)        issues.push('Cusp 1 Sub-lord missing');
+  if (!data.cusps[7].sl)        issues.push('Cusp 7 Sub-lord missing');
+  return issues;
+}
+
+// ── Status ────────────────────────────────────────────
+function updateStatus() {
+  const data = collectData();
+  const issues = validateData(data);
+  const el = document.getElementById('status-text');
+  if (!issues.length) {
+    el.textContent = '✓ All sections complete — ready to analyse';
+    el.style.color = 'var(--gold)';
+  } else {
+    el.textContent = '○ ' + issues[0];
+    el.style.color = 'var(--text-muted)';
+  }
+}
+
+// ── Clear ─────────────────────────────────────────────
+function clearAll() {
+  if (!confirm('Clear all entered data?')) return;
+  document.querySelectorAll('input:not([readonly])').forEach(el => {
+    if (el.type === 'checkbox') el.checked = false;
+    else el.value = '';
+  });
+  document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  setDefaults();
+  updateStatus();
+}
+
+// ── Proceed ───────────────────────────────────────────
+function proceedToAnalysis() {
+  const data = collectData();
+  const issues = validateData(data);
+  if (issues.length) {
+    alert('Please fix before proceeding:\n\n• ' + issues.join('\n• '));
+    return;
+  }
+  // Save to sessionStorage — cleared on tab close, never persists
+  sessionStorage.setItem('kp_input', JSON.stringify(data));
+  window.location.href = 'kp_output.html';
+}
+
+// ── Init ──────────────────────────────────────────────
+// Clear any previously stored data — fresh start every load
+localStorage.removeItem('kp_chart_data');
+sessionStorage.clear();
+document.addEventListener('change', updateStatus);
+document.addEventListener('input',  updateStatus);
+
+buildPlanetSigTable();
+buildCuspTable();
+buildDBASelects();
+buildRPGrid();
+setDefaults();
+updateStatus();
+</script>
+</body>
+</html>

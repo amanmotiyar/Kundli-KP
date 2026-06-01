@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KP Astrology — House Detail</title>
+<link rel="stylesheet" href="kp_styles.css">
+<style>
+/* ── Detail layout ── */
+.detail-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 0;
+  min-height: calc(100vh - 52px);
+}
+
+/* ── House sidebar ── */
+.house-sidebar {
+  background: var(--bg-header);
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+}
+.sidebar-title {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 16px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+.sidebar-item:hover { background: var(--bg-section); }
+.sidebar-item.active {
+  background: var(--bg-section);
+  border-left-color: var(--gold);
+}
+.sidebar-house-num {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 24px;
+}
+.sidebar-house-name {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+}
+.sidebar-item.active .sidebar-house-name { color: var(--gold-light); }
+.sidebar-nature-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.dot-supportive  { background: var(--nature-support); }
+.dot-obstructive { background: var(--nature-obstruct); }
+.dot-mixed       { background: var(--nature-mixed); }
+.dot-neutral     { background: var(--text-hint); }
+
+/* ── Main content ── */
+.detail-main {
+  padding: 32px 36px 80px;
+  min-width: 0;
+}
+
+/* House header */
+.house-detail-header {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.house-detail-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.house-detail-name {
+  font-family: 'Cinzel', serif;
+  font-size: 26px;
+  color: var(--gold-light);
+  letter-spacing: 1px;
+}
+.house-detail-num {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.house-detail-sanskrit {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.house-detail-domain {
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  margin-top: 6px;
+}
+
+/* Cusp data strip */
+.cusp-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.cusp-item {
+  background: var(--bg-section);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 6px 12px;
+  text-align: center;
+  min-width: 80px;
+}
+.cusp-item-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 3px;
+}
+.cusp-item-value {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: var(--gold-dim);
+  display: block;
+}
+
+/* Overall interpretation */
+.house-overall-interp {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--gold-dim);
+  padding: 20px 22px;
+  border-radius: 0 3px 3px 0;
+  margin-bottom: 32px;
+}
+.house-overall-interp .interp-text {
+  font-size: 15px;
+  line-height: 1.85;
+}
+
+/* Verdict row */
+.verdict-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+/* Sub-events section */
+.sub-events-label {
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sub-events-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Sub-event card */
+.sub-event-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.sub-event-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+.sub-event-name {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+  flex: 1;
+}
+.sub-event-type {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-hint);
+}
+.sub-event-toggle {
+  color: var(--text-muted);
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+.sub-event-card.collapsed .sub-event-toggle { transform: rotate(-90deg); }
+.sub-event-card.collapsed .sub-event-body   { display: none; }
+
+.sub-event-body { padding: 18px 16px; }
+
+/* Score grid */
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.score-item {
+  background: var(--bg-section);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.score-item-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 6px;
+}
+.score-item-value {
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  display: block;
+}
+.score-positive { color: var(--nature-support); }
+.score-negative { color: var(--nature-obstruct); }
+.score-neutral  { color: var(--text-secondary); }
+
+/* Attributes */
+.attrs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.attr-item {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 8px 12px;
+}
+.attr-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 3px;
+}
+.attr-value {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+/* Combination output */
+.combo-output {
+  background: var(--bg-section);
+  border-left: 3px solid var(--gold-dim);
+  padding: 10px 14px;
+  border-radius: 0 2px 2px 0;
+  margin-top: 12px;
+}
+.combo-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+.combo-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* DBA detail strip */
+.dba-detail-strip {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.dba-detail-item {
+  font-size: 10px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+.dba-detail-item.active-dba {
+  border-color: var(--gold-dim);
+  color: var(--gold-dim);
+}
+
+/* RP section */
+.rp-detail {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.rp-tag {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  padding: 3px 10px;
+  background: rgba(212,160,64,0.1);
+  border: 1px solid rgba(212,160,64,0.2);
+  border-radius: 2px;
+  color: var(--gold-dim);
+}
+
+/* Promise indicator */
+.promise-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+.promise-icon { font-size: 14px; }
+.promise-icon.yes     { color: var(--nature-support); }
+.promise-icon.weak    { color: var(--nature-mixed); }
+.promise-icon.denied  { color: var(--nature-obstruct); }
+
+/* Loading / no-data */
+.detail-loading {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+@media (max-width: 768px) {
+  .detail-layout { grid-template-columns: 1fr; }
+  .house-sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .detail-main   { padding: 20px 16px 60px; }
+  .score-grid    { grid-template-columns: repeat(2, 1fr); }
+  .attrs-grid    { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Global Nav -->
+<nav class="global-nav">
+  <div class="nav-brand" onclick="window.location.href='kp_input.html'">
+    KP Astrology Analyser
+    <span>Krishnamurti Paddhati</span>
+  </div>
+  <div class="nav-actions">
+    <span class="nav-native" id="nav-native-name"></span>
+    <button class="btn-ghost" onclick="window.location.href='kp_output.html'">← Dashboard</button>
+    <button class="btn-ghost" onclick="window.location.href='kp_input.html'">New Chart</button>
+  </div>
+</nav>
+
+<div class="detail-layout">
+
+  <!-- Sidebar -->
+  <aside class="house-sidebar" id="house-sidebar">
+    <div class="sidebar-title">All Houses</div>
+    <div id="sidebar-items"></div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="detail-main" id="detail-main">
+    <div class="detail-loading" id="detail-loading">
+      <div style="font-family:'Cinzel',serif;font-size:32px;color:var(--gold-dim);margin-bottom:16px;">✦</div>
+      Loading house analysis…
+    </div>
+    <div id="detail-content" style="display:none;"></div>
+  </main>
+
+</div>
+
+<script src="kp_engine.js"></script>
+<script>
+
+let activeHouse  = 1;
+let chartData    = null;
+let allResults   = null;
+
+// ── Navigation ───────────────────────────────────
+function buildSidebar() {
+  const container = document.getElementById('sidebar-items');
+  container.innerHTML = '';
+  for (let h = 1; h <= 12; h++) {
+    const r = allResults[h];
+    const nature = r ? (r.houseNature || 'Neutral') : 'Neutral';
+    const dotClass = `dot-${nature.toLowerCase()}`;
+    const item = document.createElement('div');
+    item.className = `sidebar-item${h === activeHouse ? ' active' : ''}`;
+    item.id = `sidebar-h${h}`;
+    item.onclick = () => loadHouseDetail(h);
+    item.innerHTML = `
+      <span class="sidebar-house-num">${h}</span>
+      <span class="sidebar-house-name">${HOUSE_DATA[h].name}</span>
+      <span class="sidebar-nature-dot ${dotClass}"></span>`;
+    container.appendChild(item);
+  }
+}
+
+function setActiveSidebar(h) {
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(`sidebar-h${h}`);
+  if (el) el.classList.add('active');
+}
+
+// ── Render house detail ──────────────────────────
+function loadHouseDetail(houseNum) {
+  activeHouse = houseNum;
+  setActiveSidebar(houseNum);
+  sessionStorage.setItem('kp_active_house', houseNum);
+
+  const r = allResults[houseNum];
+  const content = document.getElementById('detail-content');
+
+  if (!r) {
+    content.innerHTML = '<div class="detail-loading">No data for this house.</div>';
+    return;
+  }
+
+  const interpText = r.error ? 'Sub-lord data not entered.' : generateHouseInterpretation(r, chartData);
+  const nature     = r.houseNature || 'Neutral';
+  const badgeClass = `badge-${nature.toLowerCase()}`;
+
+  let html = `
+    <div class="house-detail-header">
+      <div class="house-detail-title">
+        <div>
+          <div class="house-detail-num">House ${houseNum} · ${r.Sanskrit}</div>
+          <div class="house-detail-name">${r.name}</div>
+          <div class="house-detail-domain">${r.domain}</div>
+        </div>
+        <span class="badge ${badgeClass}" style="margin-top:6px;">${nature}</span>
+      </div>
+
+      <div class="cusp-strip">
+        <div class="cusp-item">
+          <span class="cusp-item-label">Sign</span>
+          <span class="cusp-item-value">${r.cuspSign || '—'}</span>
+        </div>
+        <div class="cusp-item">
+          <span class="cusp-item-label">Sign Lord</span>
+          <span class="cusp-item-value">${chartData.cusps[houseNum]?.rl || '—'}</span>
+        </div>
+        <div class="cusp-item">
+          <span class="cusp-item-label">Star Lord</span>
+          <span class="cusp-item-value">${r.nlPlanet || '—'}</span>
+        </div>
+        <div class="cusp-item">
+          <span class="cusp-item-label">Sub Lord</span>
+          <span class="cusp-item-value" style="color:var(--gold-light)">${r.slPlanet || '—'}</span>
+        </div>
+        <div class="cusp-item">
+          <span class="cusp-item-label">Sub-Sub Lord</span>
+          <span class="cusp-item-value">${chartData.cusps[houseNum]?.ss || '—'}</span>
+        </div>
+        ${r.signData ? `
+        <div class="cusp-item">
+          <span class="cusp-item-label">Element</span>
+          <span class="cusp-item-value">${r.signData.element}</span>
+        </div>
+        <div class="cusp-item">
+          <span class="cusp-item-label">Quality</span>
+          <span class="cusp-item-value">${r.signData.quality}</span>
+        </div>` : ''}
+      </div>
+
+      <div class="verdict-row">
+        <span class="badge ${r.primaryPresent ? 'badge-active' : 'badge-neutral'}">
+          ${r.primaryPresent ? '✓ Promised' : '✗ Not Promised'}
+        </span>
+        <span class="badge badge-${r.houseNature.toLowerCase()}">
+          Net Score: ${r.houseNetScore > 0 ? '+' : ''}${r.houseNetScore}
+        </span>
+        <span class="badge ${r.adActive ? 'badge-active' : 'badge-neutral'}">
+          AD ${r.adActive ? 'Active' : 'Inactive'}
+        </span>
+        <span class="badge badge-promised">
+          ${r.houseVerdict}
+        </span>
+      </div>
+    </div>
+
+    <!-- Overall interpretation -->
+    <div class="house-overall-interp">
+      <div class="interp-text">${interpText}</div>
+    </div>
+
+    <!-- Sub-events -->
+    <div class="sub-events-label">Sub-event Analysis</div>`;
+
+  // Sub-events
+  r.subEvents.forEach((se, idx) => {
+    if (!se) return;
+    const seNature = se.nature || 'Mixed';
+    const seBadge  = `badge-${seNature.toLowerCase()}`;
+    const promisedIcon = se.promise.promised
+      ? (se.promise.strength === 'strong' ? '◉' : '◎')
+      : '○';
+    const promiseColor = se.promise.promised
+      ? (se.promise.strength === 'strong' ? 'yes' : 'weak')
+      : 'denied';
+
+    const dbaVerdict = se.type === 'Life' ? 'Life Reading' : se.dba.verdict.replace(/_/g, ' ');
+    const dbaActive  = se.dba.verdict === 'active';
+
+    // Attributes
+    let attrsHtml = '';
+    if (Object.keys(se.attributes).length > 0) {
+      attrsHtml = '<div class="attrs-grid">';
+      Object.entries(se.attributes).forEach(([k, v]) => {
+        const label = k.replace(/([A-Z])/g, ' $1').trim();
+        attrsHtml += `
+          <div class="attr-item">
+            <span class="attr-label">${label}</span>
+            <span class="attr-value">${v}</span>
+          </div>`;
+      });
+      attrsHtml += '</div>';
+    }
+
+    // Combination output
+    let comboHtml = '';
+    if (se.combination) {
+      comboHtml = `
+        <div class="combo-output">
+          <div class="combo-label">Planet + Sign Combination (${se.nlPlanet} × ${se.cuspSign})</div>
+          <div class="combo-text">${se.combination}</div>
+        </div>`;
+    }
+
+    // RP tags
+    let rpHtml = '';
+    if (se.rp.matchedRPs.length > 0) {
+      rpHtml = `<div class="rp-detail">
+        <span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);">RP Match:</span>
+        ${se.rp.matchedRPs.map(p => `<span class="rp-tag">${p}</span>`).join('')}
+        <span class="badge badge-${se.rp.confidence === 'very_high' || se.rp.confidence === 'high' ? 'active' : 'neutral'}">${se.rp.confidence.replace(/_/g,' ')}</span>
+      </div>`;
+    }
+
+    html += `
+      <div class="sub-event-card" id="se-${idx}">
+        <div class="sub-event-header" onclick="toggleSubEvent('se-${idx}')">
+          <div class="promise-icon ${promiseColor}" style="font-size:16px;">${promisedIcon}</div>
+          <div class="sub-event-name">${se.name}</div>
+          <span class="badge ${seBadge}" style="margin-right:8px;">${seNature}</span>
+          <span class="sub-event-type">${se.type}</span>
+          <span class="sub-event-toggle">▾</span>
+        </div>
+        <div class="sub-event-body">
+
+          <div class="promise-indicator">
+            <span class="promise-icon ${promiseColor}">${promisedIcon}</span>
+            <span>
+              <strong style="color:var(--text-primary);">
+                ${se.promise.promised ? `Promised — ${se.promise.strength} strength` : 'Not Promised — Primary house absent'}
+              </strong>
+              &nbsp;·&nbsp; Support: ${se.promise.supportCount} &nbsp;·&nbsp; Obstruct: ${se.promise.obstructCount} &nbsp;·&nbsp; Net: ${se.promise.netScore > 0 ? '+' : ''}${se.promise.netScore}
+            </span>
+          </div>
+
+          ${se.type !== 'Life' ? `
+          <div class="dba-detail-strip">
+            <span class="dba-detail-item ${chartData.dba.md ? 'active-dba' : ''}">MD: ${chartData.dba.md}</span>
+            <span style="color:var(--text-hint);padding:3px 2px;">›</span>
+            <span class="dba-detail-item ${se.dba.adGate ? 'active-dba' : ''}">AD: ${chartData.dba.ad} ${se.dba.adGate ? '✓' : '✗'}</span>
+            <span style="color:var(--text-hint);padding:3px 2px;">›</span>
+            <span class="dba-detail-item">PD: ${chartData.dba.pd}</span>
+            <span class="badge ${dbaActive ? 'badge-active' : se.dba.verdict === 'possible' ? 'badge-mixed' : 'badge-neutral'}" style="margin-left:8px;">
+              ${dbaVerdict}
+            </span>
+          </div>` : `
+          <div class="dba-detail-strip">
+            <span class="dba-detail-item" style="color:var(--gold-dim);">Life Reading — Permanent chart indication, not DBA-dependent</span>
+          </div>`}
+
+          <div class="score-grid">
+            <div class="score-item">
+              <span class="score-item-label">Promise Score</span>
+              <span class="score-item-value ${se.promise.netScore >= 0 ? 'score-positive' : 'score-negative'}">
+                ${se.promise.netScore > 0 ? '+' : ''}${se.promise.netScore}
+              </span>
+            </div>
+            <div class="score-item">
+              <span class="score-item-label">DBA Score</span>
+              <span class="score-item-value ${se.dba.score >= 0 ? 'score-positive' : 'score-negative'}">
+                ${se.type === 'Life' ? '—' : (se.dba.score > 0 ? '+' : '') + se.dba.score}
+              </span>
+            </div>
+            <div class="score-item">
+              <span class="score-item-label">RP Score</span>
+              <span class="score-item-value score-neutral">
+                ${se.rp.rpScore}
+              </span>
+            </div>
+          </div>
+
+          ${rpHtml}
+          ${attrsHtml}
+          ${comboHtml}
+
+        </div>
+      </div>`;
+  });
+
+  content.innerHTML = html;
+}
+
+function toggleSubEvent(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ── Init ─────────────────────────────────────────
+function init() {
+  chartData  = loadChartData();
+  allResults = loadResults();
+
+  if (!chartData || !allResults) {
+    window.location.href = 'kp_output.html';
+    return;
+  }
+
+  document.getElementById('nav-native-name').textContent = chartData.native.name || '';
+
+  const savedHouse = parseInt(sessionStorage.getItem('kp_active_house')) || 1;
+  activeHouse = savedHouse;
+
+  buildSidebar();
+  document.getElementById('detail-loading').style.display = 'none';
+  document.getElementById('detail-content').style.display = 'block';
+  loadHouseDetail(activeHouse);
+}
+
+init();
+</script>
+</body>
+</html>

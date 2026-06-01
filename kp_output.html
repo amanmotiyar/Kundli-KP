@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KP Astrology — Analysis Dashboard</title>
+<link rel="stylesheet" href="kp_styles.css">
+<style>
+/* ── Dashboard-specific styles ── */
+.dashboard-header {
+  padding: 28px 0 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+.native-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.native-name {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  color: var(--gold-light);
+  letter-spacing: 1px;
+}
+.native-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+.dba-pill {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.dba-pill-item {
+  background: var(--bg-section);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 6px 14px;
+  text-align: center;
+}
+.dba-pill-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+}
+.dba-pill-value {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--gold-light);
+  display: block;
+  margin-top: 2px;
+}
+.dba-sep {
+  color: var(--text-hint);
+  font-size: 18px;
+}
+
+/* Summary stats */
+.summary-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.stat-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 12px 20px;
+  min-width: 110px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.stat-num {
+  font-family: 'Cinzel', serif;
+  font-size: 24px;
+  display: block;
+}
+.stat-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 4px;
+}
+.stat-box.s-support  .stat-num { color: var(--nature-support); }
+.stat-box.s-mixed    .stat-num { color: var(--nature-mixed); }
+.stat-box.s-obstruct .stat-num { color: var(--nature-obstruct); }
+.stat-box.s-neutral  .stat-num { color: var(--text-muted); }
+
+/* House grid */
+.houses-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+/* House card */
+.house-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(12px);
+  animation: fadeUp 0.4s ease forwards;
+  display: flex;
+  flex-direction: column;
+}
+.house-card:hover {
+  border-color: var(--gold-dim);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.house-card:nth-child(1)  { animation-delay: 0.04s }
+.house-card:nth-child(2)  { animation-delay: 0.08s }
+.house-card:nth-child(3)  { animation-delay: 0.12s }
+.house-card:nth-child(4)  { animation-delay: 0.16s }
+.house-card:nth-child(5)  { animation-delay: 0.20s }
+.house-card:nth-child(6)  { animation-delay: 0.24s }
+.house-card:nth-child(7)  { animation-delay: 0.28s }
+.house-card:nth-child(8)  { animation-delay: 0.32s }
+.house-card:nth-child(9)  { animation-delay: 0.36s }
+.house-card:nth-child(10) { animation-delay: 0.40s }
+.house-card:nth-child(11) { animation-delay: 0.44s }
+.house-card:nth-child(12) { animation-delay: 0.48s }
+
+.card-header {
+  padding: 12px 14px 10px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-house-num {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+.card-house-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gold-light);
+  letter-spacing: 1px;
+}
+.card-sign {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+.card-body {
+  padding: 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.card-interp {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  flex: 1;
+  font-style: italic;
+}
+.card-interp strong {
+  color: var(--text-primary);
+  font-style: normal;
+}
+
+.card-footer {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-section);
+}
+.card-sl {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.card-sl span {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: var(--gold-dim);
+}
+.card-arrow {
+  font-size: 12px;
+  color: var(--text-hint);
+  transition: color 0.2s, transform 0.2s;
+}
+.house-card:hover .card-arrow {
+  color: var(--gold-dim);
+  transform: translateX(3px);
+}
+
+/* Nature indicator strip */
+.nature-strip {
+  height: 3px;
+  width: 100%;
+}
+.strip-supportive  { background: var(--nature-support); }
+.strip-obstructive { background: var(--nature-obstruct); }
+.strip-mixed       { background: var(--nature-mixed); }
+.strip-neutral     { background: var(--border); }
+
+/* Loading state */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 20px;
+}
+.loading-symbol {
+  font-family: 'Cinzel', serif;
+  font-size: 48px;
+  color: var(--gold-dim);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
+.loading-text {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* No data screen */
+.no-data {
+  text-align: center;
+  padding: 60px 20px;
+}
+.no-data h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  color: var(--gold-dim);
+  margin-bottom: 12px;
+}
+.no-data p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+  .houses-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+  .houses-grid { grid-template-columns: repeat(2, 1fr); }
+  .native-bar  { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<!-- Global Nav -->
+<nav class="global-nav">
+  <div class="nav-brand" onclick="goToInput()">
+    KP Astrology Analyser
+    <span>Krishnamurti Paddhati</span>
+  </div>
+  <div class="nav-actions">
+    <span class="nav-native" id="nav-native-name"></span>
+    <span class="nav-dba" id="nav-dba"></span>
+    <button class="btn-ghost" onclick="goToInput()">← New Chart</button>
+  </div>
+</nav>
+
+<div class="wrapper">
+
+  <!-- Loading -->
+  <div class="loading-screen" id="loading-screen">
+    <div class="loading-symbol">✦</div>
+    <div class="loading-text">Computing planetary influences…</div>
+  </div>
+
+  <!-- No data -->
+  <div class="no-data" id="no-data-screen" style="display:none;">
+    <h2>No Chart Data Found</h2>
+    <p>Please complete the input form first to generate the analysis.</p>
+    <button class="btn-primary" onclick="goToInput()">Go to Input Form</button>
+  </div>
+
+  <!-- Dashboard content -->
+  <div id="dashboard-content" style="display:none;">
+
+    <!-- Header -->
+    <div class="dashboard-header">
+      <div class="native-bar">
+        <div>
+          <div class="native-name" id="native-name-display">—</div>
+          <div class="native-meta" id="native-meta-display">—</div>
+        </div>
+        <div class="dba-pill">
+          <div class="dba-pill-item">
+            <span class="dba-pill-label">Mahadasha</span>
+            <span class="dba-pill-value" id="dba-md-display">—</span>
+          </div>
+          <span class="dba-sep">›</span>
+          <div class="dba-pill-item">
+            <span class="dba-pill-label">Antardasha</span>
+            <span class="dba-pill-value" id="dba-ad-display">—</span>
+          </div>
+          <span class="dba-sep">›</span>
+          <div class="dba-pill-item">
+            <span class="dba-pill-label">Pratyantara</span>
+            <span class="dba-pill-value" id="dba-pd-display">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary stats -->
+      <div class="summary-stats" id="summary-stats"></div>
+    </div>
+
+    <!-- 12 House Cards -->
+    <div class="houses-grid" id="houses-grid"></div>
+
+  </div>
+
+</div><!-- /wrapper -->
+
+<script src="kp_engine.js"></script>
+<script>
+// ── Navigation ───────────────────────────────────
+function goToInput() {
+  window.location.href = 'kp_input.html';
+}
+function goToDetail(houseNum) {
+  sessionStorage.setItem('kp_active_house', houseNum);
+  window.location.href = 'kp_detail.html';
+}
+
+// ── Render dashboard ─────────────────────────────
+function renderDashboard(chartData, results) {
+  // Nav
+  document.getElementById('nav-native-name').textContent = chartData.native.name || '';
+  document.getElementById('nav-dba').textContent =
+    `${chartData.dba.md} · ${chartData.dba.ad} · ${chartData.dba.pd}`;
+
+  // Header
+  document.getElementById('native-name-display').textContent = chartData.native.name || 'Native';
+  document.getElementById('native-meta-display').textContent =
+    `${chartData.native.dob || ''}  ·  ${chartData.native.tob_h || ''}:${chartData.native.tob_m || ''}  ·  ${chartData.native.place || ''}`;
+  document.getElementById('dba-md-display').textContent = chartData.dba.md || '—';
+  document.getElementById('dba-ad-display').textContent = chartData.dba.ad || '—';
+  document.getElementById('dba-pd-display').textContent = chartData.dba.pd || '—';
+
+  // Summary stats
+  const summary = getChartSummary(results);
+  const statsEl = document.getElementById('summary-stats');
+  statsEl.innerHTML = `
+    <div class="stat-box s-support">
+      <span class="stat-num">${summary.supportive}</span>
+      <span class="stat-label">Supportive</span>
+    </div>
+    <div class="stat-box s-mixed">
+      <span class="stat-num">${summary.mixed}</span>
+      <span class="stat-label">Mixed</span>
+    </div>
+    <div class="stat-box s-obstruct">
+      <span class="stat-num">${summary.obstructive}</span>
+      <span class="stat-label">Obstructive</span>
+    </div>
+    <div class="stat-box s-neutral">
+      <span class="stat-num">${summary.notPromised}</span>
+      <span class="stat-label">Not Promised</span>
+    </div>`;
+
+  // House cards
+  const grid = document.getElementById('houses-grid');
+  grid.innerHTML = '';
+
+  for (let h = 1; h <= 12; h++) {
+    const r = results[h];
+    if (!r) continue;
+
+    const nature     = r.houseNature || 'Neutral';
+    const stripClass = `strip-${nature.toLowerCase()}`;
+    const badgeClass = `badge-${nature.toLowerCase()}`;
+
+    const interpText = r.error
+      ? `<em style="color:var(--text-muted)">Sub-lord data not entered for this house.</em>`
+      : generateHouseInterpretation(r, chartData);
+
+    const sign = r.cuspSign || '—';
+    const sl   = r.slPlanet || '—';
+    const nl   = r.nlPlanet || '—';
+
+    const card = document.createElement('div');
+    card.className = 'house-card';
+    card.onclick = () => goToDetail(h);
+    card.innerHTML = `
+      <div class="nature-strip ${stripClass}"></div>
+      <div class="card-header">
+        <div>
+          <div class="card-house-num">House ${h}</div>
+          <div class="card-house-name">${r.name}</div>
+          <div class="card-sign">${sign}</div>
+        </div>
+        <span class="badge ${badgeClass}">${nature}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-interp">${interpText}</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-sl">
+          SL <span>${sl}</span> &nbsp;·&nbsp; NL <span>${nl}</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>`;
+    grid.appendChild(card);
+  }
+}
+
+// ── Init ─────────────────────────────────────────
+function init() {
+  // Clear on fresh load — data must come from input page
+  const chartData = loadChartData();
+
+  document.getElementById('loading-screen').style.display = 'none';
+
+  if (!chartData) {
+    document.getElementById('no-data-screen').style.display = 'block';
+    return;
+  }
+
+  // Run engine
+  const results = runFullChart(chartData);
+  saveResults(results);
+
+  document.getElementById('dashboard-content').style.display = 'block';
+  renderDashboard(chartData, results);
+}
+
+// Small delay for visual polish
+setTimeout(init, 600);
+</script>
+</body>
+</html>
