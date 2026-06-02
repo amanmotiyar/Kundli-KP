@@ -374,6 +374,7 @@ function parseDate(str) {
   const d = parseInt(parts[0]), m = parseInt(parts[1]);
   let y = parseInt(parts[2]);
   if (isNaN(d)||isNaN(m)||isNaN(y)) return null;
+  if (d === 0 || m === 0) return null; // reject 00/00/00 placeholder dates
   if (y < 100) y += (y < 50 ? 2000 : 1900);
   return new Date(y, m-1, d);
 }
@@ -397,11 +398,19 @@ function findCurrentDBA(text) {
     const fromD = parseDate(fm[1]), toD = parseDate(fm[2]);
     if (!fromD || !toD) continue;
     if (today >= fromD && today <= toD) {
-      // Find FIRST block header before this position
-      const before = text.slice(Math.max(0, fm.index - 400), fm.index);
-      const headers = [...before.matchAll(/(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s*--\s*(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g)];
+      // Find the Nth block header matching the position of this From/To in its row
+      // Multiple From/To dates appear on one row — find which position this one is
+      const lineStart = text.lastIndexOf('\n', fm.index) + 1;
+      const lineText = text.slice(lineStart, fm.index + fm[0].length);
+      // Count how many From/To pairs precede this one on the same line
+      const precedingFromTo = [...lineText.matchAll(/From\s+[\d\/\s]+-\s*To\s+[\d\/\s]+/g)];
+      const posInRow = Math.max(0, precedingFromTo.length - 1);
+      // Find block headers row just before this line
+      const beforeLine = text.slice(Math.max(0, lineStart - 300), lineStart);
+      const headers = [...beforeLine.matchAll(/(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s*--\s*(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g)];
       if (headers.length > 0) {
-        activeBlock = { md: headers[0][1], ad: headers[0][2], from: fromD, to: toD, pos: fm.index };
+        const hIdx = Math.min(posInRow, headers.length - 1);
+        activeBlock = { md: headers[hIdx][1], ad: headers[hIdx][2], from: fromD, to: toD, pos: fm.index };
         break;
       }
     }
@@ -504,10 +513,14 @@ function parseAstroSagePDF(text) {
     const m = L(lagnaRPRow).match(/Lagna\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
     if (m) { result.rp.ascRL=PMAP_LOCAL[m[1]]||m[1]; result.rp.ascNL=PMAP_LOCAL[m[2]]||m[2]; result.rp.ascSL=PMAP_LOCAL[m[3]]||m[3]; }
   }
-  const moonRPRow = findLine(l => /^(Ju|Ra|Sa|Ma|Me|Ve|Su|Mo)\(\d+\)\s+Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/.test(l) || /^Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/.test(l));
+  const moonRPRow = findLine(l => /Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/.test(l) && l.includes('Moon') && !l.includes('Naskshatra') && !l.includes('Rasi Lord'));
   if (moonRPRow >= 0) {
-    const m = L(moonRPRow).match(/Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
-    if (m) { result.rp.moonRL=PMAP_LOCAL[m[1]]||m[1]; result.rp.moonNL=PMAP_LOCAL[m[2]]||m[2]; }
+    const m = L(moonRPRow).match(/Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)(?:\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET))?/);
+    if (m) {
+      result.rp.moonRL = PMAP_LOCAL[m[1]]||m[1];
+      result.rp.moonNL = PMAP_LOCAL[m[2]]||m[2];
+      if (m[3]) result.rp.moonSL = PMAP_LOCAL[m[3]]||m[3];
+    }
   }
   // Day Lord row
   const dayLordRow = findLine(l => l.includes('Day Lord'));
@@ -1321,6 +1334,10 @@ function validateData(data) {
     if (!data.cusps[h].sl)   issues.push({ id:`cusp-${h}-sl`,   msg:`Cusp ${h} Sub-lord missing` });
     if (!data.cusps[h].nl)   issues.push({ id:`cusp-${h}-nl`,   msg:`Cusp ${h} Star-lord missing` });
   }
+
+  // Check planet positions — at least one planet must have a sign
+  const anyPlanet = Object.values(data.planets).some(p => p.sign);
+  if (!anyPlanet) issues.push({ id:'ppos-Sun-sign', msg:'Planet positions not entered' });
 
   // Check planet significations — at least one planet must have houses marked
   const anyMarked = Object.values(data.planetSig).some(arr => arr.length > 0);
