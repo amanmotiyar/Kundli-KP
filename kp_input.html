@@ -24,6 +24,25 @@
     <div class="progress-step"></div>
   </div>
 
+  <!-- ══ PDF UPLOAD SECTION ══ -->
+  <div class="pdf-upload-section" id="pdf-upload-section">
+    <div class="pdf-upload-inner">
+      <div class="pdf-upload-icon">📄</div>
+      <div class="pdf-upload-text">
+        <strong>Auto-fill from AstroSage PDF</strong>
+        <span>Upload your KP chart PDF from AstroSage — all fields fill automatically in seconds</span>
+        <span class="pdf-privacy-note">🔒 Processed entirely in your browser — PDF never leaves your device</span>
+      </div>
+      <div class="pdf-upload-actions">
+        <label class="btn-primary pdf-upload-btn" for="pdf-file-input">
+          Upload PDF
+        </label>
+        <input type="file" id="pdf-file-input" accept=".pdf" style="display:none" onchange="handlePDFUpload(this)">
+      </div>
+    </div>
+    <div class="pdf-status" id="pdf-status" style="display:none"></div>
+  </div>
+
   <!-- ══ SECTION 1 — NATIVE DETAILS ══ -->
   <div class="section" id="sec-native">
     <div class="section-header" onclick="toggleSection('sec-native')">
@@ -104,11 +123,7 @@
           <label>Longitude</label>
           <input type="text" id="native-lon" placeholder="e.g. 73.3167">
         </div>
-        <div class="field">
-          <label>KP Ayanamsa <span class="info-tip" data-tip="Type 6 digits e.g. 233917 → 23°39′17″">?</span></label>
-          <input type="text" id="native-ayanamsa" class="deg-input" placeholder="DDMMSS"
-            maxlength="8" oninput="formatDegree(this)" onblur="formatDegreeOnBlur(this)">
-        </div>
+
 
       </div>
 
@@ -290,6 +305,472 @@
 
 </div><!-- /wrapper -->
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ── PDF.js setup ──────────────────────────────────
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// ── Planet abbreviation map ───────────────────────
+const PMAP = {
+  SUN:'Sun', MON:'Moon', MAR:'Mars', MER:'Mercury',
+  JUP:'Jupiter', VEN:'Venus', SAT:'Saturn', RAH:'Rahu', KET:'Ketu'
+};
+
+// ── Absolute degree → sign name ───────────────────
+function absToSign(abs) {
+  const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                 'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  const idx = Math.floor(parseFloat(abs) / 30);
+  return (idx >= 0 && idx < 12) ? SIGNS[idx] : null;
+}
+
+// ── Absolute degree → DDMMSS within sign ─────────
+function absToDegRaw(abs) {
+  const total = parseFloat(abs);
+  const inSign = total % 30;
+  const d = Math.floor(inSign);
+  const mf = (inSign - d) * 60;
+  const m = Math.floor(mf);
+  const s = Math.floor((mf - m) * 60);
+  return `${String(d).padStart(2,'0')}${String(m).padStart(2,'0')}${String(s).padStart(2,'0')}`;
+}
+
+// ── Parse AstroSage degree string "DDD-MM-SS" ─────
+function parseAstroSageDeg(str) {
+  // e.g. "066-01-32" = 66 degrees 01 min 32 sec absolute
+  const parts = str.split('-');
+  if (parts.length < 3) return { abs: 0, sign: null, raw: '000000' };
+  const abs = parseFloat(parts[0]) + parseFloat(parts[1])/60 + parseFloat(parts[2])/3600;
+  return {
+    abs,
+    sign: absToSign(parts[0]),
+    raw: absToDegRaw(str)
+  };
+}
+
+// ── Parse date "DD/ MM/YY" or "DD/MM/YY" ─────────
+function parseDate(str) {
+  if (!str) return null;
+  const parts = str.trim().split('/');
+  if (parts.length < 3) return null;
+  const d = parseInt(parts[0]);
+  const m = parseInt(parts[1]);
+  let y = parseInt(parts[2]);
+  if (y < 100) y += (y < 50 ? 2000 : 1900);
+  return new Date(y, m - 1, d);
+}
+
+// ── Find current DBA from text ────────────────────
+function findCurrentDBA(text) {
+  const today = new Date();
+
+  // Find all MD-AD blocks: "MD -- AD\nFrom DD/MM/YY - To DD/MM/YY"
+  const blockRx = /(\w+)\s*--\s*(\w+)\s*\nFrom\s+([\d\/\s]+?)\s*-\s*To\s+([\d\/\s]+)/gm;
+  // Find PD entries within blocks: "PD DD/MM/YY"
+  const pdRx = /^(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+([\d\/\s]+)$/gm;
+
+  let current = { md: null, ad: null, pd: null };
+
+  let match;
+  while ((match = blockRx.exec(text)) !== null) {
+    const md = match[1];
+    const ad = match[2];
+    const fromD = parseDate(match[3]);
+    const toD   = parseDate(match[4]);
+    if (!fromD || !toD) continue;
+    if (today >= fromD && today <= toD) {
+      current.md = PMAP[md] || md;
+      current.ad = PMAP[ad] || ad;
+
+      // Find PD within this block
+      const blockStart = match.index + match[0].length;
+      // Find next block start
+      const nextBlockMatch = /\n\w+\s*--\s*\w+/.exec(text.slice(blockStart));
+      const blockEnd = nextBlockMatch
+        ? blockStart + nextBlockMatch.index
+        : blockStart + 800;
+      const blockText = text.slice(blockStart, blockEnd);
+
+      let prevDate = fromD;
+      let pdMatch;
+      pdRx.lastIndex = 0;
+      while ((pdMatch = pdRx.exec(blockText)) !== null) {
+        const pdPlanet = pdMatch[1];
+        const pdEndDate = parseDate(pdMatch[2]);
+        if (!pdEndDate) continue;
+        if (today >= prevDate && today <= pdEndDate) {
+          current.pd = PMAP[pdPlanet] || pdPlanet;
+          break;
+        }
+        prevDate = pdEndDate;
+      }
+      break;
+    }
+  }
+
+  return current;
+}
+
+// ── Main PDF parser ───────────────────────────────
+async function handlePDFUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('pdf-status');
+  statusEl.style.display = 'block';
+  statusEl.className = 'pdf-status loading';
+  statusEl.innerHTML = '⏳ Reading PDF...';
+
+  try {
+    // Read file as ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+
+    // Extract text using PDF.js
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for (let i = 1; i <= Math.min(pdf.numPages, 6); i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map(item => item.str).join(' ') + '\n';
+      fullText += pageText;
+    }
+
+    // Check if it's an AstroSage KP chart
+    if (!fullText.includes('Cuspal Positions') && !fullText.includes('KP System')) {
+      throw new Error('This does not appear to be an AstroSage KP chart PDF. Please upload the correct file.');
+    }
+
+    // Parse the data
+    const parsed = parseAstroSagePDF(fullText);
+    const report = fillFormFromParsed(parsed);
+
+    // Show results
+    statusEl.className = 'pdf-status success';
+    statusEl.innerHTML = `
+      <strong>✓ Chart loaded successfully</strong><br>
+      <div class="parse-item"><span class="tick">✓</span> Native: ${parsed.native.name || 'Found'}</div>
+      <div class="parse-item"><span class="${report.cusps === 12 ? 'tick' : 'warn'}">${report.cusps === 12 ? '✓' : '⚠'}</span> Cusps: ${report.cusps}/12 loaded</div>
+      <div class="parse-item"><span class="${report.planets >= 9 ? 'tick' : 'warn'}">${report.planets >= 9 ? '✓' : '⚠'}</span> Planet positions: ${report.planets} loaded</div>
+      <div class="parse-item"><span class="${report.sigs >= 9 ? 'tick' : 'warn'}">${report.sigs >= 9 ? '✓' : '⚠'}</span> Planet significations: ${report.sigs}/9 loaded</div>
+      <div class="parse-item"><span class="${parsed.dba.md ? 'tick' : 'warn'}">${parsed.dba.md ? '✓' : '⚠'}</span> Current DBA: ${parsed.dba.md || '?'}-${parsed.dba.ad || '?'}-${parsed.dba.pd || '?'}</div>
+      <div class="parse-item"><span class="${parsed.rp.ascNL ? 'tick' : 'warn'}">${parsed.rp.ascNL ? '✓' : '⚠'}</span> Ruling planets loaded</div>
+      <br><em style="color:var(--text-muted)">Please verify the auto-filled data and make corrections if needed.</em>
+    `;
+
+  } catch(err) {
+    statusEl.className = 'pdf-status error';
+    statusEl.innerHTML = `<strong>✗ Parse error:</strong> ${err.message}<br>
+      <em>You can still enter data manually below.</em>`;
+    console.error('PDF parse error:', err);
+  }
+
+  // Reset input so same file can be re-uploaded
+  input.value = '';
+}
+
+// ── Core parser: text → structured data ──────────
+function parseAstroSagePDF(text) {
+  const result = {
+    native: {}, cusps: {}, planets: {},
+    planetSig: {}, dba: {}, rp: {}
+  };
+
+  // ── Native details ──
+  const nameM = text.match(/Name\s+([A-Za-z\s]+?)\s+(?:Sunrise|Sex)/);
+  if (nameM) result.native.name = nameM[1].trim();
+
+  const dateM = text.match(/Date\s+([\d.]+)/);
+  if (dateM) {
+    const parts = dateM[1].split('.');
+    if (parts.length === 3) {
+      const d = parts[0].padStart(2,'0');
+      const m = parts[1].padStart(2,'0');
+      const y = parts[2].length === 2 ? '19'+parts[2] : parts[2];
+      result.native.dob = `${y}-${m}-${d}`;
+    }
+  }
+
+  const timeM = text.match(/Time of Birth\s+([\d.]+)/);
+  if (timeM) {
+    const tparts = timeM[1].split('.');
+    result.native.tob_h = tparts[0] || '00';
+    result.native.tob_m = tparts[1] || '00';
+    result.native.tob_s = tparts[2] || '00';
+  }
+
+  const placeM = text.match(/Place\s+([A-Za-z]+)/);
+  if (placeM) result.native.place = placeM[1];
+
+  const latM = text.match(/Latitude\s+([\d.]+\.[NS])/);
+  if (latM) {
+    const lp = latM[1];
+    const num = parseFloat(lp);
+    result.native.lat = lp.includes('S') ? -num : num;
+  }
+
+  const lonM = text.match(/Longitude\s+([\d.]+\.[EW])/);
+  if (lonM) {
+    const lp = lonM[1];
+    const num = parseFloat(lp);
+    result.native.lon = lp.includes('W') ? -num : num;
+  }
+
+  const sexM = text.match(/Sex\s+(Male|Female)/i);
+  if (sexM) result.native.gender = sexM[1].toLowerCase();
+
+  // ── Cuspal positions ──
+  // Format: "1 066-01-32 MER MAR MON JUP"
+  const cuspRx = /(\d{1,2})\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g;
+  let cm;
+  while ((cm = cuspRx.exec(text)) !== null) {
+    const h = parseInt(cm[1]);
+    if (h >= 1 && h <= 12) {
+      const degInfo = parseAstroSageDeg(cm[2]);
+      result.cusps[h] = {
+        sign:    degInfo.sign,
+        deg_raw: degInfo.raw,
+        deg_fmt: cm[2],
+        rl:      PMAP[cm[3]] || cm[3],
+        nl:      PMAP[cm[4]] || cm[4],
+        sl:      PMAP[cm[5]] || cm[5],
+        ss:      PMAP[cm[6]] || cm[6]
+      };
+    }
+  }
+
+  // ── Planetary positions ──
+  const planetRx = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn(?:\[R\])?|Rahu|Ketu)\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g;
+  let pm;
+  while ((pm = planetRx.exec(text)) !== null) {
+    const name = pm[1].replace('[R]','').trim();
+    const retro = pm[1].includes('[R]');
+    const degInfo = parseAstroSageDeg(pm[2]);
+    // Derive house occupation from absolute degree vs cusps
+    result.planets[name] = {
+      sign:    degInfo.sign,
+      deg_raw: degInfo.raw,
+      deg_abs: pm[2],
+      retro,
+      rl: PMAP[pm[3]] || pm[3],
+      nl: PMAP[pm[4]] || pm[4],
+      sl: PMAP[pm[5]] || pm[5],
+      ss: PMAP[pm[6]] || pm[6]
+    };
+  }
+
+  // Derive house occupation after cusps are parsed
+  Object.entries(result.planets).forEach(([pName, pData]) => {
+    pData.house = derivePlanetHouseFromAbs(parseFloat(pData.deg_abs.replace(/-/g,'.')), result.cusps);
+  });
+
+  // ── Planet significations ──
+  // Find "Planet Signification" section
+  const sigStart = text.indexOf('Planet Signification');
+  const sigEnd   = text.indexOf('Significators of Houses', sigStart);
+  if (sigStart > 0) {
+    const sigText = sigEnd > 0 ? text.slice(sigStart, sigEnd) : text.slice(sigStart, sigStart + 500);
+    const sigRx = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\s+([\d\s]+?)(?=\n|Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu|$)/g;
+    let sm;
+    while ((sm = sigRx.exec(sigText)) !== null) {
+      const planet = sm[1];
+      const houses = sm[2].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
+      if (houses.length > 0) {
+        result.planetSig[planet] = houses;
+      }
+    }
+  }
+
+  // ── Ruling Planets ──
+  const rpSection = text.slice(text.indexOf('Ruling Planet'), text.indexOf('Cuspal Positions'));
+  const rpLagna = rpSection.match(/Lagna\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+  const rpMoon  = rpSection.match(/Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+  const rpDay   = rpSection.match(/Day Lord\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+
+  if (rpLagna) {
+    result.rp.ascRL  = PMAP[rpLagna[1]] || rpLagna[1];
+    result.rp.ascNL  = PMAP[rpLagna[2]] || rpLagna[2];
+    result.rp.ascSL  = PMAP[rpLagna[3]] || rpLagna[3];
+  }
+  if (rpMoon) {
+    result.rp.moonRL = PMAP[rpMoon[1]] || rpMoon[1];
+    result.rp.moonNL = PMAP[rpMoon[2]] || rpMoon[2];
+  }
+  if (rpDay) {
+    result.rp.day = PMAP[rpDay[1]] || rpDay[1];
+  }
+
+  // Moon SL — from Moon's position NL? or from rpSection
+  const moonSLm = rpSection.match(/Moon\s+\w+\s+\w+\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+  if (moonSLm) result.rp.moonSL = PMAP[moonSLm[1]] || moonSLm[1];
+
+  // ── Current DBA ──
+  // Need full text including pratyantar pages
+  result.dba = findCurrentDBA(text);
+
+  return result;
+}
+
+// ── Derive planet house from absolute degree ──────
+function derivePlanetHouseFromAbs(absTotal, cusps) {
+  if (!cusps || Object.keys(cusps).length < 12) return null;
+  const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                 'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+
+  // Convert cusp sign+deg_raw to absolute degrees
+  const cuspAbs = {};
+  for (let h = 1; h <= 12; h++) {
+    const c = cusps[h];
+    if (!c || !c.sign) continue;
+    const sIdx = SIGNS.indexOf(c.sign);
+    if (sIdx < 0) continue;
+    const raw = c.deg_raw || '000000';
+    const d = parseInt(raw.slice(0,2)) || 0;
+    const m = parseInt(raw.slice(2,4)) || 0;
+    const s = parseInt(raw.slice(4,6)) || 0;
+    cuspAbs[h] = sIdx * 30 + d + m/60 + s/3600;
+  }
+
+  // Find which house the planet falls in
+  for (let i = 1; i <= 12; i++) {
+    const curr  = cuspAbs[i];
+    const next  = cuspAbs[(i % 12) + 1];
+    if (curr === undefined || next === undefined) continue;
+    // Handle wrap-around
+    const norm = ((absTotal % 360) + 360) % 360;
+    const c    = ((curr % 360) + 360) % 360;
+    const n    = ((next % 360) + 360) % 360;
+    let inHouse = false;
+    if (c <= n) inHouse = norm >= c && norm < n;
+    else         inHouse = norm >= c || norm < n;
+    if (inHouse) return i;
+  }
+  return null;
+}
+
+// ── Fill all form fields from parsed data ─────────
+function fillFormFromParsed(parsed) {
+  const report = { cusps: 0, planets: 0, sigs: 0 };
+
+  // Native details
+  if (parsed.native.name) {
+    const el = document.getElementById('native-name');
+    if (el) el.value = parsed.native.name;
+  }
+  if (parsed.native.dob) {
+    const el = document.getElementById('native-dob');
+    if (el) el.value = parsed.native.dob;
+  }
+  if (parsed.native.tob_h) {
+    const h = document.getElementById('tob-h');
+    const m = document.getElementById('tob-m');
+    const s = document.getElementById('tob-s');
+    if (h) h.value = String(parseInt(parsed.native.tob_h)).padStart(2,'0');
+    if (m) m.value = String(parseInt(parsed.native.tob_m)).padStart(2,'0');
+    if (s) s.value = String(parseInt(parsed.native.tob_s || '0')).padStart(2,'0');
+  }
+  if (parsed.native.gender) {
+    const el = document.getElementById('native-gender');
+    if (el) el.value = parsed.native.gender;
+  }
+  if (parsed.native.place) {
+    const el = document.getElementById('native-place');
+    if (el) el.value = parsed.native.place;
+  }
+  if (parsed.native.lat) {
+    const el = document.getElementById('native-lat');
+    if (el) el.value = parsed.native.lat;
+  }
+  if (parsed.native.lon) {
+    const el = document.getElementById('native-lon');
+    if (el) el.value = parsed.native.lon;
+  }
+
+  // Cusp data
+  Object.entries(parsed.cusps).forEach(([h, c]) => {
+    const hNum = parseInt(h);
+    const signEl = document.getElementById(`cusp-${hNum}-sign`);
+    const degEl  = document.getElementById(`cusp-${hNum}-deg`);
+    const rlEl   = document.getElementById(`cusp-${hNum}-rl`);
+    const nlEl   = document.getElementById(`cusp-${hNum}-nl`);
+    const slEl   = document.getElementById(`cusp-${hNum}-sl`);
+    const ssEl   = document.getElementById(`cusp-${hNum}-ss`);
+
+    if (signEl && c.sign) { signEl.value = c.sign; report.cusps++; }
+    if (degEl  && c.deg_raw) {
+      degEl.dataset.raw = c.deg_raw;
+      const d = c.deg_raw.slice(0,2), m = c.deg_raw.slice(2,4), s = c.deg_raw.slice(4,6);
+      degEl.value = `${d}°${m}′${s}″`;
+    }
+    if (rlEl && c.rl) rlEl.value = c.rl;
+    if (nlEl && c.nl) nlEl.value = c.nl;
+    if (slEl && c.sl) slEl.value = c.sl;
+    if (ssEl && c.ss) ssEl.value = c.ss;
+  });
+
+  // Planet positions (section 2B)
+  Object.entries(parsed.planets).forEach(([pName, pData]) => {
+    const signEl  = document.getElementById(`ppos-${pName}-sign`);
+    const degEl   = document.getElementById(`ppos-${pName}-deg`);
+    const retroEl = document.getElementById(`ppos-${pName}-retro`);
+    if (signEl && pData.sign) { signEl.value = pData.sign; report.planets++; }
+    if (degEl  && pData.deg_raw) {
+      degEl.dataset.raw = pData.deg_raw;
+      const d = pData.deg_raw.slice(0,2), m = pData.deg_raw.slice(2,4), s = pData.deg_raw.slice(4,6);
+      degEl.value = `${d}°${m}′${s}″`;
+    }
+    if (retroEl) retroEl.checked = pData.retro || false;
+  });
+
+  // Planet significations (checkboxes)
+  Object.entries(parsed.planetSig).forEach(([planet, houses]) => {
+    report.sigs++;
+    // Clear all first
+    [1,2,3,4,5,6,7,8,9,10,11,12].forEach(h => {
+      const cb = document.getElementById(`sig-${planet}-H${h}`);
+      if (cb) cb.checked = false;
+    });
+    // Check the right ones
+    houses.forEach(h => {
+      const cb = document.getElementById(`sig-${planet}-H${h}`);
+      if (cb) cb.checked = true;
+    });
+  });
+
+  // DBA
+  if (parsed.dba.md) {
+    const mdEl = document.getElementById('dba-md');
+    const adEl = document.getElementById('dba-ad');
+    const pdEl = document.getElementById('dba-pd');
+    if (mdEl) mdEl.value = parsed.dba.md;
+    if (adEl) adEl.value = parsed.dba.ad;
+    if (pdEl && parsed.dba.pd) pdEl.value = parsed.dba.pd;
+  }
+
+  // Ruling Planets
+  const rpMap = {
+    'rp-asc-nl':  parsed.rp.ascNL,
+    'rp-asc-rl':  parsed.rp.ascRL,
+    'rp-asc-sl':  parsed.rp.ascSL,
+    'rp-moon-nl': parsed.rp.moonNL,
+    'rp-moon-rl': parsed.rp.moonRL,
+    'rp-moon-sl': parsed.rp.moonSL,
+    'rp-day':     parsed.rp.day
+  };
+  Object.entries(rpMap).forEach(([id, val]) => {
+    if (val) {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    }
+  });
+
+  // Update status
+  updateStatus();
+  return report;
+}
+</script>
 <script>
 const PLANETS = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
 const SIGNS   = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
@@ -624,7 +1105,7 @@ function collectData() {
       place:     document.getElementById('native-place').value.trim(),
       lat:       document.getElementById('native-lat').value,
       lon:       document.getElementById('native-lon').value,
-      ayanamsa:  document.getElementById('native-ayanamsa').value.trim(),
+
       todayDate: document.getElementById('today-date').value,
       today_h:   document.getElementById('today-h').value,
       today_m:   document.getElementById('today-m').value,
@@ -716,7 +1197,7 @@ function validateData(data) {
   if (data.native.tob_h === '') issues.push({ id:'tob-h',         msg:'Birth hour is required' });
   if (data.native.tob_m === '') issues.push({ id:'tob-m',         msg:'Birth minute is required' });
   if (!data.native.place)       issues.push({ id:'native-place',  msg:'Birth place is required' });
-  if (!data.native.ayanamsa)    issues.push({ id:'native-ayanamsa',msg:'KP Ayanamsa is required' });
+
   if (!data.dba.md)             issues.push({ id:'dba-md',        msg:'Mahadasha is required' });
   if (!data.dba.ad)             issues.push({ id:'dba-ad',        msg:'Antardasha is required' });
   if (!data.dba.pd)             issues.push({ id:'dba-pd',        msg:'Pratyantardasha is required' });

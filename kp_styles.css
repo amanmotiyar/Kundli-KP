@@ -667,3 +667,79 @@ body {
   .rp-grid                   { grid-template-columns: 1fr; }
   .span-2, .span-3           { grid-column: span 1; }
 }
+
+/* ── PDF Upload Section ── */
+.pdf-upload-section {
+  background: linear-gradient(135deg, rgba(212,160,64,0.08), rgba(30,37,53,0.95));
+  border: 1px solid rgba(212,160,64,0.3);
+  border-radius: 4px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+.pdf-upload-inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.pdf-upload-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+.pdf-upload-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pdf-upload-text strong {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--gold-light);
+  letter-spacing: 0.5px;
+}
+.pdf-upload-text span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.pdf-privacy-note {
+  font-size: 10px !important;
+  color: var(--accent-green) !important;
+  margin-top: 2px;
+}
+.pdf-upload-btn {
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 10px 20px;
+  font-size: 12px;
+}
+.pdf-status {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 3px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.pdf-status.success {
+  background: rgba(80,168,112,0.1);
+  border: 1px solid rgba(80,168,112,0.3);
+  color: var(--accent-green);
+}
+.pdf-status.error {
+  background: rgba(192,80,64,0.1);
+  border: 1px solid rgba(192,80,64,0.3);
+  color: var(--accent-red);
+}
+.pdf-status.loading {
+  background: rgba(212,160,64,0.08);
+  border: 1px solid rgba(212,160,64,0.2);
+  color: var(--gold-dim);
+}
+.pdf-status .parse-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+.pdf-status .parse-item .tick { color: var(--accent-green); }
+.pdf-status .parse-item .warn { color: var(--gold); }
