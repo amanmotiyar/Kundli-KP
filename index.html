@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KP Astrology — Chart Input</title>
+<link rel="stylesheet" href="kp_styles.css">
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="eyebrow">Krishnamurti Paddhati</div>
+    <h1>KP Astrology Analyser</h1>
+    <p class="subtitle">Chart Input &amp; Analysis Engine</p>
+    <div class="header-rule"><span>✦</span></div>
+  </header>
+
+  <div class="progress-bar">
+    <div class="progress-step active"></div>
+    <div class="progress-step"></div>
+    <div class="progress-step"></div>
+    <div class="progress-step"></div>
+  </div>
+
+  <!-- ══ INPUT MODE TOGGLE ══ -->
+  <div class="input-mode-bar">
+    <div class="input-mode-label">How would you like to enter chart data?</div>
+    <div class="input-mode-tabs">
+      <button class="mode-tab active" id="tab-manual" onclick="switchMode('manual')">
+        ✏️ Manual Entry
+      </button>
+      <button class="mode-tab" id="tab-pdf" onclick="switchMode('pdf')">
+        📄 Upload AstroSage PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ PDF UPLOAD PANEL (hidden by default) ══ -->
+  <div class="pdf-upload-section" id="pdf-upload-section" style="display:none">
+    <div class="pdf-upload-inner">
+      <div class="pdf-upload-icon">📄</div>
+      <div class="pdf-upload-text">
+        <strong>Auto-fill from AstroSage PDF</strong>
+        <span>Upload your KP System report PDF from AstroSage.com — all fields fill automatically</span>
+        <span class="pdf-privacy-note">🔒 Processed entirely in your browser — PDF never leaves your device</span>
+      </div>
+      <div class="pdf-upload-actions">
+        <label class="btn-primary pdf-upload-btn" for="pdf-file-input">
+          Choose PDF
+        </label>
+        <input type="file" id="pdf-file-input" accept=".pdf" style="display:none" onchange="handlePDFUpload(this)">
+      </div>
+    </div>
+    <div class="pdf-status" id="pdf-status" style="display:none"></div>
+    <div class="pdf-note">
+      After upload, you can still edit any field manually below.
+      Sections are auto-filled — scroll down to verify.
+    </div>
+  </div>
+
+  <!-- ══ MANUAL ENTRY SECTIONS ══ -->
+  <div id="manual-sections">
+
+  <!-- ══ SECTION 1 — NATIVE DETAILS ══ -->
+  <div class="section" id="sec-native">
+    <div class="section-header" onclick="toggleSection('sec-native')">
+      <span class="section-num">01</span>
+      <span class="section-title">Native Details</span>
+      <span class="section-badge">Basic Info</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="form-grid cols-3">
+
+        <div class="field span-2">
+          <label>Full Name</label>
+          <input type="text" id="native-name" placeholder="Enter native's full name">
+        </div>
+
+        <div class="field">
+          <label>Gender</label>
+          <select id="native-gender">
+            <option value="">— select —</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Birth Date</label>
+          <input type="date" id="native-dob">
+        </div>
+
+        <!-- Birth Time with separate H / M / S -->
+        <div class="field span-2">
+          <label>Birth Time <span class="info-tip" data-tip="Even 1 minute changes the Sub-lord">?</span></label>
+          <div class="time-row">
+            <div class="field">
+              <label style="text-align:center;">Hour (HH)</label>
+              <input type="number" id="tob-h" min="0" max="23" placeholder="HH" oninput="padTime(this,23)">
+            </div>
+            <div class="field">
+              <label style="text-align:center;">Min (MM)</label>
+              <input type="number" id="tob-m" min="0" max="59" placeholder="MM" oninput="padTime(this,59)">
+            </div>
+            <div class="field">
+              <label style="text-align:center;">Sec (SS)</label>
+              <input type="number" id="tob-s" min="0" max="59" placeholder="00" value="00" oninput="padTime(this,59)">
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Timezone</label>
+          <select id="native-tz">
+            <option value="5.5">IST (GMT+5:30)</option>
+            <option value="0">UTC (GMT+0)</option>
+            <option value="-5">EST (GMT-5)</option>
+            <option value="-8">PST (GMT-8)</option>
+            <option value="1">CET (GMT+1)</option>
+            <option value="8">CST (GMT+8)</option>
+            <option value="5.75">NPT (GMT+5:45)</option>
+            <option value="6">BST (GMT+6)</option>
+          </select>
+        </div>
+
+        <!-- Birth Place with autocomplete -->
+        <div class="field span-2">
+          <label>Birth Place</label>
+          <div class="place-wrap">
+            <input type="text" id="native-place" placeholder="Type city name…" autocomplete="off" oninput="searchPlace(this.value, 'birth')">
+            <div class="autocomplete-list" id="ac-birth"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Latitude</label>
+          <input type="text" id="native-lat" placeholder="e.g. 28.0167">
+        </div>
+        <div class="field">
+          <label>Longitude</label>
+          <input type="text" id="native-lon" placeholder="e.g. 73.3167">
+        </div>
+
+
+      </div>
+
+      <div class="sub-divider"></div>
+      <div class="sub-label">Judgment Details</div>
+
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label>Today's Date</label>
+          <input type="date" id="today-date">
+        </div>
+        <div class="field">
+          <label>Today's Time</label>
+          <div class="time-row">
+            <input type="number" id="today-h" min="0" max="23" placeholder="HH" oninput="padTime(this,23)">
+            <input type="number" id="today-m" min="0" max="59" placeholder="MM" oninput="padTime(this,59)">
+            <input type="number" id="today-s" min="0" max="59" placeholder="00" value="00" oninput="padTime(this,59)">
+          </div>
+        </div>
+        <div class="field">
+          <label>Judgment Place</label>
+          <div class="place-wrap">
+            <input type="text" id="today-place" placeholder="Type city name…" autocomplete="off" oninput="searchPlace(this.value, 'today')">
+            <div class="autocomplete-list" id="ac-today"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 2 — PLANET SIGNIFICATIONS ══ -->
+  <div class="section" id="sec-planets">
+    <div class="section-header" onclick="toggleSection('sec-planets')">
+      <span class="section-num">02</span>
+      <span class="section-title">Planet Significations</span>
+      <span class="section-badge">House Ownership</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-box">
+        Mark which houses each planet signifies — as per your KP software (all 4 levels combined).
+        Each house is a separate checkbox — no comma errors in calculations.
+      </div>
+      <table class="planet-sig-table">
+        <thead>
+          <tr>
+            <th>Planet</th>
+            <th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th>
+            <th>H7</th><th>H8</th><th>H9</th><th>H10</th><th>H11</th><th>H12</th>
+          </tr>
+        </thead>
+        <tbody id="planet-sig-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 2B — PLANET POSITIONS ══ -->
+  <div class="section" id="sec-planet-pos">
+    <div class="section-header" onclick="toggleSection('sec-planet-pos')">
+      <span class="section-num">02B</span>
+      <span class="section-title">Planet Positions</span>
+      <span class="section-badge">Sign & Degree</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-box">
+        Enter each planet's sign and degree from your KP chart.
+        Used to derive the true Star-lord of Sub-lord (NL of SL) for accurate interpretation.
+        Degree entry: type digits only — e.g. <strong>232616</strong> → <strong>23°26′16″</strong>
+      </div>
+      <table class="cusp-table" id="planet-pos-table">
+        <thead>
+          <tr>
+            <th style="width:80px;">Planet</th>
+            <th style="min-width:120px;">Sign (Rashi)</th>
+            <th style="min-width:120px;">Degree</th>
+            <th style="min-width:110px;">
+              Nakshatra Lord <span class="info-tip" data-tip="Auto-computed from sign + degree. This is the NL of SL used in analysis.">?</span>
+            </th>
+            <th style="min-width:60px;">Retro?</th>
+          </tr>
+        </thead>
+        <tbody id="planet-pos-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 3 — CUSP DATA ══ -->
+  <div class="section" id="sec-cusps">
+    <div class="section-header" onclick="toggleSection('sec-cusps')">
+      <span class="section-num">03</span>
+      <span class="section-title">Cusp Data</span>
+      <span class="section-badge">12 Bhava Cusps</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-box">
+        Degree entry: type digits only — e.g. <strong>062639</strong> → auto-formats to <strong>06°26′39″</strong>.
+        Sub-lord decides if the house promise is ON or OFF.
+        Star-lord colors the nature and type of the result.
+      </div>
+      <table class="cusp-table">
+        <thead>
+          <tr>
+            <th style="width:34px; text-align:center;">Cusp</th>
+            <th style="min-width:110px;">Sign (Rashi)</th>
+            <th style="min-width:110px;">Degree</th>
+            <th style="min-width:100px;">Sign Lord <span style="font-size:8px;color:var(--text-hint)">(RL)</span></th>
+            <th style="min-width:100px;">Star Lord <span style="font-size:8px;color:var(--text-hint)">(NL)</span> <span class="info-tip" data-tip="Nakshatra lord — colors the result type">?</span></th>
+            <th style="min-width:100px;">Sub Lord <span style="font-size:8px;color:var(--text-hint)">(SL)</span> <span class="info-tip" data-tip="Decides if house promise is ON or OFF">?</span></th>
+            <th style="min-width:100px;">Sub-Sub <span style="font-size:8px;color:var(--text-hint)">(SS)</span> <span class="info-tip" data-tip="Refines timing accuracy">?</span></th>
+          </tr>
+        </thead>
+        <tbody id="cusp-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 4 — DBA PERIOD ══ -->
+  <div class="section" id="sec-dba">
+    <div class="section-header" onclick="toggleSection('sec-dba')">
+      <span class="section-num">04</span>
+      <span class="section-title">DBA Period</span>
+      <span class="section-badge">Vimshottari Dasha</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-box">
+        Current Dasha–Bhukti–Antara. Event fructifies only when DBA lords also signify the relevant houses — Sub-lord promise alone is not enough.
+      </div>
+      <div class="dba-grid">
+        <div class="dba-card">
+          <div class="dba-level">Mahadasha (MD)</div>
+          <select id="dba-md"><option value="">—</option></select>
+        </div>
+        <div class="dba-card">
+          <div class="dba-level">Antardasha (AD)</div>
+          <select id="dba-ad"><option value="">—</option></select>
+        </div>
+        <div class="dba-card">
+          <div class="dba-level">Pratyantardasha (PD)</div>
+          <select id="dba-pd"><option value="">—</option></select>
+        </div>
+      </div>
+      <div class="form-grid cols-2">
+        <div class="field">
+          <label>Period From</label>
+          <input type="date" id="dba-from">
+        </div>
+        <div class="field">
+          <label>Period To</label>
+          <input type="date" id="dba-to">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 5 — RULING PLANETS ══ -->
+  <div class="section" id="sec-rp">
+    <div class="section-header" onclick="toggleSection('sec-rp')">
+      <span class="section-num">05</span>
+      <span class="section-title">Ruling Planets</span>
+      <span class="section-badge">At Time of Judgment</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-box">
+        Ruling Planets at the time and place of judgment. Confirms promise, aids timing. As per Prof. Krishnamurti: Day Lord, Asc Rasi Lord, Asc Nakshatra Lord, Moon Rasi Lord, Moon Nakshatra Lord — plus Sub Lords for added precision.
+      </div>
+      <div class="rp-grid" id="rp-grid"></div>
+    </div>
+  </div>
+
+  </div><!-- /manual-sections -->
+
+  <!-- Action bar -->
+  <div class="action-bar">
+    <span class="action-status" id="status-text">○ Fill all sections to proceed</span>
+    <div class="btn-group">
+      <button class="btn-secondary" onclick="clearAll()">Clear All</button>
+      <button class="btn-primary" onclick="proceedToAnalysis()">Proceed to Analysis →</button>
+    </div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ── PDF.js setup ──────────────────────────────────
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// ── Planet abbreviation map ───────────────────────
+const PMAP = {
+  SUN:'Sun', MON:'Moon', MAR:'Mars', MER:'Mercury',
+  JUP:'Jupiter', VEN:'Venus', SAT:'Saturn', RAH:'Rahu', KET:'Ketu'
+};
+
+// ── Parse AstroSage degree string "DDD-MM-SS" ─────
+// e.g. "066-01-32" = absolute 66°01'32" → Gemini 06°01'32"
+// Integer arithmetic throughout — no floating-point precision loss on M/S.
+function parseAstroSageDeg(str) {
+  const parts = str.split('-');
+  if (parts.length < 3) return { abs: 0, sign: null, raw: '000000' };
+  const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                 'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  const absDeg    = parseInt(parts[0], 10);  // e.g. 66
+  const absMin    = parseInt(parts[1], 10);  // e.g. 01
+  const absSec    = parseInt(parts[2], 10);  // e.g. 32
+  const signIdx   = Math.floor(absDeg / 30);
+  const degInSign = absDeg % 30;             // e.g. 6 within Gemini
+  return {
+    abs:  absDeg + absMin/60 + absSec/3600,
+    sign: SIGNS[signIdx] || null,
+    // DDMMSS within the sign — minutes & seconds are unchanged from source
+    raw:  `${String(degInSign).padStart(2,'0')}${String(absMin).padStart(2,'0')}${String(absSec).padStart(2,'0')}`
+  };
+}
+
+// ── Parse date "DD/ MM/YY" or "DD/MM/YY" ─────────
+function parseDate(str) {
+  if (!str) return null;
+  const parts = str.trim().split('/');
+  if (parts.length < 3) return null;
+  const d = parseInt(parts[0]);
+  const m = parseInt(parts[1]);
+  let y = parseInt(parts[2]);
+  if (y < 100) y += (y < 50 ? 2000 : 1900);
+  return new Date(y, m - 1, d);
+}
+
+// ── Find current DBA from text ────────────────────
+function findCurrentDBA(text) {
+  const today = new Date();
+
+  // Normalize text — PDF.js sometimes adds extra spaces
+  const norm = text.replace(/\s+/g, ' ');
+
+  // Pattern: "MD -- AD From DD/ MM/YY - To DD/ MM/YY"
+  const blockRx = /(\w+)\s*--\s*(\w+)\s+From\s+([\d]+\/\s*[\d]+\/\s*[\d]+)\s*-\s*To\s+([\d]+\/\s*[\d]+\/\s*[\d]+)/g;
+  // PD pattern: "PD DD/ MM/YY"
+  const pdRx = /(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+([\d]+\/\s*[\d]+\/\s*[\d]+)/g;
+
+  let current = { md: null, ad: null, pd: null };
+
+  let match;
+  while ((match = blockRx.exec(norm)) !== null) {
+    const md = match[1];
+    const ad = match[2];
+    // Skip if MD=AD and it's a period header not a block
+    if (['From','To','Page','Dasa'].includes(md)) continue;
+    const fromD = parseDate(match[3]);
+    const toD   = parseDate(match[4]);
+    if (!fromD || !toD) continue;
+
+    if (today >= fromD && today <= toD) {
+      current.md = PMAP[md] || md;
+      current.ad = PMAP[ad] || ad;
+
+      // Find PD entries after this block header
+      const blockStart = match.index + match[0].length;
+      // Find next block
+      const nextBlock = /\w+\s*--\s*\w+/.exec(norm.slice(blockStart));
+      const blockEnd = nextBlock ? blockStart + nextBlock.index : blockStart + 600;
+      const blockText = norm.slice(blockStart, blockEnd);
+
+      let prevDate = fromD;
+      pdRx.lastIndex = 0;
+      let pdMatch;
+      while ((pdMatch = pdRx.exec(blockText)) !== null) {
+        const pdPlanet = pdMatch[1];
+        const pdEndDate = parseDate(pdMatch[2]);
+        if (!pdEndDate) continue;
+        if (today >= prevDate && today <= pdEndDate) {
+          current.pd = PMAP[pdPlanet] || pdPlanet;
+          break;
+        }
+        prevDate = pdEndDate;
+      }
+      break;
+    }
+  }
+
+  return current;
+}
+
+// ── Main PDF parser ───────────────────────────────
+async function handlePDFUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('pdf-status');
+  statusEl.style.display = 'block';
+  statusEl.className = 'pdf-status loading';
+  statusEl.innerHTML = '⏳ Reading PDF...';
+
+  try {
+    // Read file as ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+
+    // Extract text using PDF.js
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for (let i = 1; i <= Math.min(pdf.numPages, 6); i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map(item => item.str).join(' ') + '\n';
+      fullText += pageText;
+    }
+
+    // Check if it's an AstroSage KP chart
+    if (!fullText.includes('Cuspal Positions') && !fullText.includes('KP System')) {
+      throw new Error('This does not appear to be an AstroSage KP chart PDF. Please upload the correct file.');
+    }
+
+    // Parse the data
+    const parsed = parseAstroSagePDF(fullText);
+    const report = fillFormFromParsed(parsed);
+
+    // Show results
+    statusEl.className = 'pdf-status success';
+    statusEl.innerHTML = `
+      <strong>✓ Chart loaded successfully</strong><br>
+      <div class="parse-item"><span class="tick">✓</span> Native: ${parsed.native.name || 'Found'}</div>
+      <div class="parse-item"><span class="${report.cusps === 12 ? 'tick' : 'warn'}">${report.cusps === 12 ? '✓' : '⚠'}</span> Cusps: ${report.cusps}/12 loaded</div>
+      <div class="parse-item"><span class="${report.planets >= 9 ? 'tick' : 'warn'}">${report.planets >= 9 ? '✓' : '⚠'}</span> Planet positions: ${report.planets} loaded</div>
+      <div class="parse-item"><span class="${report.sigs >= 9 ? 'tick' : 'warn'}">${report.sigs >= 9 ? '✓' : '⚠'}</span> Planet significations: ${report.sigs}/9 loaded</div>
+      <div class="parse-item"><span class="${parsed.dba.md ? 'tick' : 'warn'}">${parsed.dba.md ? '✓' : '⚠'}</span> Current DBA: ${parsed.dba.md || '?'}-${parsed.dba.ad || '?'}-${parsed.dba.pd || '?'}</div>
+      <div class="parse-item"><span class="${parsed.rp.ascNL ? 'tick' : 'warn'}">${parsed.rp.ascNL ? '✓' : '⚠'}</span> Ruling planets loaded</div>
+      <br><em style="color:var(--text-muted)">Please verify the auto-filled data and make corrections if needed.</em>
+    `;
+
+  } catch(err) {
+    statusEl.className = 'pdf-status error';
+    statusEl.innerHTML = `<strong>✗ Parse error:</strong> ${err.message}<br>
+      <em>You can still enter data manually below.</em>`;
+    console.error('PDF parse error:', err);
+  }
+
+  // Reset input so same file can be re-uploaded
+  input.value = '';
+}
+
+// ── Core parser: text → structured data ──────────
+function parseAstroSagePDF(text) {
+  const result = {
+    native: {}, cusps: {}, planets: {},
+    planetSig: {}, dba: {}, rp: {}
+  };
+
+  // ── Native details ──
+  // PDF layout: "Sex Male" comes BEFORE "Name Amit Parashar" on page 1
+  // Name appears after "Sex Male\nName " so we match "Name" followed by the name then a line-break or known keyword
+  const nameM = text.match(/\bName\s+([A-Za-z][A-Za-z\s]{1,50}?)(?:\s*[\r\n]|\s+(?:Ayan|Get\s))/);
+  if (nameM) result.native.name = nameM[1].trim();
+
+  const dateM = text.match(/Date\s+([\d]+)\.([\d]+)\.([\d]+)/);
+  if (dateM) {
+    const d = dateM[1].padStart(2,'0');
+    const m = dateM[2].padStart(2,'0');
+    let y = dateM[3];
+    if (y.length === 2) y = parseInt(y) < 50 ? '20'+y : '19'+y;
+    result.native.dob = `${y}-${m}-${d}`;
+  }
+
+  const timeM = text.match(/Time of Birth\s+([\d.]+)/);
+  if (timeM) {
+    const tparts = timeM[1].split('.');
+    result.native.tob_h = tparts[0] || '00';
+    result.native.tob_m = tparts[1] || '00';
+    result.native.tob_s = tparts[2] || '00';
+  }
+
+  // PDF layout: "Place\nLatitude\nLongitude\nK. P. New\n023-39-53\nKota\n25.21.N"
+  // City name comes after the SID/ayanamsa value (3-digit degree string like "023-39-53")
+  const placeM = text.match(/\d{3}-\d{2}-\d{2}[\s\r\n]+([A-Za-z][A-Za-z\s]{1,30}?)[\s\r\n]/);
+  if (placeM) result.native.place = placeM[1].trim();
+
+  // Lat/Lon are on their own lines: "25.21.N" and "75.50.E"
+  const latM = text.match(/\b(\d{1,3})\.(\d{1,2})\.([NS])\b/);
+  if (latM) {
+    const val = parseInt(latM[1]) + parseInt(latM[2])/60;
+    result.native.lat = latM[3] === 'S' ? (-val).toFixed(4) : val.toFixed(4);
+  }
+
+  const lonM = text.match(/\b(\d{1,3})\.(\d{1,2})\.([EW])\b/);
+  if (lonM) {
+    const val = parseInt(lonM[1]) + parseInt(lonM[2])/60;
+    result.native.lon = lonM[3] === 'W' ? (-val).toFixed(4) : val.toFixed(4);
+  }
+
+  const sexM = text.match(/Sex\s+(Male|Female)/i);
+  if (sexM) result.native.gender = sexM[1].toLowerCase();
+
+  // ── Cuspal positions ──
+  // Format: "1 066-01-32 MER MAR MON JUP"
+  const cuspRx = /(\d{1,2})\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g;
+  let cm;
+  while ((cm = cuspRx.exec(text)) !== null) {
+    const h = parseInt(cm[1]);
+    if (h >= 1 && h <= 12) {
+      const degInfo = parseAstroSageDeg(cm[2]);
+      result.cusps[h] = {
+        sign:    degInfo.sign,
+        deg_raw: degInfo.raw,
+        deg_fmt: cm[2],
+        rl:      PMAP[cm[3]] || cm[3],
+        nl:      PMAP[cm[4]] || cm[4],
+        sl:      PMAP[cm[5]] || cm[5],
+        ss:      PMAP[cm[6]] || cm[6]
+      };
+    }
+  }
+
+  // ── Planetary positions ──
+  // Saturn[R] may appear as "Saturn[R]" or "Saturn [R]" depending on PDF.js extraction
+  const planetRx = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn\s*(?:\[R\])?|Rahu|Ketu)\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g;
+  let pm;
+  while ((pm = planetRx.exec(text)) !== null) {
+    const name  = pm[1].replace(/\s*\[R\]/, '').trim();
+    const retro = pm[1].includes('[R]');
+    const degInfo = parseAstroSageDeg(pm[2]);
+    // Derive house occupation from absolute degree vs cusps
+    result.planets[name] = {
+      sign:    degInfo.sign,
+      deg_raw: degInfo.raw,
+      abs:     degInfo.abs,
+      retro,
+      rl: PMAP[pm[3]] || pm[3],
+      nl: PMAP[pm[4]] || pm[4],
+      sl: PMAP[pm[5]] || pm[5],
+      ss: PMAP[pm[6]] || pm[6]
+    };
+  }
+
+  // Derive house occupation after cusps are parsed
+  // pData.abs is the precise absolute longitude already set by parseAstroSageDeg
+  Object.entries(result.planets).forEach(([pName, pData]) => {
+    pData.house = derivePlanetHouseFromAbs(pData.abs, result.cusps);
+  });
+
+  // ── Planet significations ──
+  // In the PDF "Planet Signification" section comes AFTER "Significators of Houses"
+  // We search forward from "Planet Signification" to the next known section or end.
+  const sigStart = text.indexOf('Planet Signification');
+  if (sigStart > 0) {
+    // End at next major section or take up to 800 chars
+    const sigEnd = text.search(new RegExp('VEN\\s*[-–]\\s*\\d+\\s*Years|VEN --', 'i'));
+    const sigText = sigEnd > sigStart
+      ? text.slice(sigStart, sigEnd)
+      : text.slice(sigStart, sigStart + 800);
+    // Works for both newline-separated and space-separated (PDF.js) text
+    const sigRx = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\s+([\d\s]+?)(?=Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu|VEN\s*[-–]|$)/g;
+    let sm;
+    while ((sm = sigRx.exec(sigText)) !== null) {
+      const planet = sm[1];
+      const houses = sm[2].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
+      if (houses.length > 0) {
+        result.planetSig[planet] = houses;
+      }
+    }
+  }
+
+  // ── Ruling Planets ──
+  // PDF layout (values may be on separate lines from labels):
+  //   "Lagna MER MAR MON"  → RL=MER, NL=MAR, SL=MON
+  //   "Moon MAR VEN"        → RL=MAR, NL=VEN  (only 2 values shown)
+  //   "Day Lord\nSAT\nMER"  → Day=SAT  (value on next line; MER is lagna lord, not day lord)
+  const rpStart = text.indexOf('Ruling Planet');
+  const rpEnd   = text.indexOf('Cuspal Positions');
+  const rpSection = (rpStart >= 0 && rpEnd > rpStart)
+    ? text.slice(rpStart, rpEnd)
+    : (rpStart >= 0 ? text.slice(rpStart, rpStart + 400) : '');
+
+  const rpLagna = rpSection.match(/Lagna\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+  const rpMoon  = rpSection.match(/Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+  // Day Lord value may be on the same line OR the next line
+  const rpDay   = rpSection.match(/Day Lord[\s\r\n]+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+
+  if (rpLagna) {
+    result.rp.ascRL = PMAP[rpLagna[1]] || rpLagna[1];
+    result.rp.ascNL = PMAP[rpLagna[2]] || rpLagna[2];
+    result.rp.ascSL = PMAP[rpLagna[3]] || rpLagna[3];
+  }
+  if (rpMoon) {
+    result.rp.moonRL = PMAP[rpMoon[1]] || rpMoon[1];
+    result.rp.moonNL = PMAP[rpMoon[2]] || rpMoon[2];
+  }
+  if (rpDay) {
+    result.rp.day = PMAP[rpDay[1]] || rpDay[1];
+  }
+
+  // Moon SL: attempt to find a 3rd value after Moon RL NL
+  const moonSLm = rpSection.match(/Moon\s+(?:SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(?:SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+  if (moonSLm) result.rp.moonSL = PMAP[moonSLm[1]] || moonSLm[1];
+
+  // ── Current DBA ──
+  // Need full text including pratyantar pages
+  result.dba = findCurrentDBA(text);
+
+  return result;
+}
+
+// ── Derive planet house from absolute degree ──────
+function derivePlanetHouseFromAbs(absTotal, cusps) {
+  if (!cusps || Object.keys(cusps).length < 12) return null;
+  const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                 'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+
+  // Convert cusp sign+deg_raw to absolute degrees
+  const cuspAbs = {};
+  for (let h = 1; h <= 12; h++) {
+    const c = cusps[h];
+    if (!c || !c.sign) continue;
+    const sIdx = SIGNS.indexOf(c.sign);
+    if (sIdx < 0) continue;
+    const raw = c.deg_raw || '000000';
+    const d = parseInt(raw.slice(0,2)) || 0;
+    const m = parseInt(raw.slice(2,4)) || 0;
+    const s = parseInt(raw.slice(4,6)) || 0;
+    cuspAbs[h] = sIdx * 30 + d + m/60 + s/3600;
+  }
+
+  // Find which house the planet falls in
+  for (let i = 1; i <= 12; i++) {
+    const curr  = cuspAbs[i];
+    const next  = cuspAbs[(i % 12) + 1];
+    if (curr === undefined || next === undefined) continue;
+    // Handle wrap-around
+    const norm = ((absTotal % 360) + 360) % 360;
+    const c    = ((curr % 360) + 360) % 360;
+    const n    = ((next % 360) + 360) % 360;
+    let inHouse = false;
+    if (c <= n) inHouse = norm >= c && norm < n;
+    else         inHouse = norm >= c || norm < n;
+    if (inHouse) return i;
+  }
+  return null;
+}
+
+// ── Fill all form fields from parsed data ─────────
+function fillFormFromParsed(parsed) {
+  const report = { cusps: 0, planets: 0, sigs: 0 };
+
+  // Native details
+  if (parsed.native.name) {
+    const el = document.getElementById('native-name');
+    if (el) el.value = parsed.native.name;
+  }
+  if (parsed.native.dob) {
+    const el = document.getElementById('native-dob');
+    if (el) el.value = parsed.native.dob;
+  }
+  if (parsed.native.tob_h) {
+    const h = document.getElementById('tob-h');
+    const m = document.getElementById('tob-m');
+    const s = document.getElementById('tob-s');
+    if (h) h.value = String(parseInt(parsed.native.tob_h)).padStart(2,'0');
+    if (m) m.value = String(parseInt(parsed.native.tob_m)).padStart(2,'0');
+    if (s) s.value = String(parseInt(parsed.native.tob_s || '0')).padStart(2,'0');
+  }
+  if (parsed.native.gender) {
+    const el = document.getElementById('native-gender');
+    if (el) el.value = parsed.native.gender;
+  }
+  if (parsed.native.place) {
+    const el = document.getElementById('native-place');
+    if (el) {
+      el.value = parsed.native.place;
+      // Trigger geocoding to get lat/lon
+      if (parsed.native.lat && parsed.native.lon) {
+        // Already have lat/lon from PDF — set directly
+        const latEl = document.getElementById('native-lat');
+        const lonEl = document.getElementById('native-lon');
+        if (latEl) latEl.value = parsed.native.lat;
+        if (lonEl) lonEl.value = parsed.native.lon;
+      } else {
+        // Try to geocode the place name
+        setTimeout(() => searchPlace(parsed.native.place, 'birth'), 300);
+      }
+    }
+  }
+  if (parsed.native.lat && !document.getElementById('native-lat').value) {
+    const el = document.getElementById('native-lat');
+    if (el) el.value = parsed.native.lat;
+  }
+  if (parsed.native.lon && !document.getElementById('native-lon').value) {
+    const el = document.getElementById('native-lon');
+    if (el) el.value = parsed.native.lon;
+  }
+
+  // Cusp data
+  Object.entries(parsed.cusps).forEach(([h, c]) => {
+    const hNum = parseInt(h);
+    const signEl = document.getElementById(`cusp-${hNum}-sign`);
+    const degEl  = document.getElementById(`cusp-${hNum}-deg`);
+    const rlEl   = document.getElementById(`cusp-${hNum}-rl`);
+    const nlEl   = document.getElementById(`cusp-${hNum}-nl`);
+    const slEl   = document.getElementById(`cusp-${hNum}-sl`);
+    const ssEl   = document.getElementById(`cusp-${hNum}-ss`);
+
+    if (signEl && c.sign) { signEl.value = c.sign; report.cusps++; }
+    if (degEl  && c.deg_raw) {
+      degEl.dataset.raw = c.deg_raw;
+      const d = c.deg_raw.slice(0,2), m = c.deg_raw.slice(2,4), s = c.deg_raw.slice(4,6);
+      degEl.value = `${d}°${m}′${s}″`;
+    }
+    if (rlEl && c.rl) rlEl.value = c.rl;
+    if (nlEl && c.nl) nlEl.value = c.nl;
+    if (slEl && c.sl) slEl.value = c.sl;
+    if (ssEl && c.ss) ssEl.value = c.ss;
+  });
+
+  // Planet positions (section 2B)
+  Object.entries(parsed.planets).forEach(([pName, pData]) => {
+    const signEl  = document.getElementById(`ppos-${pName}-sign`);
+    const degEl   = document.getElementById(`ppos-${pName}-deg`);
+    const retroEl = document.getElementById(`ppos-${pName}-retro`);
+    if (signEl && pData.sign) { signEl.value = pData.sign; report.planets++; }
+    if (degEl  && pData.deg_raw) {
+      degEl.dataset.raw = pData.deg_raw;
+      const d = pData.deg_raw.slice(0,2), m = pData.deg_raw.slice(2,4), s = pData.deg_raw.slice(4,6);
+      degEl.value = `${d}°${m}′${s}″`;
+    }
+    if (retroEl) retroEl.checked = pData.retro || false;
+  });
+
+  // Planet significations (checkboxes)
+  Object.entries(parsed.planetSig).forEach(([planet, houses]) => {
+    report.sigs++;
+    // Clear all first
+    [1,2,3,4,5,6,7,8,9,10,11,12].forEach(h => {
+      const cb = document.getElementById(`sig-${planet}-H${h}`);
+      if (cb) cb.checked = false;
+    });
+    // Check the right ones
+    houses.forEach(h => {
+      const cb = document.getElementById(`sig-${planet}-H${h}`);
+      if (cb) cb.checked = true;
+    });
+  });
+
+  // DBA
+  if (parsed.dba.md) {
+    const mdEl = document.getElementById('dba-md');
+    const adEl = document.getElementById('dba-ad');
+    const pdEl = document.getElementById('dba-pd');
+    if (mdEl) mdEl.value = parsed.dba.md;
+    if (adEl) adEl.value = parsed.dba.ad;
+    if (pdEl && parsed.dba.pd) pdEl.value = parsed.dba.pd;
+  }
+
+  // Ruling Planets
+  const rpMap = {
+    'rp-asc-nl':  parsed.rp.ascNL,
+    'rp-asc-rl':  parsed.rp.ascRL,
+    'rp-asc-sl':  parsed.rp.ascSL,
+    'rp-moon-nl': parsed.rp.moonNL,
+    'rp-moon-rl': parsed.rp.moonRL,
+    'rp-moon-sl': parsed.rp.moonSL,
+    'rp-day':     parsed.rp.day
+  };
+  Object.entries(rpMap).forEach(([id, val]) => {
+    if (val) {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    }
+  });
+
+  // Update status — deferred until main script loads
+  if (typeof updateStatus === 'function') updateStatus();
+  else setTimeout(() => { if (typeof updateStatus === 'function') updateStatus(); }, 100);
+
+  // Recompute NL column for all planets after fill
+  setTimeout(() => {
+    if (typeof computePlanetNL === 'function') {
+      ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'].forEach(p => computePlanetNL(p));
+    }
+  }, 50);
+  return report;
+}
+</script>
+<script>
+const PLANETS = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+const SIGNS   = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+const HOUSES  = [1,2,3,4,5,6,7,8,9,10,11,12];
+const PLANET_COLORS = {
+  Sun:'var(--planet-sun)', Moon:'var(--planet-moon)', Mars:'var(--planet-mars)',
+  Mercury:'var(--planet-mercury)', Jupiter:'var(--planet-jupiter)', Venus:'var(--planet-venus)',
+  Saturn:'var(--planet-saturn)', Rahu:'var(--planet-rahu)', Ketu:'var(--planet-ketu)'
+};
+const RP_LABELS = [
+  {id:'rp-day',     label:'Day Lord'},
+  {id:'rp-asc-rl',  label:'Asc Rasi Lord'},
+  {id:'rp-asc-nl',  label:'Asc Nakshatra Lord'},
+  {id:'rp-asc-sl',  label:'Asc Sub Lord'},
+  {id:'rp-moon-rl', label:'Moon Rasi Lord'},
+  {id:'rp-moon-nl', label:'Moon Nakshatra Lord'},
+  {id:'rp-moon-sl', label:'Moon Sub Lord'},
+];
+
+// ── Input Mode Toggle ─────────────────────────────
+function switchMode(mode) {
+  const pdfPanel    = document.getElementById('pdf-upload-section');
+  const manualSecs  = document.getElementById('manual-sections');
+  const tabManual   = document.getElementById('tab-manual');
+  const tabPDF      = document.getElementById('tab-pdf');
+  if (mode === 'pdf') {
+    pdfPanel.style.display   = 'block';
+    manualSecs.style.display = 'block'; // keep visible so PDF can fill them; scroll hint shown
+    tabManual.classList.remove('active');
+    tabPDF.classList.add('active');
+  } else {
+    pdfPanel.style.display   = 'none';
+    manualSecs.style.display = 'block';
+    tabManual.classList.add('active');
+    tabPDF.classList.remove('active');
+  }
+}
+function buildPlanetSigTable() {
+  const tbody = document.getElementById('planet-sig-body');
+  PLANETS.forEach(p => {
+    const tr = document.createElement('tr');
+    let html = `<td><div class="planet-name-cell">
+      <div class="planet-dot" style="background:${PLANET_COLORS[p]}"></div>
+      <span class="planet-label" style="color:${PLANET_COLORS[p]}">${p}</span>
+    </div></td>`;
+    HOUSES.forEach(h => {
+      html += `<td class="house-checkbox-cell">
+        <div class="house-cb-wrap">
+          <input type="checkbox" id="sig-${p}-H${h}" data-planet="${p}" data-house="${h}">
+          <span class="house-num">${h}</span>
+        </div></td>`;
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Planet Positions Table ────────────────────────
+function buildPlanetPosTable() {
+  const tbody = document.getElementById('planet-pos-body');
+  const signOpts = SIGNS.map(s=>`<option value="${s}">${s}</option>`).join('');
+  PLANETS.forEach(p => {
+    const tr = document.createElement('tr');
+    const pColor = PLANET_COLORS[p] || 'var(--gold-dim)';
+    tr.innerHTML = `
+      <td><div class="planet-name-cell">
+        <div class="planet-dot" style="background:${pColor}"></div>
+        <span>${p}</span>
+      </div></td>
+      <td><select id="ppos-${p}-sign" onchange="computePlanetNL('${p}')">
+        <option value="">— sign —</option>${signOpts}
+      </select></td>
+      <td><input type="text" id="ppos-${p}-deg" class="deg-input" placeholder="DDMMSS"
+           maxlength="8" oninput="formatDegree(this); computePlanetNL('${p}')"
+           onblur="formatDegreeOnBlur(this); computePlanetNL('${p}')"></td>
+      <td id="ppos-${p}-nl-cell" style="text-align:center;">
+        <span id="ppos-${p}-nl" style="
+          font-family:'Cinzel',serif; font-size:12px;
+          color:var(--text-muted); letter-spacing:0.5px;">—</span>
+      </td>
+      <td style="text-align:center"><input type="checkbox" id="ppos-${p}-retro"></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Auto-compute Nakshatra Lord from sign + degree ──
+// Uses the same nakshatra table as the engine
+const NAKSHATRA_DATA_INPUT = [
+  { start:0,       lord:'Ketu'    }, { start:13.333,  lord:'Venus'   },
+  { start:26.667,  lord:'Sun'     }, { start:40.000,  lord:'Moon'    },
+  { start:53.333,  lord:'Mars'    }, { start:66.667,  lord:'Rahu'    },
+  { start:80.000,  lord:'Jupiter' }, { start:93.333,  lord:'Saturn'  },
+  { start:106.667, lord:'Mercury' }, { start:120.000, lord:'Ketu'    },
+  { start:133.333, lord:'Venus'   }, { start:146.667, lord:'Sun'     },
+  { start:160.000, lord:'Moon'    }, { start:173.333, lord:'Mars'    },
+  { start:186.667, lord:'Rahu'    }, { start:200.000, lord:'Jupiter' },
+  { start:213.333, lord:'Saturn'  }, { start:226.667, lord:'Mercury' },
+  { start:240.000, lord:'Ketu'    }, { start:253.333, lord:'Venus'   },
+  { start:266.667, lord:'Sun'     }, { start:280.000, lord:'Moon'    },
+  { start:293.333, lord:'Mars'    }, { start:306.667, lord:'Rahu'    },
+  { start:320.000, lord:'Jupiter' }, { start:333.333, lord:'Saturn'  },
+  { start:346.667, lord:'Mercury' }
+];
+
+const PLANET_NL_COLORS = {
+  Sun:'var(--planet-sun)', Moon:'var(--planet-moon)', Mars:'var(--planet-mars)',
+  Mercury:'var(--planet-mercury)', Jupiter:'var(--planet-jupiter)',
+  Venus:'var(--planet-venus)', Saturn:'var(--planet-saturn)',
+  Rahu:'var(--planet-rahu)', Ketu:'var(--planet-ketu)'
+};
+
+function computePlanetNL(planet) {
+  const signEl  = document.getElementById(`ppos-${planet}-sign`);
+  const degEl   = document.getElementById(`ppos-${planet}-deg`);
+  const nlSpan  = document.getElementById(`ppos-${planet}-nl`);
+  if (!signEl || !degEl || !nlSpan) return;
+
+  const sign   = signEl.value;
+  const raw    = degEl.dataset.raw || '';
+  if (!sign || raw.length < 2) {
+    nlSpan.textContent = '—';
+    nlSpan.style.color = 'var(--text-muted)';
+    return;
+  }
+
+  const signIdx  = SIGNS.indexOf(sign);
+  if (signIdx < 0) return;
+  const d = parseInt(raw.slice(0,2)) || 0;
+  const m = parseInt(raw.slice(2,4)) || 0;
+  const s = parseInt(raw.slice(4,6)) || 0;
+  const absLong  = signIdx * 30 + d + m/60 + s/3600;
+  const norm     = ((absLong % 360) + 360) % 360;
+
+  let found = NAKSHATRA_DATA_INPUT[0];
+  for (let i = NAKSHATRA_DATA_INPUT.length - 1; i >= 0; i--) {
+    if (norm >= NAKSHATRA_DATA_INPUT[i].start) { found = NAKSHATRA_DATA_INPUT[i]; break; }
+  }
+
+  nlSpan.textContent = found.lord;
+  nlSpan.style.color = PLANET_NL_COLORS[found.lord] || 'var(--gold-dim)';
+  nlSpan.style.fontWeight = '600';
+}
+function buildCuspTable() {
+  const tbody = document.getElementById('cusp-body');
+  const signOpts = SIGNS.map(s=>`<option value="${s}">${s}</option>`).join('');
+  const pOpts = PLANETS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  HOUSES.forEach(h => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="cusp-num">${h}</td>
+      <td><select id="cusp-${h}-sign"><option value="">— sign —</option>${signOpts}</select></td>
+      <td><input type="text" id="cusp-${h}-deg" class="deg-input" placeholder="DDMMSS" maxlength="8"
+           oninput="formatDegree(this)" onblur="formatDegreeOnBlur(this)"></td>
+      <td><select id="cusp-${h}-rl"><option value="">— select —</option>${pOpts}</select></td>
+      <td><select id="cusp-${h}-nl"><option value="">— select —</option>${pOpts}</select></td>
+      <td><select id="cusp-${h}-sl"><option value="">— select —</option>${pOpts}</select></td>
+      <td><select id="cusp-${h}-ss"><option value="">— select —</option>${pOpts}</select></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Degree formatting ────────────────────────────────
+// User types: 062639 → displays 06°26′39″
+// Internally stores raw digits, formats on display
+
+function formatDegree(input) {
+  // Strip non-digits
+  let raw = input.value.replace(/\D/g, '').slice(0, 6);
+  input.dataset.raw = raw;
+  // Show formatted preview while typing
+  if (raw.length <= 2) {
+    input.value = raw;
+  } else if (raw.length <= 4) {
+    input.value = raw.slice(0,2) + '°' + raw.slice(2);
+  } else {
+    input.value = raw.slice(0,2) + '°' + raw.slice(2,4) + '′' + raw.slice(4);
+  }
+}
+
+function formatDegreeOnBlur(input) {
+  let raw = (input.dataset.raw || input.value.replace(/\D/g,'')).padEnd(6,'0').slice(0,6);
+  input.dataset.raw = raw;
+  const d = raw.slice(0,2);
+  const m = raw.slice(2,4);
+  const s = raw.slice(4,6);
+  input.value = `${d}°${m}′${s}″`;
+}
+
+// ── Derive which house a planet occupies ─────────────
+function derivePlanetHouse(planetSign, planetDegRaw, cusps) {
+  if (!planetSign || !cusps) return null;
+  const SIGN_ORDER = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                      'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  const signIdx = SIGN_ORDER.indexOf(planetSign);
+  if (signIdx < 0) return null;
+
+  const pDeg = signIdx * 30 + getDegreeDecimal(planetDegRaw || '000000');
+
+  // Get absolute longitudes of all cusps
+  const cuspLongs = [];
+  for (let h = 1; h <= 12; h++) {
+    const c = cusps[h];
+    if (!c || !c.sign) continue;
+    const cSignIdx = SIGN_ORDER.indexOf(c.sign);
+    if (cSignIdx < 0) continue;
+    const cDeg = cSignIdx * 30 + getDegreeDecimal(c.deg_raw || '000000');
+    cuspLongs.push({ house: h, long: cDeg });
+  }
+  if (cuspLongs.length < 12) return null;
+
+  // Find which house the planet falls in
+  for (let i = 0; i < 12; i++) {
+    const current = cuspLongs[i].long;
+    const next    = cuspLongs[(i + 1) % 12].long;
+    const house   = cuspLongs[i].house;
+
+    let inHouse = false;
+    if (current <= next) {
+      inHouse = pDeg >= current && pDeg < next;
+    } else {
+      // Wraps around 360
+      inHouse = pDeg >= current || pDeg < next;
+    }
+    if (inHouse) return house;
+  }
+  return null;
+}
+
+function getDegreeDecimal(raw) {
+  if (!raw || raw.length < 6) return 0;
+  const d = parseInt(raw.slice(0,2)) || 0;
+  const m = parseInt(raw.slice(2,4)) || 0;
+  const s = parseInt(raw.slice(4,6)) || 0;
+  return d + m/60 + s/3600;
+}
+
+// ── DBA & RP ─────────────────────────────────────────
+function buildDBASelects() {
+  const opts = PLANETS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  ['dba-md','dba-ad','dba-pd'].forEach(id => {
+    document.getElementById(id).innerHTML = `<option value="">— select —</option>${opts}`;
+  });
+}
+
+function buildRPGrid() {
+  const grid = document.getElementById('rp-grid');
+  const opts = PLANETS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  RP_LABELS.forEach(rp => {
+    const div = document.createElement('div');
+    div.className = 'rp-card';
+    div.innerHTML = `<span class="rp-label">${rp.label}</span>
+      <select id="${rp.id}"><option value="">—</option>${opts}</select>`;
+    grid.appendChild(div);
+  });
+}
+
+// ── Place Autocomplete ────────────────────────────────
+// Tries Nominatim directly, then via two CORS proxies as fallback.
+// If all fail, shows manual lat/lon entry prompt.
+let acTimers = {};
+
+const NOMINATIM_ENDPOINTS = [
+  // Photon (komoot) — CORS-open, no key needed, very reliable
+  q => `https://photon.komoot.io/api/?q=${q}&limit=6&lang=en`,
+  // Nominatim via corsproxy.io fallback
+  q => `https://corsproxy.io/?${encodeURIComponent(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&addressdetails=1`)}`,
+  // allorigins fallback
+  q => `https://api.allorigins.win/get?url=${encodeURIComponent(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6`)}`,
+];
+
+async function fetchNominatim(query) {
+  const q = encodeURIComponent(query);
+
+  // ── Endpoint 0: Photon (komoot) ──
+  try {
+    const url = `https://photon.komoot.io/api/?q=${q}&limit=6&lang=en`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.features && data.features.length) {
+        // Normalise to Nominatim-style objects
+        return data.features.map(f => {
+          const p = f.properties;
+          const parts = [p.name, p.city || p.town || p.village, p.state, p.country].filter(Boolean);
+          return {
+            display_name: parts.join(', '),
+            lat: String(f.geometry.coordinates[1]),
+            lon: String(f.geometry.coordinates[0]),
+          };
+        });
+      }
+    }
+  } catch(e) { /* fall through */ }
+
+  // ── Endpoint 1: corsproxy.io → Nominatim ──
+  try {
+    const url = `https://corsproxy.io/?${encodeURIComponent(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=6&addressdetails=1`)}`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length) return data;
+    }
+  } catch(e) { /* fall through */ }
+
+  // ── Endpoint 2: allorigins → Nominatim ──
+  try {
+    const url = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=6`)}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.contents) {
+        const arr = JSON.parse(data.contents);
+        if (Array.isArray(arr) && arr.length) return arr;
+      }
+    }
+  } catch(e) { /* fall through */ }
+
+  return null; // all failed — caller will show manual lat/lon entry
+}
+
+function showManualLatLon(key) {
+  const listEl = document.getElementById(`ac-${key}`);
+  listEl.innerHTML = `
+    <div style="padding:12px 14px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;letter-spacing:0.5px;">
+        Auto-search unavailable — enter coordinates manually:
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-hint);margin-bottom:4px;">Latitude</div>
+          <input type="text" id="manual-lat-${key}" placeholder="e.g. 28.0167"
+            style="background:var(--bg-input);border:1px solid var(--border);border-radius:2px;
+                   color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:12px;
+                   padding:6px 8px;outline:none;width:100%;">
+        </div>
+        <div>
+          <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-hint);margin-bottom:4px;">Longitude</div>
+          <input type="text" id="manual-lon-${key}" placeholder="e.g. 73.3167"
+            style="background:var(--bg-input);border:1px solid var(--border);border-radius:2px;
+                   color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:12px;
+                   padding:6px 8px;outline:none;width:100%;">
+        </div>
+      </div>
+      <button onclick="applyManualLatLon('${key}')"
+        style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;
+               color:#1a1e2a;background:var(--gold);border:none;padding:7px 16px;
+               border-radius:2px;cursor:pointer;width:100%;letter-spacing:1px;">
+        Apply Coordinates
+      </button>
+    </div>`;
+  listEl.classList.add('open');
+}
+
+function applyManualLatLon(key) {
+  const lat = document.getElementById(`manual-lat-${key}`).value.trim();
+  const lon = document.getElementById(`manual-lon-${key}`).value.trim();
+  if (key === 'birth') {
+    if (lat) document.getElementById('native-lat').value = lat;
+    if (lon) document.getElementById('native-lon').value = lon;
+  }
+  document.getElementById(`ac-${key}`).classList.remove('open');
+  updateStatus();
+}
+
+function searchPlace(query, key) {
+  const listEl = document.getElementById(`ac-${key}`);
+  clearTimeout(acTimers[key]);
+  if (query.length < 2) { listEl.classList.remove('open'); return; }
+  listEl.innerHTML = '<div class="ac-loading">Searching…</div>';
+  listEl.classList.add('open');
+  acTimers[key] = setTimeout(async () => {
+    const results = await fetchNominatim(query);
+    if (results === null) {
+      showManualLatLon(key);
+      return;
+    }
+    if (!results.length) {
+      listEl.innerHTML = '<div class="ac-loading">No results found — try a different spelling</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    results.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'ac-item';
+      const parts = r.display_name.split(', ');
+      const main  = parts.slice(0, 2).join(', ');
+      const sub   = parts.slice(2).join(', ');
+      div.innerHTML = `<div class="ac-main">${main}</div><div class="ac-sub">${sub}</div>`;
+      div.onclick = () => selectPlace(r, key);
+      listEl.appendChild(div);
+    });
+  }, 400);
+}
+
+function selectPlace(result, key) {
+  const listEl = document.getElementById(`ac-${key}`);
+  const parts = result.display_name.split(', ');
+  const label = parts.slice(0, 3).join(', ');
+  if (key === 'birth') {
+    document.getElementById('native-place').value = label;
+    document.getElementById('native-lat').value   = parseFloat(result.lat).toFixed(4);
+    document.getElementById('native-lon').value   = parseFloat(result.lon).toFixed(4);
+  } else {
+    document.getElementById('today-place').value = label;
+  }
+  listEl.classList.remove('open');
+  updateStatus();
+}
+
+// Close autocomplete on outside click
+document.addEventListener('click', e => {
+  document.querySelectorAll('.autocomplete-list').forEach(el => {
+    if (!el.closest('.place-wrap').contains(e.target)) el.classList.remove('open');
+  });
+});
+
+// ── Time helper ──────────────────────────────────────
+function padTime(input, max) {
+  let v = parseInt(input.value);
+  if (isNaN(v)) return;
+  if (v < 0)   input.value = 0;
+  if (v > max) input.value = max;
+  updateStatus();
+}
+
+// ── Toggle sections ──────────────────────────────────
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ── Defaults ─────────────────────────────────────────
+function setDefaults() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('today-date').value =
+    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById('today-h').value = pad(now.getHours());
+  document.getElementById('today-m').value = pad(now.getMinutes());
+  document.getElementById('today-s').value = '00';
+  document.getElementById('tob-s').value   = '00';
+}
+
+// ── Collect ───────────────────────────────────────────
+function collectData() {
+  const data = {
+    native: {
+      name:      document.getElementById('native-name').value.trim(),
+      gender:    document.getElementById('native-gender').value,
+      dob:       document.getElementById('native-dob').value,
+      tob_h:     document.getElementById('tob-h').value,
+      tob_m:     document.getElementById('tob-m').value,
+      tob_s:     document.getElementById('tob-s').value,
+      tz:        document.getElementById('native-tz').value,
+      place:     document.getElementById('native-place').value.trim(),
+      lat:       document.getElementById('native-lat').value,
+      lon:       document.getElementById('native-lon').value,
+
+      todayDate: document.getElementById('today-date').value,
+      today_h:   document.getElementById('today-h').value,
+      today_m:   document.getElementById('today-m').value,
+      today_s:   document.getElementById('today-s').value,
+      todayPlace:document.getElementById('today-place').value.trim(),
+    },
+    planetSig: {},
+    cusps: {},
+    dba: {
+      md:   document.getElementById('dba-md').value,
+      ad:   document.getElementById('dba-ad').value,
+      pd:   document.getElementById('dba-pd').value,
+      from: document.getElementById('dba-from').value,
+      to:   document.getElementById('dba-to').value,
+    },
+    rp: {}
+  };
+
+  // Planet significations as clean arrays
+  PLANETS.forEach(p => {
+    data.planetSig[p] = [];
+    HOUSES.forEach(h => {
+      const cb = document.getElementById(`sig-${p}-H${h}`);
+      if (cb && cb.checked) data.planetSig[p].push(h);
+    });
+  });
+
+  // Cusps — store raw deg digits separately for calculations
+  HOUSES.forEach(h => {
+    const rawDeg = document.getElementById(`cusp-${h}-deg`).dataset.raw || '';
+    data.cusps[h] = {
+      sign:    document.getElementById(`cusp-${h}-sign`).value,
+      deg_raw: rawDeg,
+      deg_dec: getDegreeDecimal(rawDeg),
+      deg_fmt: document.getElementById(`cusp-${h}-deg`).value,
+      rl:      document.getElementById(`cusp-${h}-rl`).value,
+      nl:      document.getElementById(`cusp-${h}-nl`).value,
+      sl:      document.getElementById(`cusp-${h}-sl`).value,
+      ss:      document.getElementById(`cusp-${h}-ss`).value,
+    };
+  });
+
+  // Planet positions (sign + degree for NL of SL derivation)
+  const planets = {};
+  PLANETS.forEach(p => {
+    const sign   = document.getElementById(`ppos-${p}-sign`)?.value || '';
+    const degEl  = document.getElementById(`ppos-${p}-deg`);
+    const degRaw = degEl ? (degEl.dataset.raw || '') : '';
+    const retro  = document.getElementById(`ppos-${p}-retro`)?.checked || false;
+    // Derive which house the planet occupies from cusp degrees
+    let house = null;
+    if (sign) {
+      house = derivePlanetHouse(sign, degRaw, data.cusps);
+    }
+    planets[p] = { sign, deg_raw: degRaw, retro, house };
+  });
+  data.planets = planets;
+
+  // Ruling planets
+  RP_LABELS.forEach(rp => {
+    const el = document.getElementById(rp.id);
+    data.rp[rp.id] = el ? el.value : '';
+  });
+
+  return data;
+}
+
+// ── Validate ──────────────────────────────────────────
+function clearErrors() {
+  document.querySelectorAll('.field-error').forEach(el => el.remove());
+  document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+}
+
+function showFieldError(elementId, message) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.classList.add('input-error');
+  // Remove existing error
+  const existing = el.parentElement.querySelector('.field-error');
+  if (existing) existing.remove();
+  const err = document.createElement('div');
+  err.className = 'field-error';
+  err.textContent = message;
+  el.parentElement.appendChild(err);
+  // Scroll into view
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function validateData(data) {
+  const issues = [];
+  if (!data.native.name)        issues.push({ id:'native-name',   msg:'Native name is required' });
+  if (!data.native.dob)         issues.push({ id:'native-dob',    msg:'Birth date is required' });
+  if (data.native.tob_h === '') issues.push({ id:'tob-h',         msg:'Birth hour is required' });
+  if (data.native.tob_m === '') issues.push({ id:'tob-m',         msg:'Birth minute is required' });
+  if (!data.native.place)       issues.push({ id:'native-place',  msg:'Birth place is required' });
+
+  if (!data.dba.md)             issues.push({ id:'dba-md',        msg:'Mahadasha is required' });
+  if (!data.dba.ad)             issues.push({ id:'dba-ad',        msg:'Antardasha is required' });
+  if (!data.dba.pd)             issues.push({ id:'dba-pd',        msg:'Pratyantardasha is required' });
+
+  // Check all 12 cusps have sign and sub-lord
+  for (let h = 1; h <= 12; h++) {
+    if (!data.cusps[h].sign) issues.push({ id:`cusp-${h}-sign`, msg:`Cusp ${h} sign missing` });
+    if (!data.cusps[h].sl)   issues.push({ id:`cusp-${h}-sl`,   msg:`Cusp ${h} Sub-lord missing` });
+    if (!data.cusps[h].nl)   issues.push({ id:`cusp-${h}-nl`,   msg:`Cusp ${h} Star-lord missing` });
+  }
+
+  // Check planet significations — at least one planet must have houses marked
+  const anyMarked = Object.values(data.planetSig).some(arr => arr.length > 0);
+  if (!anyMarked) issues.push({ id:'planet-sig-body', msg:'No planet significations entered' });
+
+  return issues;
+}
+
+// ── Status ────────────────────────────────────────────
+function updateStatus() {
+  const data = collectData();
+  const issues = validateData(data);
+  const el = document.getElementById('status-text');
+  if (!issues.length) {
+    el.textContent = '✓ All sections complete — ready to analyse';
+    el.style.color = 'var(--gold)';
+  } else {
+    el.textContent = `○ ${issues.length} field${issues.length > 1 ? 's' : ''} need attention`;
+    el.style.color = 'var(--text-muted)';
+  }
+}
+
+// ── Proceed ───────────────────────────────────────────
+function proceedToAnalysis() {
+  clearErrors();
+  const data = collectData();
+  const issues = validateData(data);
+  if (issues.length) {
+    // Show first 3 errors inline on their fields
+    issues.slice(0, 3).forEach(issue => showFieldError(issue.id, issue.msg));
+    // Open collapsed sections containing errors
+    issues.forEach(issue => {
+      const el = document.getElementById(issue.id);
+      if (el) {
+        const section = el.closest('.section');
+        if (section && section.classList.contains('collapsed'))
+          section.classList.remove('collapsed');
+      }
+    });
+    return;
+  }
+  sessionStorage.setItem('kp_input', JSON.stringify(data));
+  window.location.href = 'kp_output.html';
+}
+
+// ── Clear ─────────────────────────────────────────────
+function clearAll() {
+  if (!confirm('Clear all entered data?')) return;
+  clearErrors();
+  document.querySelectorAll('input:not([readonly])').forEach(el => {
+    if (el.type === 'checkbox') el.checked = false;
+    else el.value = '';
+  });
+  document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  setDefaults();
+  updateStatus();
+}
+// Clear any previously stored data — fresh start every load
+localStorage.removeItem('kp_chart_data');
+sessionStorage.clear();
+document.addEventListener('change', updateStatus);
+document.addEventListener('input',  updateStatus);
+
+buildPlanetSigTable();
+buildPlanetPosTable();
+buildCuspTable();
+buildDBASelects();
+buildRPGrid();
+setDefaults();
+updateStatus();
+</script>
+</body>
+</html>
