@@ -1066,9 +1066,16 @@ function deriveAttributes(subEventKey, slSig, nlSig, slPlanet, nlPlanet,
   const attrs = {};
   const planetsInHouse = getOccupyingPlanets(houseNum, chartData);
 
-  if (subEventKey === 'H7.TYPE' || subEventKey === 'H7.UNION') {
+  if (subEventKey === 'H7.TYPE') {
     attrs.marriageType   = ATTRIBUTE_RULES.MARRIAGE_TYPE(slSig, nlSig, slPlanet, cuspSign);
     attrs.marriageTiming = ATTRIBUTE_RULES.MARRIAGE_TIMING(slSig, slPlanet);
+  }
+  if (subEventKey === 'H7.UNION') {
+    attrs.marriageType   = ATTRIBUTE_RULES.MARRIAGE_TYPE(slSig, nlSig, slPlanet, cuspSign);
+    attrs.marriageTiming = ATTRIBUTE_RULES.MARRIAGE_TIMING(slSig, slPlanet);
+    // slSig and nlSig exposed for use in summary
+    attrs._slSig = slSig;
+    attrs._nlSig = nlSig;
   }
   if (subEventKey === 'H7.SPOUSE_NATURE') {
     const sign = SIGN_DATA[cuspSign];
@@ -1157,166 +1164,258 @@ function generateSubEventSummary(se, houseNum, chartData) {
   const dba       = se.dba;
   const attrs     = se.attributes || {};
   const occupants = getOccupyingPlanets(houseNum, chartData);
-  const topic     = se.name.replace(/_/g, ' ').toLowerCase();
-  const Topic     = topic[0].toUpperCase() + topic.slice(1);
   const dba_ad    = chartData && chartData.dba ? chartData.dba.ad : '';
   const dba_md    = chartData && chartData.dba ? chartData.dba.md : '';
   const slKarak   = slData.karakatva ? slData.karakatva.slice(0,2).join(' and ') : se.slPlanet;
   const nlKarak   = nlData.karakatva ? nlData.karakatva.slice(0,2).join(' and ') : se.nlPlanet;
+  const ownStar   = se.nlPlanet === se.slPlanet;
 
-  // Helper: convert a TABLE9 meaning string into a prose fragment
-  // Describe what a house number means for this sub-event in plain words
-  // Uses house cluster/obstruct role + SL planet context — no raw TABLE9 text
-  function houseRole(house) {
-    const isMain    = rule.primaryGate === house;
-    const isCluster = rule.cluster && rule.cluster.includes(house);
-    const isObstruct= rule.obstruct && rule.obstruct.includes(house);
-    const hData     = HOUSE_DATA[house];
-    const houseName = hData ? hData.name.toLowerCase() : 'house ' + house;
-    if (isMain)    return houseName + ' (the main factor)';
-    if (isCluster) return houseName + ' (a supporting factor)';
-    if (isObstruct) return houseName + ' (a complicating factor)';
-    return houseName;
+  // ── Promise strength helper (client language) ──
+  function promiseStrength() {
+    if (promise.mainPresent && promise.obstructHits.length === 0) return 'strong';
+    if (promise.mainPresent && promise.obstructHits.length > 0)   return 'mixed';
+    if (promise.clusterHits.length >= 2)                          return 'indirect';
+    if (promise.clusterHits.length === 1)                         return 'weak';
+    return 'absent';
   }
 
-  // ── PARAGRAPH 1: Promise ──
-  let para1 = '';
-
-  if (promise.mainPresent && promise.obstructHits.length === 0) {
-    para1 = `<strong>${Topic}</strong> is directly and clearly promised — ${se.slPlanet} signifies this house with no complications. `;
-    if (slKarak) para1 += `Its energy of ${slKarak} flows directly into this area of life. `;
-  } else if (promise.mainPresent && promise.obstructHits.length > 0) {
-    para1 = `<strong>${Topic}</strong> is promised, but ${promise.obstructHits.length} complicating factor${promise.obstructHits.length > 1 ? 's' : ''} introduce friction. `;
-    // Describe what the obstructing houses mean — in prose, not raw text
-    const obstDescs = promise.obstructHits.map(h => houseRole(h)).filter(Boolean);
-    if (obstDescs.length === 1) para1 += `The complication comes from: ${obstDescs[0].toLowerCase()}. `;
-    else if (obstDescs.length > 1) para1 += `Complications include: ${obstDescs[0].toLowerCase()}, and ${obstDescs[1].toLowerCase()}. `;
-    if (slKarak) para1 += `Despite this, ${se.slPlanet}'s energy of ${slKarak} is present and active. `;
-  } else if (promise.clusterHits.length >= 2) {
-    para1 = `<strong>${Topic}</strong> is indirectly promised — the main house is not directly signified but ${promise.clusterHits.length} supporting houses build the case. `;
-    const clusterDescs = promise.clusterHits.map(h => houseRole(h)).filter(Boolean).slice(0,2);
-    if (clusterDescs.length) para1 += `The indirect support comes from: ${clusterDescs.join(', ').toLowerCase()}. `;
-  } else if (promise.clusterHits.length === 1) {
-    const c = houseRole(promise.clusterHits[0]);
-    para1 = `<strong>${Topic}</strong> has a weak indirect promise — only one supporting factor connects: ${c.toLowerCase()}. `;
-  } else {
-    para1 = `<strong>${Topic}</strong> is not clearly promised in this chart — ${se.slPlanet}'s significations don't connect to the key houses for this area. `;
-  }
-
-  // Add what the promise means specifically — pick the most meaningful cluster/main house context
-  const supportHouses = [...(promise.mainPresent ? [rule.primaryGate] : []), ...promise.clusterHits];
-  const bestSupport = supportHouses.map(h => houseRole(h)).filter(Boolean).slice(0,1)[0];
-  if (bestSupport && promise.clusterHits.length > 0 && !promise.mainPresent) {
-    // already described above
-  } else if (bestSupport && promise.clusterHits.length > 0) {
-    // additional cluster color
-    const clusterDescs = promise.clusterHits.map(h => houseRole(h)).filter(Boolean).slice(0,2);
-    if (clusterDescs.length) para1 += `Supporting factors: ${clusterDescs.join('; ').toLowerCase()}. `;
-  }
-
-  // ── PARAGRAPH 2: Nature (NL of SL) + key attributes + occupants ──
-  let para2 = '';
-
-  if (se.nlPlanet) {
-    const ownStar = se.nlPlanet === se.slPlanet;
-    // Get NL's significations in this house's context — pick the most meaningful one
-    const nlSig = (chartData && chartData.planetSig) ? (chartData.planetSig[se.nlPlanet] || []) : [];
-    const nlContextHits = nlSig
-      .map(h => ({ h, c: getContextualMeaning(houseNum, h) }))
-      .filter(x => x.c && x.c.m);
-    // Pick support hits first, then neutral
-    const nlBestHit = nlContextHits.find(x => x.c.s === 'support') || nlContextHits[0];
-
+  // ── NL flavour sentence (client language) ──
+  function nlFlavour() {
     if (ownStar) {
-      para2 = `<strong>${se.slPlanet}</strong> sits in its own nakshatra, so it acts with full, undiluted strength here — no other planet filters its influence. `;
-      if (nlKarak) para2 += `Its qualities of ${nlKarak} shape every dimension of how this plays out. `;
+      return `${se.slPlanet} is in its own star, so it works at full strength here — its qualities of ${nlKarak} come through clearly.`;
+    }
+    return `The star lord is ${se.nlPlanet}, which brings the qualities of ${nlKarak} into the picture.`;
+  }
+
+  // ── Period sentence (client language) ──
+  function periodSentence() {
+    if (se.type === 'Life') return '';
+    if (!dba) return '';
+    let s = '';
+    if (dba.adGate === 'wide_open') {
+      s = `The current period (${dba_ad} antardasha) is directly activating this — things can move now.`;
+    } else if (dba.adGate === 'partial') {
+      s = `The current period (${dba_ad} antardasha) gives partial support — some movement is possible but the timing is not at its peak.`;
     } else {
-      para2 = `The nakshatra lord of <strong>${se.slPlanet}</strong> is <strong>${se.nlPlanet}</strong> (${nlKarak}) — this determines the style and colour of how ${topic} manifests. `;
-      if (nlBestHit) {
-        const supportWord = nlBestHit.c.s === 'support' ? 'supporting' : nlBestHit.c.s === 'obstruct' ? 'complicating' : 'adding context to';
-        para2 += `${se.nlPlanet}'s qualities of ${nlKarak} colour how this plays out — ${supportWord} the picture through its influence on H${nlBestHit.h}. `;
+      s = `The current period (${dba_ad} antardasha) is not the main trigger for this — a better period will come.`;
+    }
+    if (dba.verdict === 'strongly_active' || dba.verdict === 'active') {
+      s += ` Overall the planetary periods are strongly aligned for this right now.`;
+    } else if (dba.verdict === 'possible') {
+      s += ` This can happen in this period but needs a stronger sub-period trigger.`;
+    } else if (dba.verdict === 'not_this_period') {
+      s += ` This is not the right window — wait for a period when the right planets become active.`;
+    }
+    return s;
+  }
+
+  // ══════════════════════════════════════════════
+  // SUB-EVENT SPECIFIC SUMMARIES
+  // ══════════════════════════════════════════════
+
+  // H7.UNION — Will marriage happen?
+  if (se.key === 'H7.UNION') {
+    const strength = promiseStrength();
+    let para1 = '', para2 = '', para3 = '';
+
+    if (strength === 'strong') {
+      para1 = `<strong>Marriage is clearly promised in this chart.</strong> The 7th house is directly activated — there is no ambiguity here. Marriage will happen.`;
+    } else if (strength === 'mixed') {
+      para1 = `<strong>Marriage is promised but with some complications.</strong> The 7th house is activated, however there are also houses of delay and obstacles present. Marriage will happen — but it may come with challenges, delays, or unconventional circumstances.`;
+    } else if (strength === 'indirect') {
+      para1 = `<strong>Marriage is indirectly promised.</strong> The 7th house is not directly lit up, but supporting factors (gains, partnerships, family connections) build the case. Marriage is likely — though it may come through an indirect route.`;
+    } else if (strength === 'weak') {
+      para1 = `<strong>Marriage has a weak promise in this chart.</strong> Only one supporting factor connects to the 7th house. Marriage is possible but not strongly indicated — it depends heavily on the right planetary period arriving.`;
+    } else {
+      para1 = `<strong>Marriage is not clearly promised in this chart.</strong> The 7th house sub-lord's significations don't connect to the houses needed for marriage to fructify. This does not mean marriage is impossible — but it will need very specific planetary conditions to materialise.`;
+    }
+
+    if (attrs.marriageType) {
+      para1 += `<br><strong>Type: ${attrs.marriageType}</strong>`;
+    }
+
+    para2 = nlFlavour();
+    if (occupants.length > 0) {
+      para2 += ` ${occupants.join(' and ')} ${occupants.length > 1 ? 'are' : 'is'} placed in the 7th house and directly colour the marriage picture.`;
+    }
+
+    para3 = periodSentence();
+    if (attrs.marriageTiming) {
+      para3 += para3 ? ` Timing: <strong>${attrs.marriageTiming}</strong>.` : `Timing: <strong>${attrs.marriageTiming}</strong>.`;
+    }
+
+    return [para1, para2, para3].filter(p => p).join('<br><br>');
+  }
+
+  // H7.TYPE — What kind of marriage?
+  if (se.key === 'H7.TYPE') {
+    let para1 = '', para2 = '', para3 = '';
+
+    const mType = attrs.marriageType || 'Not determined';
+    para1 = `<strong>Marriage Type: ${mType}</strong><br>`;
+
+    // Explain why based on which houses are present
+    const both = [...new Set([...se.slSig || [], ...se.nlSig || []])];
+    const reasons = [];
+    if (both.includes(5))  reasons.push('H5 is present — a romantic connection is part of this');
+    if (both.includes(3))  reasons.push('H3 is present — family negotiations and matchmaking are involved');
+    if (both.includes(9))  reasons.push('H9 is present — traditional ceremony and family blessing are involved');
+    if (both.includes(2))  reasons.push('H2 is present — the partner joins the family setup');
+    if (both.includes(6))  reasons.push('H6 is present — there may be opposition or it crosses community lines');
+    if (both.includes(12)) reasons.push('H12 is present — there is a foreign or distant connection possible');
+    if (both.includes(8))  reasons.push('H8 is present — the circumstances around marriage are unconventional');
+
+    if (reasons.length > 0) {
+      para1 += reasons.map(r => `• ${r}`).join('<br>');
+    }
+
+    para2 = nlFlavour();
+    if (attrs.marriageTiming) {
+      para2 += `<br><strong>Marriage timing: ${attrs.marriageTiming}</strong>`;
+    }
+
+    para3 = `This is a permanent reading about the nature of marriage — it does not change with planetary periods.`;
+
+    return [para1, para2, para3].filter(p => p).join('<br><br>');
+  }
+
+  // H7.MARRIAGE_NUMBER — How many marriages?
+  if (se.key === 'H7.MARRIAGE_NUMBER') {
+    const strength = promiseStrength();
+    let para1 = '';
+
+    const num = attrs.marriageNumber || '';
+    if (num.includes('Second') || num.includes('second')) {
+      para1 = `<strong>Second marriage is possible in this chart.</strong><br>H9 is activated in the sub-lord's significations — in KP, H9 is the house of the 3rd partner (or 2nd marriage). This does not mean the first marriage will end, but the chart does show the possibility of more than one significant relationship or union.`;
+    } else {
+      para1 = `<strong>One marriage is primarily indicated.</strong><br>The chart points to a single marriage as the primary relationship path. H9 is not strongly activated in a way that would suggest a second union.`;
+    }
+
+    if (strength === 'absent' || strength === 'weak') {
+      para1 += `<br><br>Note: Since the basic marriage promise itself is weak (as seen in H7.UNION), the number of marriages becomes secondary — first the marriage needs to happen.`;
+    }
+
+    const para2 = nlFlavour();
+    return [para1, para2].filter(p => p).join('<br><br>');
+  }
+
+  // H7.SPOUSE_NATURE — What will the spouse be like?
+  if (se.key === 'H7.SPOUSE_NATURE') {
+    const strength = promiseStrength();
+    let para1 = '', para2 = '', para3 = '';
+
+    if (strength === 'absent') {
+      para1 = `<strong>Spouse nature is not clearly defined in this chart.</strong> The 7th sub-lord doesn't give strong clues about the partner's qualities.`;
+    } else {
+      para1 = `<strong>About the spouse:</strong><br>`;
+      const nature = attrs.spouseNature || [];
+      if (Array.isArray(nature) && nature.length > 0) {
+        para1 += nature.map(q => `• ${q}`).join('<br>');
+      } else {
+        // Derive from NL planet qualities
+        para1 += `The spouse will carry the qualities of <strong>${se.nlPlanet}</strong> — ${nlKarak}.`;
       }
     }
+
+    para2 = nlFlavour();
+    if (occupants.length > 0) {
+      para2 += ` ${occupants.join(' and ')} in the 7th house also shape the partner's personality and appearance.`;
+    }
+
+    para3 = `This is a permanent reading — the spouse's nature is shown by the chart at birth and doesn't change.`;
+    return [para1, para2, para3].filter(p => p).join('<br><br>');
   }
 
-  // Key attributes — formatted naturally, not as label:value dumps
+  // H7.SEPARATION — Risk of separation?
+  if (se.key === 'H7.SEPARATION') {
+    const strength = promiseStrength();
+    let para1 = '', para2 = '', para3 = '';
+
+    if (strength === 'strong') {
+      para1 = `<strong>Separation or distancing in marriage is clearly indicated.</strong> The house of dissolution and separation is strongly activated. This does not guarantee divorce — but significant friction, distance, or a formal separation is possible.`;
+    } else if (strength === 'mixed' || strength === 'indirect') {
+      para1 = `<strong>There is some indication of marital stress or separation — but not a strong one.</strong> The separation indicators are present but mixed with other factors. There may be periods of difficulty or distance, but it is not the dominant pattern.`;
+    } else {
+      para1 = `<strong>No strong indication of separation in this chart.</strong> The separation houses are not prominently activated — the marriage is more likely to stay intact.`;
+    }
+
+    para2 = nlFlavour();
+    para3 = periodSentence();
+    return [para1, para2, para3].filter(p => p).join('<br><br>');
+  }
+
+  // H7.PARTNERSHIP — Business or professional partnership
+  if (se.key === 'H7.PARTNERSHIP') {
+    const strength = promiseStrength();
+    let para1 = '', para2 = '', para3 = '';
+
+    if (strength === 'strong') {
+      para1 = `<strong>Professional partnership is strongly promised.</strong> This person is well-suited for collaborative business — the chart supports working with a partner rather than alone.`;
+    } else if (strength === 'mixed') {
+      para1 = `<strong>Partnership is possible but comes with friction.</strong> While collaboration is indicated, there will be challenges — differences of opinion, power struggles, or legal complications with partners.`;
+    } else if (strength === 'indirect' || strength === 'weak') {
+      para1 = `<strong>Partnership may happen but is not the primary path.</strong> The chart leans more toward independent work than collaborative ventures.`;
+    } else {
+      para1 = `<strong>Partnership is not strongly supported in this chart.</strong> Working alone or in a support role suits this chart better than formal business partnership.`;
+    }
+
+    para2 = nlFlavour();
+    para3 = periodSentence();
+    return [para1, para2, para3].filter(p => p).join('<br><br>');
+  }
+
+  // ══════════════════════════════════════════════
+  // GENERIC FALLBACK — client language for all other sub-events
+  // ══════════════════════════════════════════════
+
+  const strength = promiseStrength();
+  const topicLabel = se.name.replace(/_/g,' ');
+
+  // Para 1: Promise in plain client language
+  let para1 = '';
+  if (strength === 'strong') {
+    para1 = `<strong>${topicLabel}</strong> is clearly and strongly promised in this chart.`;
+  } else if (strength === 'mixed') {
+    para1 = `<strong>${topicLabel}</strong> is promised but comes with some complications and obstacles. It will happen — but not without challenges.`;
+  } else if (strength === 'indirect') {
+    para1 = `<strong>${topicLabel}</strong> is indicated in the chart, though indirectly. It is likely — but may come through an unexpected route or require more effort.`;
+  } else if (strength === 'weak') {
+    para1 = `<strong>${topicLabel}</strong> has a weak indication in this chart. It is possible but not guaranteed — the right planetary period is needed.`;
+  } else {
+    para1 = `<strong>${topicLabel}</strong> is not clearly indicated in this chart. This does not mean it can never happen, but it will need very specific conditions.`;
+  }
+
+  // Key attribute if present
   const attrEntries = Object.entries(attrs);
   if (attrEntries.length > 0) {
-    const attrParts = attrEntries.slice(0,3).map(([k, v]) => {
-      const label = k.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
-      const val   = Array.isArray(v) ? v.slice(0,2).join(', ') : String(v);
-      return `${label}: <strong>${val}</strong>`;
-    });
-    para2 += `Key indicators — ${attrParts.join('; ')}. `;
+    const highlights = attrEntries.slice(0,3).map(([k, v]) => {
+      const label = k.replace(/([A-Z])/g,' $1').trim();
+      const val = Array.isArray(v) ? v.slice(0,2).join(', ') : String(v);
+      return `<strong>${label}:</strong> ${val}`;
+    }).join(' &nbsp;|&nbsp; ');
+    para1 += `<br>${highlights}`;
   }
 
-  // Planets occupying this house
+  // Para 2: NL flavour + occupants
+  let para2 = nlFlavour();
   if (occupants.length > 0) {
-    const occParts = occupants.map(p => {
+    const occDesc = occupants.map(p => {
       const pd = PLANET_DATA[p];
       return pd ? `${p} (${pd.karakatva[0]})` : p;
-    });
-    para2 += `${occParts.join(' and ')} ${occupants.length > 1 ? 'are' : 'is'} placed in this house and add their energy directly to this area. `;
+    }).join(' and ');
+    para2 += ` ${occDesc} ${occupants.length > 1 ? 'are' : 'is'} placed directly in this house, adding their energy to this area of life.`;
   }
 
-  // ── PARAGRAPH 3: Current period status ──
+  // Para 3: Period or life reading
   let para3 = '';
-
   if (se.type === 'Life') {
-    para3 = `This is a permanent reading — it reflects a fixed pattern in the chart and doesn't change with DBA periods. `;
-    if (promise.mainPresent) {
-      para3 += `This pattern is strongly present and will be a consistent theme throughout life.`;
-    } else if (promise.clusterHits.length > 0) {
-      para3 += `This trait is present but works indirectly rather than as the dominant feature.`;
-    } else {
-      para3 += `This trait is not strongly activated in this chart.`;
-    }
-  } else if (dba) {
-    // AD gate
-    if (dba.adGate === 'wide_open') {
-      para3 = `Right now the AD lord <strong>${dba_ad}</strong> directly opens this house — this topic is live and active in the current period. `;
-    } else if (dba.adGate === 'partial') {
-      para3 = `The AD lord <strong>${dba_ad}</strong> partially supports this — activity is possible but not at full strength. `;
-    } else {
-      para3 = `The AD lord <strong>${dba_ad}</strong> doesn't open this house directly — this topic is not the main focus in the current period. `;
-    }
-
-    // DBA score in plain words
-    if (dba.verdict === 'strongly_active') {
-      para3 += `The combined DBA score is high (${dba.score > 0 ? '+' : ''}${dba.score}) — this is one of the most active topics right now. `;
-    } else if (dba.verdict === 'active') {
-      para3 += `DBA score is solid (+${dba.score}) — this is running actively in the current period. `;
-    } else if (dba.verdict === 'moderately_active') {
-      para3 += `DBA score is moderate (+${dba.score}) — some movement is happening, but not at peak. `;
-    } else if (dba.verdict === 'weakly_active') {
-      para3 += `DBA score is low — background energy only, not the primary focus right now. `;
-    } else if (dba.verdict === 'possible') {
-      para3 += `This is possible in the current period but not strongly timed — a better window will come. `;
-    } else {
-      para3 += `The current DBA period is not the right window for this topic. `;
-    }
-
-    // MD context — only if meaningful (support type) and avoid raw table dump
-    if (dba_md && chartData.planetSig) {
-      const mdSig = chartData.planetSig[dba_md] || [];
-      const mdSupportHit = mdSig
-        .map(h => ({ h, c: getContextualMeaning(houseNum, h) }))
-        .find(x => x.c && x.c.s === 'support' && x.c.m);
-      if (mdSupportHit) {
-        const mdCtx = mdSupportHit.c.m.split(/[.—]/)[0].trim().toLowerCase();
-        para3 += `At the Mahadasha level, ${dba_md} (H${mdSupportHit.h}) adds: ${mdCtx}.`;
-      }
-    }
+    para3 = `This is a permanent reading — it shows a fixed pattern in the chart from birth.`;
+  } else {
+    para3 = periodSentence();
   }
 
-  return [para1.trim(), para2.trim(), para3.trim()].filter(p => p).join('<br><br>');
+  return [para1, para2, para3].filter(p => p).join('<br><br>');
 }
-
-
-
-/**
- * Get lagnesh and its significance
- */
 function getLagneshData(chartData) {
   const c1 = chartData.cusps && chartData.cusps[1];
   if (!c1 || !c1.sign) return null;
@@ -1591,7 +1690,8 @@ function runHousePrediction(houseNum, chartData) {
       rp:          rpResult,
       attributes:  attrs,
       combination: comboOut,
-      slPlanet, nlPlanet, cuspSign, signData
+      slPlanet, nlPlanet, cuspSign, signData,
+      slSig, nlSig
     };
   }).filter(Boolean);
 
