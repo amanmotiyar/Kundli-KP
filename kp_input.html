@@ -60,6 +60,9 @@
     </div>
   </div>
 
+  <!-- ══ MANUAL ENTRY SECTIONS ══ -->
+  <div id="manual-sections">
+
   <!-- ══ SECTION 1 — NATIVE DETAILS ══ -->
   <div class="section" id="sec-native">
     <div class="section-header" onclick="toggleSection('sec-native')">
@@ -310,6 +313,8 @@
       <div class="rp-grid" id="rp-grid"></div>
     </div>
   </div>
+
+  </div><!-- /manual-sections -->
 
   <!-- Action bar -->
   <div class="action-bar">
@@ -829,15 +834,18 @@ const RP_LABELS = [
 
 // ── Input Mode Toggle ─────────────────────────────
 function switchMode(mode) {
-  const pdfPanel = document.getElementById('pdf-upload-section');
-  const tabManual = document.getElementById('tab-manual');
-  const tabPDF = document.getElementById('tab-pdf');
+  const pdfPanel    = document.getElementById('pdf-upload-section');
+  const manualSecs  = document.getElementById('manual-sections');
+  const tabManual   = document.getElementById('tab-manual');
+  const tabPDF      = document.getElementById('tab-pdf');
   if (mode === 'pdf') {
-    pdfPanel.style.display = 'block';
+    pdfPanel.style.display   = 'block';
+    manualSecs.style.display = 'block'; // keep visible so PDF can fill them; scroll hint shown
     tabManual.classList.remove('active');
     tabPDF.classList.add('active');
   } else {
-    pdfPanel.style.display = 'none';
+    pdfPanel.style.display   = 'none';
+    manualSecs.style.display = 'block';
     tabManual.classList.add('active');
     tabPDF.classList.remove('active');
   }
@@ -966,10 +974,12 @@ function derivePlanetHouse(planetSign, planetDegRaw, cusps) {
   }
   return null;
 }
-  if (!raw || raw.length < 6) return null;
-  const d = parseInt(raw.slice(0,2));
-  const m = parseInt(raw.slice(2,4));
-  const s = parseInt(raw.slice(4,6));
+
+function getDegreeDecimal(raw) {
+  if (!raw || raw.length < 6) return 0;
+  const d = parseInt(raw.slice(0,2)) || 0;
+  const m = parseInt(raw.slice(2,4)) || 0;
+  const s = parseInt(raw.slice(4,6)) || 0;
   return d + m/60 + s/3600;
 }
 
@@ -999,25 +1009,62 @@ function buildRPGrid() {
 let acTimers = {};
 
 const NOMINATIM_ENDPOINTS = [
-  q => `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&addressdetails=1`,
+  // Photon (komoot) — CORS-open, no key needed, very reliable
+  q => `https://photon.komoot.io/api/?q=${q}&limit=6&lang=en`,
+  // Nominatim via corsproxy.io fallback
   q => `https://corsproxy.io/?${encodeURIComponent(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&addressdetails=1`)}`,
+  // allorigins fallback
   q => `https://api.allorigins.win/get?url=${encodeURIComponent(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6`)}`,
 ];
 
 async function fetchNominatim(query) {
   const q = encodeURIComponent(query);
-  for (let i = 0; i < NOMINATIM_ENDPOINTS.length; i++) {
-    try {
-      const url = NOMINATIM_ENDPOINTS[i](q);
-      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
-      if (!res.ok) continue;
+
+  // ── Endpoint 0: Photon (komoot) ──
+  try {
+    const url = `https://photon.komoot.io/api/?q=${q}&limit=6&lang=en`;
+    const res = await fetch(url);
+    if (res.ok) {
       const data = await res.json();
-      // allorigins wraps in { contents: "..." }
-      if (data && data.contents) return JSON.parse(data.contents);
-      if (Array.isArray(data)) return data;
-    } catch(e) { continue; }
-  }
-  return null; // all failed
+      if (data && data.features && data.features.length) {
+        // Normalise to Nominatim-style objects
+        return data.features.map(f => {
+          const p = f.properties;
+          const parts = [p.name, p.city || p.town || p.village, p.state, p.country].filter(Boolean);
+          return {
+            display_name: parts.join(', '),
+            lat: String(f.geometry.coordinates[1]),
+            lon: String(f.geometry.coordinates[0]),
+          };
+        });
+      }
+    }
+  } catch(e) { /* fall through */ }
+
+  // ── Endpoint 1: corsproxy.io → Nominatim ──
+  try {
+    const url = `https://corsproxy.io/?${encodeURIComponent(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=6&addressdetails=1`)}`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length) return data;
+    }
+  } catch(e) { /* fall through */ }
+
+  // ── Endpoint 2: allorigins → Nominatim ──
+  try {
+    const url = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=6`)}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.contents) {
+        const arr = JSON.parse(data.contents);
+        if (Array.isArray(arr) && arr.length) return arr;
+      }
+    }
+  } catch(e) { /* fall through */ }
+
+  return null; // all failed — caller will show manual lat/lon entry
 }
 
 function showManualLatLon(key) {
@@ -1067,7 +1114,7 @@ function applyManualLatLon(key) {
 function searchPlace(query, key) {
   const listEl = document.getElementById(`ac-${key}`);
   clearTimeout(acTimers[key]);
-  if (query.length < 3) { listEl.classList.remove('open'); return; }
+  if (query.length < 2) { listEl.classList.remove('open'); return; }
   listEl.innerHTML = '<div class="ac-loading">Searching…</div>';
   listEl.classList.add('open');
   acTimers[key] = setTimeout(async () => {
@@ -1214,7 +1261,11 @@ function collectData() {
     planets[p] = { sign, deg_raw: degRaw, retro, house };
   });
   data.planets = planets;
-    data.rp[rp.id] = document.getElementById(rp.id).value;
+
+  // Ruling planets
+  RP_LABELS.forEach(rp => {
+    const el = document.getElementById(rp.id);
+    data.rp[rp.id] = el ? el.value : '';
   });
 
   return data;
