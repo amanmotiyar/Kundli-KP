@@ -451,12 +451,21 @@ function findCurrentDBA(text) {
 // ── PDF Upload Handler ────────────────────────────
 async function handlePDFUpload(input) {
   const file = input.files[0];
+  console.log('[KP] handlePDFUpload called, file:', file ? file.name : 'none');
   if (!file) return;
 
   const statusEl = document.getElementById('pdf-status');
+  if (!statusEl) { console.error('[KP] pdf-status element not found'); return; }
   statusEl.style.display = 'block';
   statusEl.className = 'pdf-status loading';
   statusEl.innerHTML = '⏳ Reading PDF...';
+
+  if (typeof pdfjsLib === 'undefined') {
+    statusEl.className = 'pdf-status error';
+    statusEl.innerHTML = '<strong>✗ PDF library not loaded.</strong> Check your internet connection and refresh the page.';
+    console.error('[KP] pdfjsLib is not defined');
+    return;
+  }
 
   try {
     const arrayBuffer = await file.arrayBuffer();
