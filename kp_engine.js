@@ -1094,6 +1094,115 @@ function getOccupyingPlanets(houseNum, chartData) {
   return occupants;
 }
 
+// ═══════════════════════════════════════════════════
+// SUB-EVENT PLAIN-ENGLISH SUMMARY GENERATOR
+// ═══════════════════════════════════════════════════
+
+/**
+ * Generates a 3–5 sentence plain English summary for a sub-event card.
+ * Covers: promise status, what the houses mean, DBA timing, key attributes.
+ */
+function generateSubEventSummary(se, houseNum, chartData) {
+  if (!se) return '';
+
+  const rule     = SUB_EVENT_RULES[se.key] || {};
+  const slData   = PLANET_DATA[se.slPlanet] || {};
+  const nlData   = PLANET_DATA[se.nlPlanet] || {};
+  const promise  = se.promise;
+  const dba      = se.dba;
+  const attrs    = se.attributes || {};
+  const occupants = getOccupyingPlanets(houseNum, chartData);
+
+  // ── Part 1: Promise sentence ──
+  let out = '';
+  const topicLabel = se.name.replace(/_/g, ' ').toLowerCase();
+
+  if (promise.mainPresent && promise.obstructHits.length === 0) {
+    out += `${se.slPlanet} directly signifies this house — <strong>${topicLabel}</strong> is clearly promised in this chart. `;
+  } else if (promise.mainPresent && promise.obstructHits.length > 0) {
+    const obstMeanings = promise.obstructHits
+      .map(h => getContextualMeaning(houseNum, h).m)
+      .filter(Boolean).slice(0, 2);
+    out += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is promised but comes with friction — `;
+    out += obstMeanings.length
+      ? obstMeanings.join('; ').toLowerCase() + '. '
+      : `${promise.obstructHits.length} obstructing house${promise.obstructHits.length > 1 ? 's' : ''} create complications. `;
+  } else if (promise.clusterHits.length >= 2) {
+    out += `The main house is absent but ${promise.clusterHits.length} supporting houses (H${promise.clusterHits.join(', H')}) give an indirect promise for <strong>${topicLabel}</strong>. `;
+  } else if (promise.clusterHits.length === 1) {
+    out += `Only H${promise.clusterHits[0]} connects — <strong>${topicLabel}</strong> has a weak indirect promise. `;
+  } else {
+    out += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is not clearly promised in this chart — ${se.slPlanet}'s significations don't connect to this area's key houses. `;
+  }
+
+  // ── Part 2: What the supporting houses mean in plain words ──
+  if (promise.clusterHits.length > 0 || promise.mainPresent) {
+    const supportMeanings = [...(promise.mainPresent ? [rule.primaryGate] : []), ...promise.clusterHits]
+      .map(h => getContextualMeaning(houseNum, h).m)
+      .filter(Boolean).slice(0, 2);
+    if (supportMeanings.length > 0) {
+      const karak = slData.karakatva ? slData.karakatva.slice(0, 2).join(' and ') : '';
+      out += `${karak ? `${se.slPlanet} (${karak}) ` : ''}brings energy through: ${supportMeanings.join('; ').toLowerCase()}. `;
+    }
+  }
+
+  // ── Part 3: NL of SL flavour ──
+  if (se.nlPlanet) {
+    const ownStar = se.nlPlanet === se.slPlanet;
+    if (ownStar) {
+      out += `${se.slPlanet} sits in its own nakshatra — full, undiluted strength, no secondary influence filtering it. `;
+    } else {
+      const nlKarak = nlData.karakatva ? nlData.karakatva.slice(0, 2).join(' and ') : '';
+      out += `The Star-lord is <strong>${se.nlPlanet}</strong>${nlKarak ? ` (${nlKarak})` : ''} — this shapes the style and tone of how ${topicLabel} unfolds. `;
+    }
+  }
+
+  // ── Part 4: Planets sitting in the house ──
+  if (occupants.length > 0) {
+    const occDesc = occupants.map(p => {
+      const pd = PLANET_DATA[p];
+      return `${p}${pd ? ` (${pd.karakatva.slice(0,1).join('')})` : ''}`;
+    }).join(' and ');
+    out += `${occDesc} ${occupants.length > 1 ? 'are' : 'is'} sitting in this house and add their energy directly. `;
+  }
+
+  // ── Part 5: DBA timing sentence ──
+  if (se.type !== 'Life' && dba) {
+    const dba_md = chartData.dba.md;
+    const dba_ad = chartData.dba.ad;
+    const dba_pd = chartData.dba.pd;
+
+    if (dba.adGate === 'wide_open') {
+      out += `Right now the AD (${dba_ad}) fully opens this — timing is active and current. `;
+    } else if (dba.adGate === 'partial') {
+      out += `The AD (${dba_ad}) partially supports this period. Events are possible but not at peak. `;
+    } else {
+      out += `The current AD (${dba_ad}) doesn't open this house — this topic is not in focus right now. `;
+    }
+
+    if (dba.verdict === 'strongly_active' || dba.verdict === 'active') {
+      out += `Overall DBA score is strong (+${dba.score}) — this is an active timing window. `;
+    } else if (dba.verdict === 'moderately_active' || dba.verdict === 'weakly_active') {
+      out += `DBA score is moderate — some movement possible but not peak activity. `;
+    } else if (dba.verdict === 'not_this_period') {
+      out += `This period is not the right window for this topic. `;
+    }
+  } else if (se.type === 'Life') {
+    out += `This is a permanent life reading — it describes a fixed trait in the chart, not a timed event. `;
+  }
+
+  // ── Part 6: Key attribute if present ──
+  const attrEntries = Object.entries(attrs);
+  if (attrEntries.length > 0) {
+    const [firstKey, firstVal] = attrEntries[0];
+    const label = firstKey.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
+    const val   = Array.isArray(firstVal) ? firstVal.slice(0, 2).join(', ') : firstVal;
+    if (val) out += `Key indicator — <strong>${label}:</strong> ${val}. `;
+  }
+
+  return out;
+}
+
 /**
  * Get lagnesh and its significance
  */

@@ -104,7 +104,7 @@
   margin-bottom: 4px;
 }
 .house-detail-sanskrit {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-style: italic;
   color: var(--text-muted);
@@ -303,11 +303,30 @@
   margin-bottom: 5px;
 }
 .combo-text {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-style: italic;
   color: var(--text-secondary);
   line-height: 1.6;
+}
+
+/* Sub-event plain-English summary */
+.se-summary {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--bg-section);
+  border-left: 3px solid var(--gold-dim);
+  border-radius: 0 3px 3px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.85;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+}
+.se-summary strong {
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 /* DBA detail strip */
@@ -645,6 +664,10 @@ function loadHouseDetail(houseNum) {
           ${rpHtml}
           ${attrsHtml}
           ${comboHtml}
+
+          <div class="se-summary">
+            ${generateSubEventSummary(se, houseNum, chartData)}
+          </div>
 
         </div>
       </div>`;

@@ -203,16 +203,18 @@
   align-items: start;
 }
 .row-interp {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 17px;
-  line-height: 1.9;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.85;
   color: var(--text-secondary);
-  font-style: italic;
+  font-style: normal;
+  letter-spacing: 0.01em;
 }
 .row-interp strong {
   color: var(--text-primary);
   font-style: normal;
-  font-weight: 500;
+  font-weight: 600;
 }
 .row-side {
   display: flex;
@@ -470,7 +472,7 @@ function renderDashboard(chartData, results) {
         </div>
         <div class="row-meta">
           <span class="row-sl">SL <strong>${r.slPlanet || '—'}</strong></span>
-          <span class="row-sl">NL <strong>${r.nlPlanet || '—'}</strong></span>
+          <span class="row-sl" title="Nakshatra lord of where ${r.slPlanet} sits (NL of SL)">NL of SL <strong>${r.nlPlanet || '—'}</strong></span>
           <span class="row-sl">Sign <strong>${r.cuspSign || '—'}</strong></span>
           <span class="badge badge-${natClass}">${nature}</span>
           <span class="row-arrow">→</span>
