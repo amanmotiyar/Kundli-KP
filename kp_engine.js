@@ -346,47 +346,94 @@ const SUB_EVENT_RULES = {
 
 const ATTRIBUTE_RULES = {
 
-  // MARRIAGE TYPE — uses contextual H7 meanings
-  MARRIAGE_TYPE: (slSig, nlSig) => {
+  // MARRIAGE TYPE — uses corrected TABLE 9 H7 contextual meanings
+  // H5 = love indicator, H2+H3+H9 = arranged/traditional, H1 = dominant personality NOT self-choice
+  // H9+H12 together = foreign ONLY when sign direction also confirms it
+  MARRIAGE_TYPE: (slSig, nlSig, slPlanet, cuspSign) => {
     const both = [...new Set([...slSig, ...nlSig])];
-    const hasH5  = both.includes(5);
     const hasH2  = both.includes(2);
     const hasH3  = both.includes(3);
     const hasH4  = both.includes(4);
-    const hasH9  = both.includes(9);
-    const hasH12 = both.includes(12);
+    const hasH5  = both.includes(5);
     const hasH6  = both.includes(6);
-    const hasH10 = both.includes(10);
     const hasH7  = both.includes(7);
-    const hasH1  = both.includes(1);
+    const hasH8  = both.includes(8);
+    const hasH9  = both.includes(9);
+    const hasH10 = both.includes(10);
+    const hasH11 = both.includes(11);
+    const hasH12 = both.includes(12);
 
-    // ARRANGED indicators: H2(family arranges) + H3(negotiations) + H9(father/dharma) + no H5
+    // ARRANGED indicators (TABLE 9 H7 context):
+    // H2 = partner joins family / family arranges
+    // H3 = family negotiations / matchmaking process
+    // H9 = father's blessing / dharmic/traditional union
+    // H4 = mother's role / domestic focus
     const arrangedScore = (hasH2?2:0) + (hasH3?2:0) + (hasH9?2:0) + (hasH4?1:0);
-    // LOVE indicators: H5(romance) + H1(self-choice) + H7(direct)
-    const loveScore = (hasH5?3:0) + (hasH1?1:0);
-    // FOREIGN indicators: H9+H12 together AND directional sign
-    const foreignScore = (hasH9 && hasH12) ? 3 : 0;
-    // COURT indicators: H6+H10 both
+
+    // LOVE indicators:
+    // H5 = love/romance element (the ONLY direct love indicator)
+    // H7 = direct union energy present (strengthens any type)
+    // NOTE: H1 = dominant personality in relationship, NOT self-choice
+    const loveScore = (hasH5?3:0) + (hasH7?1:0);
+
+    // FOREIGN indicator — requires H9+H12 TOGETHER, not individually
+    // H9 alone = father's blessing/arranged, H12 alone = bed happiness/expenses
+    const foreignScore = (hasH9 && hasH12) ? 2 : 0;
+
+    // COURT / REGISTERED: H6+H10 both present (service/career over ceremony)
     const courtScore = (hasH6 && hasH10) ? 3 : 0;
 
-    // Determine primary type
-    if (courtScore >= 3) return 'Court / Registered Marriage';
-    if (loveScore >= 3 && arrangedScore < 2) return 'Love Marriage';
-    if (loveScore >= 2 && arrangedScore >= 2) return 'Love with Family Support';
-    if (loveScore >= 2 && hasH6) return 'Love Against Family Wishes';
-    if (arrangedScore >= 4 && !hasH5) return 'Arranged / Traditional';
-    if (arrangedScore >= 2 && !hasH5) return 'Arranged with Personal Choice';
-    if (foreignScore >= 3) return 'Foreign / Inter-regional';
-    if (hasH6 && !hasH5) return 'Arranged — Intercaste / Inter-community possible';
-    return 'Mixed — primarily arranged with self-choice element';
+    // INTERCASTE / INTER-COMMUNITY: Rahu as SL + H6 (social friction) present
+    const intercasteFlag = (slPlanet === 'Rahu' || slPlanet === 'Ketu') && hasH6;
+
+    // LATE MARRIAGE: Saturn as SL OR H1+H8 obstruct pattern
+    const lateFlag = slPlanet === 'Saturn' || (both.includes(1) && (hasH8 || hasH12));
+
+    // ── Determine primary type ──
+    let primaryType;
+
+    if (courtScore >= 3) {
+      primaryType = 'Court / Registered';
+    } else if (loveScore >= 3 && arrangedScore < 3) {
+      primaryType = hasH6 ? 'Love — Against Family Wishes' : 'Love Marriage';
+    } else if (loveScore >= 3 && arrangedScore >= 3) {
+      primaryType = 'Love with Family Support';
+    } else if (loveScore >= 2 && arrangedScore >= 2) {
+      primaryType = 'Love with Family Support';
+    } else if (arrangedScore >= 6 && !hasH5) {
+      primaryType = 'Arranged — Traditional';
+    } else if (arrangedScore >= 4 && !hasH5) {
+      primaryType = 'Arranged';
+    } else if (arrangedScore >= 2 && !hasH5) {
+      primaryType = 'Arranged with Personal Choice';
+    } else if (loveScore >= 1 && arrangedScore >= 1) {
+      primaryType = 'Semi-arranged with Self-choice';
+    } else {
+      primaryType = 'Arranged with Personal Choice';
+    }
+
+    // ── Secondary qualifiers ──
+    const qualifiers = [];
+    if (foreignScore >= 2) qualifiers.push('Inter-regional / Foreign partner possible');
+    if (intercasteFlag)    qualifiers.push('Intercaste / Inter-community possible');
+    if (lateFlag)          qualifiers.push('Late timing — 30+ years');
+    if (hasH9 && !hasH5)   qualifiers.push('Traditional ceremony');
+    if (hasH8)             qualifiers.push('Unconventional circumstances');
+
+    return qualifiers.length
+      ? `${primaryType} — ${qualifiers.join('; ')}`
+      : primaryType;
   },
 
   MARRIAGE_TIMING: (slSig, slPlanet) => {
-    if (slPlanet === 'Saturn') return 'Late — 30+ age range';
-    if (slSig.includes(1) && !slSig.includes(7)) return 'Delayed — strong independence';
-    if (slSig.includes(6) || slSig.includes(8) || slSig.includes(12)) return 'Delayed — obstacles present';
-    if (slSig.includes(5) || slSig.includes(11)) return 'Timely — relatively natural timing';
-    return 'Moderate — as per social norm';
+    // H6/H8/H12 in SL sig = obstruct/delay in H7 context
+    // H1 in H7 context = dominant personality, NOT delay indicator
+    if (slPlanet === 'Saturn') return 'Late — 30+ years';
+    if (slSig.includes(6) && slSig.includes(10)) return 'Delayed — career and service obligations dominant';
+    if (slSig.includes(8) || slSig.includes(6)) return 'Delayed — obstacles and transformation phase first';
+    if (slSig.includes(5) || slSig.includes(11)) return 'Timely — natural timing';
+    if (slSig.includes(7)) return 'On time — direct union energy present';
+    return 'Moderate — around social norm age';
   },
 
   CAREER_PATH: (slSig, nlSig) => {
@@ -1020,7 +1067,7 @@ function deriveAttributes(subEventKey, slSig, nlSig, slPlanet, nlPlanet,
   const planetsInHouse = getOccupyingPlanets(houseNum, chartData);
 
   if (subEventKey === 'H7.TYPE' || subEventKey === 'H7.UNION') {
-    attrs.marriageType   = ATTRIBUTE_RULES.MARRIAGE_TYPE(slSig, nlSig);
+    attrs.marriageType   = ATTRIBUTE_RULES.MARRIAGE_TYPE(slSig, nlSig, slPlanet, cuspSign);
     attrs.marriageTiming = ATTRIBUTE_RULES.MARRIAGE_TIMING(slSig, slPlanet);
   }
   if (subEventKey === 'H7.SPOUSE_NATURE') {
@@ -1096,112 +1143,147 @@ function getOccupyingPlanets(houseNum, chartData) {
 
 // ═══════════════════════════════════════════════════
 // SUB-EVENT PLAIN-ENGLISH SUMMARY GENERATOR
+// Format: Para1=Promise, Para2=Nature+Attributes, Para3=DBA/Period
+// Uses TABLE 9 contextual meanings throughout
 // ═══════════════════════════════════════════════════
 
-/**
- * Generates a 3–5 sentence plain English summary for a sub-event card.
- * Covers: promise status, what the houses mean, DBA timing, key attributes.
- */
 function generateSubEventSummary(se, houseNum, chartData) {
   if (!se) return '';
 
-  const rule     = SUB_EVENT_RULES[se.key] || {};
-  const slData   = PLANET_DATA[se.slPlanet] || {};
-  const nlData   = PLANET_DATA[se.nlPlanet] || {};
-  const promise  = se.promise;
-  const dba      = se.dba;
-  const attrs    = se.attributes || {};
+  const rule      = SUB_EVENT_RULES[se.key] || {};
+  const slData    = PLANET_DATA[se.slPlanet] || {};
+  const nlData    = PLANET_DATA[se.nlPlanet] || {};
+  const promise   = se.promise;
+  const dba       = se.dba;
+  const attrs     = se.attributes || {};
   const occupants = getOccupyingPlanets(houseNum, chartData);
-
-  // ── Part 1: Promise sentence ──
-  let out = '';
   const topicLabel = se.name.replace(/_/g, ' ').toLowerCase();
+  const dba_ad    = chartData && chartData.dba ? chartData.dba.ad : '';
+  const dba_md    = chartData && chartData.dba ? chartData.dba.md : '';
+
+  // ── PARAGRAPH 1: Promise — what is promised and at what strength ──
+  let para1 = '';
 
   if (promise.mainPresent && promise.obstructHits.length === 0) {
-    out += `${se.slPlanet} directly signifies this house — <strong>${topicLabel}</strong> is clearly promised in this chart. `;
+    para1 += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is directly and clearly promised — ${se.slPlanet} signifies the main house with no obstructing houses present. `;
   } else if (promise.mainPresent && promise.obstructHits.length > 0) {
     const obstMeanings = promise.obstructHits
-      .map(h => getContextualMeaning(houseNum, h).m)
-      .filter(Boolean).slice(0, 2);
-    out += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is promised but comes with friction — `;
-    out += obstMeanings.length
+      .map(h => getContextualMeaning(houseNum, h).m).filter(Boolean).slice(0, 2);
+    para1 += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is promised but with complications — `;
+    para1 += obstMeanings.length
       ? obstMeanings.join('; ').toLowerCase() + '. '
-      : `${promise.obstructHits.length} obstructing house${promise.obstructHits.length > 1 ? 's' : ''} create complications. `;
+      : `${promise.obstructHits.length} obstructing factor${promise.obstructHits.length > 1 ? 's' : ''} introduce friction. `;
   } else if (promise.clusterHits.length >= 2) {
-    out += `The main house is absent but ${promise.clusterHits.length} supporting houses (H${promise.clusterHits.join(', H')}) give an indirect promise for <strong>${topicLabel}</strong>. `;
+    const clusterMeanings = promise.clusterHits
+      .map(h => getContextualMeaning(houseNum, h).m).filter(Boolean).slice(0, 2);
+    para1 += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is indirectly promised — the main house is absent but ${promise.clusterHits.length} supporting houses confirm it through an indirect path. `;
+    if (clusterMeanings.length) para1 += `Support through: ${clusterMeanings.join('; ').toLowerCase()}. `;
   } else if (promise.clusterHits.length === 1) {
-    out += `Only H${promise.clusterHits[0]} connects — <strong>${topicLabel}</strong> has a weak indirect promise. `;
+    const ctx = getContextualMeaning(houseNum, promise.clusterHits[0]);
+    para1 += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> has a weak promise — only H${promise.clusterHits[0]} connects: ${ctx.m.toLowerCase()}. `;
   } else {
-    out += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is not clearly promised in this chart — ${se.slPlanet}'s significations don't connect to this area's key houses. `;
+    para1 += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is not clearly promised — ${se.slPlanet}'s significations don't connect to this area's key houses. `;
   }
 
-  // ── Part 2: What the supporting houses mean in plain words ──
-  if (promise.clusterHits.length > 0 || promise.mainPresent) {
-    const supportMeanings = [...(promise.mainPresent ? [rule.primaryGate] : []), ...promise.clusterHits]
-      .map(h => getContextualMeaning(houseNum, h).m)
-      .filter(Boolean).slice(0, 2);
+  // What the supporting houses mean contextually
+  if ((promise.mainPresent || promise.clusterHits.length > 0) && slData.karakatva) {
+    const supportHouses = [...(promise.mainPresent ? [rule.primaryGate] : []), ...promise.clusterHits];
+    const supportMeanings = supportHouses
+      .map(h => getContextualMeaning(houseNum, h).m).filter(Boolean).slice(0, 2);
     if (supportMeanings.length > 0) {
-      const karak = slData.karakatva ? slData.karakatva.slice(0, 2).join(' and ') : '';
-      out += `${karak ? `${se.slPlanet} (${karak}) ` : ''}brings energy through: ${supportMeanings.join('; ').toLowerCase()}. `;
+      para1 += `${se.slPlanet} (${slData.karakatva.slice(0,2).join(', ')}) operates through: ${supportMeanings.join('; ').toLowerCase()}. `;
     }
   }
 
-  // ── Part 3: NL of SL flavour ──
+  // ── PARAGRAPH 2: Nature from NL of SL + key attributes ──
+  let para2 = '';
+
   if (se.nlPlanet) {
     const ownStar = se.nlPlanet === se.slPlanet;
+    const nlKarak = nlData.karakatva ? nlData.karakatva.slice(0, 3).join(', ') : '';
+    const nlSig   = (chartData && chartData.planetSig) ? (chartData.planetSig[se.nlPlanet] || []) : [];
+    const nlSupportMeanings = nlSig
+      .map(h => getContextualMeaning(houseNum, h))
+      .filter(c => c && c.s === 'support' && c.m).slice(0, 2)
+      .map(c => c.m.toLowerCase());
+
     if (ownStar) {
-      out += `${se.slPlanet} sits in its own nakshatra — full, undiluted strength, no secondary influence filtering it. `;
+      para2 += `${se.slPlanet} sits in its own nakshatra — acts with full undiluted strength. `;
+      if (nlKarak) para2 += `Its qualities of ${nlKarak} operate without filtering from another planet. `;
     } else {
-      const nlKarak = nlData.karakatva ? nlData.karakatva.slice(0, 2).join(' and ') : '';
-      out += `The Star-lord is <strong>${se.nlPlanet}</strong>${nlKarak ? ` (${nlKarak})` : ''} — this shapes the style and tone of how ${topicLabel} unfolds. `;
+      para2 += `The Star-lord of the Sub-lord is <strong>${se.nlPlanet}</strong>${nlKarak ? ` (${nlKarak})` : ''} — this shapes how ${topicLabel} manifests. `;
+      if (nlSupportMeanings.length > 0) {
+        para2 += `${se.nlPlanet} brings: ${nlSupportMeanings.join('; ')}. `;
+      }
     }
   }
 
-  // ── Part 4: Planets sitting in the house ──
+  // Key attributes in plain language (up to 3)
+  const attrEntries = Object.entries(attrs);
+  if (attrEntries.length > 0) {
+    const attrLines = attrEntries.slice(0, 3).map(([k, v]) => {
+      const label = k.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
+      const val   = Array.isArray(v) ? v.slice(0, 2).join(', ') : String(v);
+      return `<strong>${label}:</strong> ${val}`;
+    });
+    para2 += attrLines.join(' — ') + '. ';
+  }
+
+  // Occupants
   if (occupants.length > 0) {
     const occDesc = occupants.map(p => {
       const pd = PLANET_DATA[p];
-      return `${p}${pd ? ` (${pd.karakatva.slice(0,1).join('')})` : ''}`;
+      return pd ? `${p} (${pd.karakatva[0]})` : p;
     }).join(' and ');
-    out += `${occDesc} ${occupants.length > 1 ? 'are' : 'is'} sitting in this house and add their energy directly. `;
+    para2 += `${occDesc} ${occupants.length > 1 ? 'are' : 'is'} sitting in this house and add their energy directly. `;
   }
 
-  // ── Part 5: DBA timing sentence ──
-  if (se.type !== 'Life' && dba) {
-    const dba_md = chartData.dba.md;
-    const dba_ad = chartData.dba.ad;
-    const dba_pd = chartData.dba.pd;
+  // ── PARAGRAPH 3: Current period (TIME) or permanent note (LIFE) ──
+  let para3 = '';
 
-    if (dba.adGate === 'wide_open') {
-      out += `Right now the AD (${dba_ad}) fully opens this — timing is active and current. `;
-    } else if (dba.adGate === 'partial') {
-      out += `The AD (${dba_ad}) partially supports this period. Events are possible but not at peak. `;
+  if (se.type === 'Life') {
+    para3 += `This is a permanent chart reading — it stays constant regardless of DBA period. `;
+    if (promise.mainPresent) {
+      para3 += `It is strongly embedded in the chart and will be a consistent theme throughout life.`;
+    } else if (promise.clusterHits.length > 0) {
+      para3 += `This trait is present but expressed indirectly rather than as the dominant feature.`;
     } else {
-      out += `The current AD (${dba_ad}) doesn't open this house — this topic is not in focus right now. `;
+      para3 += `This trait is not prominently activated in this chart.`;
+    }
+  } else if (dba) {
+    if (dba.adGate === 'wide_open') {
+      para3 += `Right now the AD lord <strong>${dba_ad}</strong> directly opens this house — this topic is active and current. `;
+    } else if (dba.adGate === 'partial') {
+      para3 += `The AD lord <strong>${dba_ad}</strong> partially supports this — events are possible but not at full strength. `;
+    } else {
+      para3 += `The current AD lord <strong>${dba_ad}</strong> doesn't open this house — this topic is not in the primary window right now. `;
     }
 
-    if (dba.verdict === 'strongly_active' || dba.verdict === 'active') {
-      out += `Overall DBA score is strong (+${dba.score}) — this is an active timing window. `;
-    } else if (dba.verdict === 'moderately_active' || dba.verdict === 'weakly_active') {
-      out += `DBA score is moderate — some movement possible but not peak activity. `;
-    } else if (dba.verdict === 'not_this_period') {
-      out += `This period is not the right window for this topic. `;
+    if (dba.verdict === 'strongly_active') {
+      para3 += `Overall DBA score is strong (${dba.score > 0 ? '+' : ''}${dba.score}) — one of the most active topics this period. `;
+    } else if (dba.verdict === 'active') {
+      para3 += `DBA score is good (+${dba.score}) — actively running in the current period. `;
+    } else if (dba.verdict === 'moderately_active') {
+      para3 += `DBA score is moderate (+${dba.score}) — some movement but not at peak. `;
+    } else if (dba.verdict === 'weakly_active') {
+      para3 += `DBA score is low — background activity, not the primary focus. `;
+    } else if (dba.verdict === 'possible') {
+      para3 += `Possible in this period but not strongly timed — a future period will be more aligned. `;
+    } else {
+      para3 += `This period is not the right window — belongs to a different DBA timing. `;
     }
-  } else if (se.type === 'Life') {
-    out += `This is a permanent life reading — it describes a fixed trait in the chart, not a timed event. `;
+
+    // MD context note if meaningful
+    if (dba_md && chartData.planetSig) {
+      const mdSig = chartData.planetSig[dba_md] || [];
+      const mdCtx = mdSig.map(h => getContextualMeaning(houseNum, h)).find(c => c && c.s === 'support');
+      if (mdCtx) para3 += `At Mahadasha level (${dba_md}): ${mdCtx.m.toLowerCase()}.`;
+    }
   }
 
-  // ── Part 6: Key attribute if present ──
-  const attrEntries = Object.entries(attrs);
-  if (attrEntries.length > 0) {
-    const [firstKey, firstVal] = attrEntries[0];
-    const label = firstKey.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
-    const val   = Array.isArray(firstVal) ? firstVal.slice(0, 2).join(', ') : firstVal;
-    if (val) out += `Key indicator — <strong>${label}:</strong> ${val}. `;
-  }
-
-  return out;
+  return [para1, para2, para3].filter(p => p.trim()).join('<br><br>');
 }
+
 
 /**
  * Get lagnesh and its significance
