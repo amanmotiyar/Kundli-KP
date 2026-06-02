@@ -1414,6 +1414,104 @@ function collectData() {
   return data;
 }
 
+// ── Restore form from saved data (Back navigation) ───
+function restoreFromData(data) {
+  if (!data) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
+  const check = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+  // Native
+  if (data.native) {
+    set('native-name',   data.native.name);
+    set('native-gender', data.native.gender);
+    set('native-dob',    data.native.dob);
+    set('tob-h',         data.native.tob_h);
+    set('tob-m',         data.native.tob_m);
+    set('tob-s',         data.native.tob_s);
+    set('native-place',  data.native.place);
+    set('native-lat',    data.native.lat);
+    set('native-lon',    data.native.lon);
+    set('native-tz',     data.native.tz);
+  }
+
+  // Cusps
+  if (data.cusps) {
+    HOUSES.forEach(h => {
+      const c = data.cusps[h];
+      if (!c) return;
+      set(`cusp-${h}-sign`, c.sign);
+      set(`cusp-${h}-rl`,   c.rl);
+      set(`cusp-${h}-nl`,   c.nl);
+      set(`cusp-${h}-sl`,   c.sl);
+      set(`cusp-${h}-ss`,   c.ss);
+      const degEl = document.getElementById(`cusp-${h}-deg`);
+      if (degEl && (c.deg_fmt || c.deg_raw)) {
+        // deg_fmt from collectData is already formatted (e.g. "066°01′32″")
+        // deg_fmt from parser is dash-format (e.g. "066-01-32")
+        if (c.deg_fmt && c.deg_fmt.includes('-')) {
+          const parts = c.deg_fmt.split('-');
+          degEl.value = `${parts[0]}°${parts[1]}′${parts[2]}″`;
+        } else if (c.deg_fmt) {
+          degEl.value = c.deg_fmt; // already formatted
+        }
+        degEl.dataset.raw = c.deg_raw || '';
+      }
+    });
+  }
+
+  // Planet positions
+  if (data.planets) {
+    PLANETS.forEach(p => {
+      const pd = data.planets[p];
+      if (!pd) return;
+      set(`ppos-${p}-sign`, pd.sign);
+      check(`ppos-${p}-retro`, pd.retro);
+      const degEl = document.getElementById(`ppos-${p}-deg`);
+      if (degEl && (pd.deg_fmt || pd.deg_raw)) {
+        if (pd.deg_fmt && pd.deg_fmt.includes('-')) {
+          const parts = pd.deg_fmt.split('-');
+          degEl.value = `${parts[0]}°${parts[1]}′${parts[2]}″`;
+        } else if (pd.deg_fmt) {
+          degEl.value = pd.deg_fmt;
+        }
+        degEl.dataset.raw = pd.deg_raw || '';
+      }
+    });
+  }
+
+  // Planet significations
+  if (data.planetSig) {
+    PLANETS.forEach(p => {
+      HOUSES.forEach(h => {
+        const cb = document.getElementById(`sig-${p}-H${h}`);
+        if (cb) cb.checked = (data.planetSig[p] || []).includes(h);
+      });
+    });
+  }
+
+  // DBA
+  if (data.dba) {
+    set('dba-md',   data.dba.md);
+    set('dba-ad',   data.dba.ad);
+    set('dba-pd',   data.dba.pd);
+    set('dba-from', data.dba.from);
+    set('dba-to',   data.dba.to);
+  }
+
+  // Ruling planets
+  if (data.rp) {
+    RP_LABELS.forEach(rp => set(rp.id, data.rp[rp.id]));
+  }
+
+  // Today
+  if (data.today) {
+    set('today-date',  data.today.todayDate);
+    set('today-h',     data.today.today_h);
+    set('today-m',     data.today.today_m);
+    set('today-place', data.today.todayPlace);
+  }
+}
+
 // ── Validate ──────────────────────────────────────────
 function clearErrors() {
   document.querySelectorAll('.field-error').forEach(el => el.remove());
@@ -1443,9 +1541,11 @@ function validateData(data) {
   if (data.native.tob_m === '') issues.push({ id:'tob-m',         msg:'Birth minute is required' });
   if (!data.native.place)       issues.push({ id:'native-place',  msg:'Birth place is required' });
 
-  if (!data.dba.md)             issues.push({ id:'dba-md',        msg:'Mahadasha is required' });
-  if (!data.dba.ad)             issues.push({ id:'dba-ad',        msg:'Antardasha is required' });
-  if (!data.dba.pd)             issues.push({ id:'dba-pd',        msg:'Pratyantardasha is required' });
+  if (!data.dba.md)             issues.push({ id:'dba-md',   msg:'Mahadasha is required' });
+  if (!data.dba.ad)             issues.push({ id:'dba-ad',   msg:'Antardasha is required' });
+  if (!data.dba.pd)             issues.push({ id:'dba-pd',   msg:'Pratyantardasha is required' });
+  if (!data.dba.from)           issues.push({ id:'dba-from', msg:'DBA Period From date is required' });
+  if (!data.dba.to)             issues.push({ id:'dba-to',   msg:'DBA Period To date is required' });
 
   // Check all 12 cusps have sign and sub-lord
   for (let h = 1; h <= 12; h++) {
@@ -1514,9 +1614,9 @@ function clearAll() {
   setDefaults();
   updateStatus();
 }
-// Clear any previously stored data — fresh start every load
+// On load: restore saved form data if returning from output page
+// (don't clear session — that wipes data when user presses Back)
 localStorage.removeItem('kp_chart_data');
-sessionStorage.clear();
 document.addEventListener('change', updateStatus);
 document.addEventListener('input',  updateStatus);
 
@@ -1526,6 +1626,16 @@ buildCuspTable();
 buildDBASelects();
 buildRPGrid();
 setDefaults();
+
+// Restore saved input if coming back from output page
+const saved = sessionStorage.getItem('kp_input');
+if (saved) {
+  try {
+    const data = JSON.parse(saved);
+    restoreFromData(data);
+  } catch(e) { /* ignore parse errors */ }
+}
+
 updateStatus();
 </script>
 </body>
