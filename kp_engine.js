@@ -1143,8 +1143,8 @@ function getOccupyingPlanets(houseNum, chartData) {
 
 // ═══════════════════════════════════════════════════
 // SUB-EVENT PLAIN-ENGLISH SUMMARY GENERATOR
-// Format: Para1=Promise, Para2=Nature+Attributes, Para3=DBA/Period
-// Uses TABLE 9 contextual meanings throughout
+// Format: Para1=Promise, Para2=Nature, Para3=Current period
+// All TABLE 9 meanings converted to natural prose — no raw text leaking
 // ═══════════════════════════════════════════════════
 
 function generateSubEventSummary(se, houseNum, chartData) {
@@ -1157,132 +1157,161 @@ function generateSubEventSummary(se, houseNum, chartData) {
   const dba       = se.dba;
   const attrs     = se.attributes || {};
   const occupants = getOccupyingPlanets(houseNum, chartData);
-  const topicLabel = se.name.replace(/_/g, ' ').toLowerCase();
+  const topic     = se.name.replace(/_/g, ' ').toLowerCase();
+  const Topic     = topic[0].toUpperCase() + topic.slice(1);
   const dba_ad    = chartData && chartData.dba ? chartData.dba.ad : '';
   const dba_md    = chartData && chartData.dba ? chartData.dba.md : '';
+  const slKarak   = slData.karakatva ? slData.karakatva.slice(0,2).join(' and ') : se.slPlanet;
+  const nlKarak   = nlData.karakatva ? nlData.karakatva.slice(0,2).join(' and ') : se.nlPlanet;
 
-  // ── PARAGRAPH 1: Promise — what is promised and at what strength ──
+  // Helper: convert a TABLE9 meaning string into a prose fragment
+  // Describe what a house number means for this sub-event in plain words
+  // Uses house cluster/obstruct role + SL planet context — no raw TABLE9 text
+  function houseRole(house) {
+    const isMain    = rule.primaryGate === house;
+    const isCluster = rule.cluster && rule.cluster.includes(house);
+    const isObstruct= rule.obstruct && rule.obstruct.includes(house);
+    const hData     = HOUSE_DATA[house];
+    const houseName = hData ? hData.name.toLowerCase() : 'house ' + house;
+    if (isMain)    return houseName + ' (the main factor)';
+    if (isCluster) return houseName + ' (a supporting factor)';
+    if (isObstruct) return houseName + ' (a complicating factor)';
+    return houseName;
+  }
+
+  // ── PARAGRAPH 1: Promise ──
   let para1 = '';
 
   if (promise.mainPresent && promise.obstructHits.length === 0) {
-    para1 += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is directly and clearly promised — ${se.slPlanet} signifies the main house with no obstructing houses present. `;
+    para1 = `<strong>${Topic}</strong> is directly and clearly promised — ${se.slPlanet} signifies this house with no complications. `;
+    if (slKarak) para1 += `Its energy of ${slKarak} flows directly into this area of life. `;
   } else if (promise.mainPresent && promise.obstructHits.length > 0) {
-    const obstMeanings = promise.obstructHits
-      .map(h => getContextualMeaning(houseNum, h).m).filter(Boolean).slice(0, 2);
-    para1 += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is promised but with complications — `;
-    para1 += obstMeanings.length
-      ? obstMeanings.join('; ').toLowerCase() + '. '
-      : `${promise.obstructHits.length} obstructing factor${promise.obstructHits.length > 1 ? 's' : ''} introduce friction. `;
+    para1 = `<strong>${Topic}</strong> is promised, but ${promise.obstructHits.length} complicating factor${promise.obstructHits.length > 1 ? 's' : ''} introduce friction. `;
+    // Describe what the obstructing houses mean — in prose, not raw text
+    const obstDescs = promise.obstructHits.map(h => houseRole(h)).filter(Boolean);
+    if (obstDescs.length === 1) para1 += `The complication comes from: ${obstDescs[0].toLowerCase()}. `;
+    else if (obstDescs.length > 1) para1 += `Complications include: ${obstDescs[0].toLowerCase()}, and ${obstDescs[1].toLowerCase()}. `;
+    if (slKarak) para1 += `Despite this, ${se.slPlanet}'s energy of ${slKarak} is present and active. `;
   } else if (promise.clusterHits.length >= 2) {
-    const clusterMeanings = promise.clusterHits
-      .map(h => getContextualMeaning(houseNum, h).m).filter(Boolean).slice(0, 2);
-    para1 += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is indirectly promised — the main house is absent but ${promise.clusterHits.length} supporting houses confirm it through an indirect path. `;
-    if (clusterMeanings.length) para1 += `Support through: ${clusterMeanings.join('; ').toLowerCase()}. `;
+    para1 = `<strong>${Topic}</strong> is indirectly promised — the main house is not directly signified but ${promise.clusterHits.length} supporting houses build the case. `;
+    const clusterDescs = promise.clusterHits.map(h => houseRole(h)).filter(Boolean).slice(0,2);
+    if (clusterDescs.length) para1 += `The indirect support comes from: ${clusterDescs.join(', ').toLowerCase()}. `;
   } else if (promise.clusterHits.length === 1) {
-    const ctx = getContextualMeaning(houseNum, promise.clusterHits[0]);
-    para1 += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> has a weak promise — only H${promise.clusterHits[0]} connects: ${ctx.m.toLowerCase()}. `;
+    const c = houseRole(promise.clusterHits[0]);
+    para1 = `<strong>${Topic}</strong> has a weak indirect promise — only one supporting factor connects: ${c.toLowerCase()}. `;
   } else {
-    para1 += `<strong>${topicLabel[0].toUpperCase() + topicLabel.slice(1)}</strong> is not clearly promised — ${se.slPlanet}'s significations don't connect to this area's key houses. `;
+    para1 = `<strong>${Topic}</strong> is not clearly promised in this chart — ${se.slPlanet}'s significations don't connect to the key houses for this area. `;
   }
 
-  // What the supporting houses mean contextually
-  if ((promise.mainPresent || promise.clusterHits.length > 0) && slData.karakatva) {
-    const supportHouses = [...(promise.mainPresent ? [rule.primaryGate] : []), ...promise.clusterHits];
-    const supportMeanings = supportHouses
-      .map(h => getContextualMeaning(houseNum, h).m).filter(Boolean).slice(0, 2);
-    if (supportMeanings.length > 0) {
-      para1 += `${se.slPlanet} (${slData.karakatva.slice(0,2).join(', ')}) operates through: ${supportMeanings.join('; ').toLowerCase()}. `;
-    }
+  // Add what the promise means specifically — pick the most meaningful cluster/main house context
+  const supportHouses = [...(promise.mainPresent ? [rule.primaryGate] : []), ...promise.clusterHits];
+  const bestSupport = supportHouses.map(h => houseRole(h)).filter(Boolean).slice(0,1)[0];
+  if (bestSupport && promise.clusterHits.length > 0 && !promise.mainPresent) {
+    // already described above
+  } else if (bestSupport && promise.clusterHits.length > 0) {
+    // additional cluster color
+    const clusterDescs = promise.clusterHits.map(h => houseRole(h)).filter(Boolean).slice(0,2);
+    if (clusterDescs.length) para1 += `Supporting factors: ${clusterDescs.join('; ').toLowerCase()}. `;
   }
 
-  // ── PARAGRAPH 2: Nature from NL of SL + key attributes ──
+  // ── PARAGRAPH 2: Nature (NL of SL) + key attributes + occupants ──
   let para2 = '';
 
   if (se.nlPlanet) {
     const ownStar = se.nlPlanet === se.slPlanet;
-    const nlKarak = nlData.karakatva ? nlData.karakatva.slice(0, 3).join(', ') : '';
-    const nlSig   = (chartData && chartData.planetSig) ? (chartData.planetSig[se.nlPlanet] || []) : [];
-    const nlSupportMeanings = nlSig
-      .map(h => getContextualMeaning(houseNum, h))
-      .filter(c => c && c.s === 'support' && c.m).slice(0, 2)
-      .map(c => c.m.toLowerCase());
+    // Get NL's significations in this house's context — pick the most meaningful one
+    const nlSig = (chartData && chartData.planetSig) ? (chartData.planetSig[se.nlPlanet] || []) : [];
+    const nlContextHits = nlSig
+      .map(h => ({ h, c: getContextualMeaning(houseNum, h) }))
+      .filter(x => x.c && x.c.m);
+    // Pick support hits first, then neutral
+    const nlBestHit = nlContextHits.find(x => x.c.s === 'support') || nlContextHits[0];
 
     if (ownStar) {
-      para2 += `${se.slPlanet} sits in its own nakshatra — acts with full undiluted strength. `;
-      if (nlKarak) para2 += `Its qualities of ${nlKarak} operate without filtering from another planet. `;
+      para2 = `<strong>${se.slPlanet}</strong> sits in its own nakshatra, so it acts with full, undiluted strength here — no other planet filters its influence. `;
+      if (nlKarak) para2 += `Its qualities of ${nlKarak} shape every dimension of how this plays out. `;
     } else {
-      para2 += `The Star-lord of the Sub-lord is <strong>${se.nlPlanet}</strong>${nlKarak ? ` (${nlKarak})` : ''} — this shapes how ${topicLabel} manifests. `;
-      if (nlSupportMeanings.length > 0) {
-        para2 += `${se.nlPlanet} brings: ${nlSupportMeanings.join('; ')}. `;
+      para2 = `The nakshatra lord of <strong>${se.slPlanet}</strong> is <strong>${se.nlPlanet}</strong> (${nlKarak}) — this determines the style and colour of how ${topic} manifests. `;
+      if (nlBestHit) {
+        const supportWord = nlBestHit.c.s === 'support' ? 'supporting' : nlBestHit.c.s === 'obstruct' ? 'complicating' : 'adding context to';
+        para2 += `${se.nlPlanet}'s qualities of ${nlKarak} colour how this plays out — ${supportWord} the picture through its influence on H${nlBestHit.h}. `;
       }
     }
   }
 
-  // Key attributes in plain language (up to 3)
+  // Key attributes — formatted naturally, not as label:value dumps
   const attrEntries = Object.entries(attrs);
   if (attrEntries.length > 0) {
-    const attrLines = attrEntries.slice(0, 3).map(([k, v]) => {
+    const attrParts = attrEntries.slice(0,3).map(([k, v]) => {
       const label = k.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
-      const val   = Array.isArray(v) ? v.slice(0, 2).join(', ') : String(v);
-      return `<strong>${label}:</strong> ${val}`;
+      const val   = Array.isArray(v) ? v.slice(0,2).join(', ') : String(v);
+      return `${label}: <strong>${val}</strong>`;
     });
-    para2 += attrLines.join(' — ') + '. ';
+    para2 += `Key indicators — ${attrParts.join('; ')}. `;
   }
 
-  // Occupants
+  // Planets occupying this house
   if (occupants.length > 0) {
-    const occDesc = occupants.map(p => {
+    const occParts = occupants.map(p => {
       const pd = PLANET_DATA[p];
       return pd ? `${p} (${pd.karakatva[0]})` : p;
-    }).join(' and ');
-    para2 += `${occDesc} ${occupants.length > 1 ? 'are' : 'is'} sitting in this house and add their energy directly. `;
+    });
+    para2 += `${occParts.join(' and ')} ${occupants.length > 1 ? 'are' : 'is'} placed in this house and add their energy directly to this area. `;
   }
 
-  // ── PARAGRAPH 3: Current period (TIME) or permanent note (LIFE) ──
+  // ── PARAGRAPH 3: Current period status ──
   let para3 = '';
 
   if (se.type === 'Life') {
-    para3 += `This is a permanent chart reading — it stays constant regardless of DBA period. `;
+    para3 = `This is a permanent reading — it reflects a fixed pattern in the chart and doesn't change with DBA periods. `;
     if (promise.mainPresent) {
-      para3 += `It is strongly embedded in the chart and will be a consistent theme throughout life.`;
+      para3 += `This pattern is strongly present and will be a consistent theme throughout life.`;
     } else if (promise.clusterHits.length > 0) {
-      para3 += `This trait is present but expressed indirectly rather than as the dominant feature.`;
+      para3 += `This trait is present but works indirectly rather than as the dominant feature.`;
     } else {
-      para3 += `This trait is not prominently activated in this chart.`;
+      para3 += `This trait is not strongly activated in this chart.`;
     }
   } else if (dba) {
+    // AD gate
     if (dba.adGate === 'wide_open') {
-      para3 += `Right now the AD lord <strong>${dba_ad}</strong> directly opens this house — this topic is active and current. `;
+      para3 = `Right now the AD lord <strong>${dba_ad}</strong> directly opens this house — this topic is live and active in the current period. `;
     } else if (dba.adGate === 'partial') {
-      para3 += `The AD lord <strong>${dba_ad}</strong> partially supports this — events are possible but not at full strength. `;
+      para3 = `The AD lord <strong>${dba_ad}</strong> partially supports this — activity is possible but not at full strength. `;
     } else {
-      para3 += `The current AD lord <strong>${dba_ad}</strong> doesn't open this house — this topic is not in the primary window right now. `;
+      para3 = `The AD lord <strong>${dba_ad}</strong> doesn't open this house directly — this topic is not the main focus in the current period. `;
     }
 
+    // DBA score in plain words
     if (dba.verdict === 'strongly_active') {
-      para3 += `Overall DBA score is strong (${dba.score > 0 ? '+' : ''}${dba.score}) — one of the most active topics this period. `;
+      para3 += `The combined DBA score is high (${dba.score > 0 ? '+' : ''}${dba.score}) — this is one of the most active topics right now. `;
     } else if (dba.verdict === 'active') {
-      para3 += `DBA score is good (+${dba.score}) — actively running in the current period. `;
+      para3 += `DBA score is solid (+${dba.score}) — this is running actively in the current period. `;
     } else if (dba.verdict === 'moderately_active') {
-      para3 += `DBA score is moderate (+${dba.score}) — some movement but not at peak. `;
+      para3 += `DBA score is moderate (+${dba.score}) — some movement is happening, but not at peak. `;
     } else if (dba.verdict === 'weakly_active') {
-      para3 += `DBA score is low — background activity, not the primary focus. `;
+      para3 += `DBA score is low — background energy only, not the primary focus right now. `;
     } else if (dba.verdict === 'possible') {
-      para3 += `Possible in this period but not strongly timed — a future period will be more aligned. `;
+      para3 += `This is possible in the current period but not strongly timed — a better window will come. `;
     } else {
-      para3 += `This period is not the right window — belongs to a different DBA timing. `;
+      para3 += `The current DBA period is not the right window for this topic. `;
     }
 
-    // MD context note if meaningful
+    // MD context — only if meaningful (support type) and avoid raw table dump
     if (dba_md && chartData.planetSig) {
       const mdSig = chartData.planetSig[dba_md] || [];
-      const mdCtx = mdSig.map(h => getContextualMeaning(houseNum, h)).find(c => c && c.s === 'support');
-      if (mdCtx) para3 += `At Mahadasha level (${dba_md}): ${mdCtx.m.toLowerCase()}.`;
+      const mdSupportHit = mdSig
+        .map(h => ({ h, c: getContextualMeaning(houseNum, h) }))
+        .find(x => x.c && x.c.s === 'support' && x.c.m);
+      if (mdSupportHit) {
+        const mdCtx = mdSupportHit.c.m.split(/[.—]/)[0].trim().toLowerCase();
+        para3 += `At the Mahadasha level, ${dba_md} (H${mdSupportHit.h}) adds: ${mdCtx}.`;
+      }
     }
   }
 
-  return [para1, para2, para3].filter(p => p.trim()).join('<br><br>');
+  return [para1.trim(), para2.trim(), para3.trim()].filter(p => p).join('<br><br>');
 }
+
 
 
 /**
