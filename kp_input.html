@@ -24,23 +24,40 @@
     <div class="progress-step"></div>
   </div>
 
-  <!-- ══ PDF UPLOAD SECTION ══ -->
-  <div class="pdf-upload-section" id="pdf-upload-section">
+  <!-- ══ INPUT MODE TOGGLE ══ -->
+  <div class="input-mode-bar">
+    <div class="input-mode-label">How would you like to enter chart data?</div>
+    <div class="input-mode-tabs">
+      <button class="mode-tab active" id="tab-manual" onclick="switchMode('manual')">
+        ✏️ Manual Entry
+      </button>
+      <button class="mode-tab" id="tab-pdf" onclick="switchMode('pdf')">
+        📄 Upload AstroSage PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ PDF UPLOAD PANEL (hidden by default) ══ -->
+  <div class="pdf-upload-section" id="pdf-upload-section" style="display:none">
     <div class="pdf-upload-inner">
       <div class="pdf-upload-icon">📄</div>
       <div class="pdf-upload-text">
         <strong>Auto-fill from AstroSage PDF</strong>
-        <span>Upload your KP chart PDF from AstroSage — all fields fill automatically in seconds</span>
+        <span>Upload your KP System report PDF from AstroSage.com — all fields fill automatically</span>
         <span class="pdf-privacy-note">🔒 Processed entirely in your browser — PDF never leaves your device</span>
       </div>
       <div class="pdf-upload-actions">
         <label class="btn-primary pdf-upload-btn" for="pdf-file-input">
-          Upload PDF
+          Choose PDF
         </label>
         <input type="file" id="pdf-file-input" accept=".pdf" style="display:none" onchange="handlePDFUpload(this)">
       </div>
     </div>
     <div class="pdf-status" id="pdf-status" style="display:none"></div>
+    <div class="pdf-note">
+      After upload, you can still edit any field manually below.
+      Sections are auto-filled — scroll down to verify.
+    </div>
   </div>
 
   <!-- ══ SECTION 1 — NATIVE DETAILS ══ -->
@@ -367,36 +384,40 @@ function parseDate(str) {
 function findCurrentDBA(text) {
   const today = new Date();
 
-  // Find all MD-AD blocks: "MD -- AD\nFrom DD/MM/YY - To DD/MM/YY"
-  const blockRx = /(\w+)\s*--\s*(\w+)\s*\nFrom\s+([\d\/\s]+?)\s*-\s*To\s+([\d\/\s]+)/gm;
-  // Find PD entries within blocks: "PD DD/MM/YY"
-  const pdRx = /^(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+([\d\/\s]+)$/gm;
+  // Normalize text — PDF.js sometimes adds extra spaces
+  const norm = text.replace(/\s+/g, ' ');
+
+  // Pattern: "MD -- AD From DD/ MM/YY - To DD/ MM/YY"
+  const blockRx = /(\w+)\s*--\s*(\w+)\s+From\s+([\d]+\/\s*[\d]+\/\s*[\d]+)\s*-\s*To\s+([\d]+\/\s*[\d]+\/\s*[\d]+)/g;
+  // PD pattern: "PD DD/ MM/YY"
+  const pdRx = /(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+([\d]+\/\s*[\d]+\/\s*[\d]+)/g;
 
   let current = { md: null, ad: null, pd: null };
 
   let match;
-  while ((match = blockRx.exec(text)) !== null) {
+  while ((match = blockRx.exec(norm)) !== null) {
     const md = match[1];
     const ad = match[2];
+    // Skip if MD=AD and it's a period header not a block
+    if (['From','To','Page','Dasa'].includes(md)) continue;
     const fromD = parseDate(match[3]);
     const toD   = parseDate(match[4]);
     if (!fromD || !toD) continue;
+
     if (today >= fromD && today <= toD) {
       current.md = PMAP[md] || md;
       current.ad = PMAP[ad] || ad;
 
-      // Find PD within this block
+      // Find PD entries after this block header
       const blockStart = match.index + match[0].length;
-      // Find next block start
-      const nextBlockMatch = /\n\w+\s*--\s*\w+/.exec(text.slice(blockStart));
-      const blockEnd = nextBlockMatch
-        ? blockStart + nextBlockMatch.index
-        : blockStart + 800;
-      const blockText = text.slice(blockStart, blockEnd);
+      // Find next block
+      const nextBlock = /\w+\s*--\s*\w+/.exec(norm.slice(blockStart));
+      const blockEnd = nextBlock ? blockStart + nextBlock.index : blockStart + 600;
+      const blockText = norm.slice(blockStart, blockEnd);
 
       let prevDate = fromD;
-      let pdMatch;
       pdRx.lastIndex = 0;
+      let pdMatch;
       while ((pdMatch = pdRx.exec(blockText)) !== null) {
         const pdPlanet = pdMatch[1];
         const pdEndDate = parseDate(pdMatch[2]);
@@ -482,15 +503,13 @@ function parseAstroSagePDF(text) {
   const nameM = text.match(/Name\s+([A-Za-z\s]+?)\s+(?:Sunrise|Sex)/);
   if (nameM) result.native.name = nameM[1].trim();
 
-  const dateM = text.match(/Date\s+([\d.]+)/);
+  const dateM = text.match(/Date\s+([\d]+)\.([\d]+)\.([\d]+)/);
   if (dateM) {
-    const parts = dateM[1].split('.');
-    if (parts.length === 3) {
-      const d = parts[0].padStart(2,'0');
-      const m = parts[1].padStart(2,'0');
-      const y = parts[2].length === 2 ? '19'+parts[2] : parts[2];
-      result.native.dob = `${y}-${m}-${d}`;
-    }
+    const d = dateM[1].padStart(2,'0');
+    const m = dateM[2].padStart(2,'0');
+    let y = dateM[3];
+    if (y.length === 2) y = parseInt(y) < 50 ? '20'+y : '19'+y;
+    result.native.dob = `${y}-${m}-${d}`;
   }
 
   const timeM = text.match(/Time of Birth\s+([\d.]+)/);
@@ -504,18 +523,22 @@ function parseAstroSagePDF(text) {
   const placeM = text.match(/Place\s+([A-Za-z]+)/);
   if (placeM) result.native.place = placeM[1];
 
-  const latM = text.match(/Latitude\s+([\d.]+\.[NS])/);
+  const latM = text.match(/Latitude\s+([\d.]+)\.([NS])/);
   if (latM) {
-    const lp = latM[1];
-    const num = parseFloat(lp);
-    result.native.lat = lp.includes('S') ? -num : num;
+    const parts = latM[1].split('.');
+    const deg = parseInt(parts[0]);
+    const min = parseInt(parts[1] || '0');
+    const val = deg + min/60;
+    result.native.lat = latM[2] === 'S' ? -val.toFixed(4) : val.toFixed(4);
   }
 
-  const lonM = text.match(/Longitude\s+([\d.]+\.[EW])/);
+  const lonM = text.match(/Longitude\s+([\d.]+)\.([EW])/);
   if (lonM) {
-    const lp = lonM[1];
-    const num = parseFloat(lp);
-    result.native.lon = lp.includes('W') ? -num : num;
+    const parts = lonM[1].split('.');
+    const deg = parseInt(parts[0]);
+    const min = parseInt(parts[1] || '0');
+    const val = deg + min/60;
+    result.native.lon = lonM[2] === 'W' ? -val.toFixed(4) : val.toFixed(4);
   }
 
   const sexM = text.match(/Sex\s+(Male|Female)/i);
@@ -677,13 +700,26 @@ function fillFormFromParsed(parsed) {
   }
   if (parsed.native.place) {
     const el = document.getElementById('native-place');
-    if (el) el.value = parsed.native.place;
+    if (el) {
+      el.value = parsed.native.place;
+      // Trigger geocoding to get lat/lon
+      if (parsed.native.lat && parsed.native.lon) {
+        // Already have lat/lon from PDF — set directly
+        const latEl = document.getElementById('native-lat');
+        const lonEl = document.getElementById('native-lon');
+        if (latEl) latEl.value = parsed.native.lat;
+        if (lonEl) lonEl.value = parsed.native.lon;
+      } else {
+        // Try to geocode the place name
+        setTimeout(() => searchPlace(parsed.native.place, 'birth'), 300);
+      }
+    }
   }
-  if (parsed.native.lat) {
+  if (parsed.native.lat && !document.getElementById('native-lat').value) {
     const el = document.getElementById('native-lat');
     if (el) el.value = parsed.native.lat;
   }
-  if (parsed.native.lon) {
+  if (parsed.native.lon && !document.getElementById('native-lon').value) {
     const el = document.getElementById('native-lon');
     if (el) el.value = parsed.native.lon;
   }
@@ -766,8 +802,9 @@ function fillFormFromParsed(parsed) {
     }
   });
 
-  // Update status
-  updateStatus();
+  // Update status — deferred until main script loads
+  if (typeof updateStatus === 'function') updateStatus();
+  else setTimeout(() => { if (typeof updateStatus === 'function') updateStatus(); }, 100);
   return report;
 }
 </script>
@@ -790,7 +827,21 @@ const RP_LABELS = [
   {id:'rp-moon-sl', label:'Moon Sub Lord'},
 ];
 
-// ── Planet Sig Table ─────────────────────────────────
+// ── Input Mode Toggle ─────────────────────────────
+function switchMode(mode) {
+  const pdfPanel = document.getElementById('pdf-upload-section');
+  const tabManual = document.getElementById('tab-manual');
+  const tabPDF = document.getElementById('tab-pdf');
+  if (mode === 'pdf') {
+    pdfPanel.style.display = 'block';
+    tabManual.classList.remove('active');
+    tabPDF.classList.add('active');
+  } else {
+    pdfPanel.style.display = 'none';
+    tabManual.classList.add('active');
+    tabPDF.classList.remove('active');
+  }
+}
 function buildPlanetSigTable() {
   const tbody = document.getElementById('planet-sig-body');
   PLANETS.forEach(p => {
