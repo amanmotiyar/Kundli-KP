@@ -448,6 +448,85 @@ function findCurrentDBA(text) {
   return result;
 }
 
+// ── PDF Upload Handler ────────────────────────────
+async function handlePDFUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('pdf-status');
+  statusEl.style.display = 'block';
+  statusEl.className = 'pdf-status loading';
+  statusEl.innerHTML = '⏳ Reading PDF...';
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+
+    for (let i = 1; i <= Math.min(pdf.numPages, 6); i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+
+      // Sort items by row (y) then column (x) — gives row-based reading order
+      const items = content.items.filter(item => item.str.trim().length > 0);
+      items.sort((a, b) => {
+        const yA = Math.round(a.transform[5]);
+        const yB = Math.round(b.transform[5]);
+        const yDiff = yB - yA;
+        if (Math.abs(yDiff) > 3) return yDiff;
+        return a.transform[4] - b.transform[4];
+      });
+
+      // Group into visual lines (items within 3 y-units on same line)
+      const rowLines = [];
+      let currentRow = [], lastY = null;
+      for (const item of items) {
+        const y = Math.round(item.transform[5]);
+        if (lastY !== null && Math.abs(y - lastY) > 3) {
+          if (currentRow.length > 0) {
+            rowLines.push(currentRow.map(it => it.str.trim()).filter(Boolean).join(' '));
+          }
+          currentRow = [];
+        }
+        currentRow.push(item);
+        lastY = y;
+      }
+      if (currentRow.length > 0) {
+        rowLines.push(currentRow.map(it => it.str.trim()).filter(Boolean).join(' '));
+      }
+
+      fullText += rowLines.join('\n') + '\n';
+    }
+
+    if (!fullText.includes('Cuspal Positions') && !fullText.includes('KP System')) {
+      throw new Error('This does not appear to be an AstroSage KP chart PDF. Please upload the correct file.');
+    }
+
+    const parsed = parseAstroSagePDF(fullText);
+    const report = fillFormFromParsed(parsed);
+
+    statusEl.className = 'pdf-status success';
+    statusEl.innerHTML = `
+      <strong>✓ Chart loaded successfully</strong><br>
+      <div class="parse-item"><span class="tick">✓</span> Native: ${parsed.native.name || 'Found'}</div>
+      <div class="parse-item"><span class="${report.cusps === 12 ? 'tick' : 'warn'}">${report.cusps === 12 ? '✓' : '⚠'}</span> Cusps: ${report.cusps}/12 loaded</div>
+      <div class="parse-item"><span class="${report.planets >= 9 ? 'tick' : 'warn'}">${report.planets >= 9 ? '✓' : '⚠'}</span> Planet positions: ${report.planets}/9 loaded</div>
+      <div class="parse-item"><span class="${report.sigs >= 9 ? 'tick' : 'warn'}">${report.sigs >= 9 ? '✓' : '⚠'}</span> Planet significations: ${report.sigs}/9 loaded</div>
+      <div class="parse-item"><span class="${parsed.dba.md ? 'tick' : 'warn'}">${parsed.dba.md ? '✓' : '⚠'}</span> DBA: ${parsed.dba.md || '?'} / ${parsed.dba.ad || '?'} / ${parsed.dba.pd || '?'}</div>
+      <div class="parse-item"><span class="${parsed.rp.ascNL ? 'tick' : 'warn'}">${parsed.rp.ascNL ? '✓' : '⚠'}</span> Ruling planets loaded</div>
+      <br><em style="color:var(--text-muted)">Please verify the data and fill DBA period dates manually.</em>
+    `;
+
+  } catch(err) {
+    statusEl.className = 'pdf-status error';
+    statusEl.innerHTML = `<strong>✗ Parse error:</strong> ${err.message}<br>
+      <em>You can still enter data manually below.</em>`;
+    console.error('PDF parse error:', err);
+  }
+
+  input.value = '';
+}
+
 // ── Core parser: row-sorted PDF text → structured data ──
 // Input: text where each visual row is one line (items sorted by y then x)
 function parseAstroSagePDF(text) {
