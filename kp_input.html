@@ -220,6 +220,9 @@
             <th style="width:80px;">Planet</th>
             <th style="min-width:120px;">Sign (Rashi)</th>
             <th style="min-width:120px;">Degree</th>
+            <th style="min-width:110px;">
+              Nakshatra Lord <span class="info-tip" data-tip="Auto-computed from sign + degree. This is the NL of SL used in analysis.">?</span>
+            </th>
             <th style="min-width:60px;">Retro?</th>
           </tr>
         </thead>
@@ -815,6 +818,13 @@ function fillFormFromParsed(parsed) {
   // Update status — deferred until main script loads
   if (typeof updateStatus === 'function') updateStatus();
   else setTimeout(() => { if (typeof updateStatus === 'function') updateStatus(); }, 100);
+
+  // Recompute NL column for all planets after fill
+  setTimeout(() => {
+    if (typeof computePlanetNL === 'function') {
+      ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'].forEach(p => computePlanetNL(p));
+    }
+  }, 50);
   return report;
 }
 </script>
@@ -887,12 +897,78 @@ function buildPlanetPosTable() {
         <div class="planet-dot" style="background:${pColor}"></div>
         <span>${p}</span>
       </div></td>
-      <td><select id="ppos-${p}-sign"><option value="">— sign —</option>${signOpts}</select></td>
+      <td><select id="ppos-${p}-sign" onchange="computePlanetNL('${p}')">
+        <option value="">— sign —</option>${signOpts}
+      </select></td>
       <td><input type="text" id="ppos-${p}-deg" class="deg-input" placeholder="DDMMSS"
-           maxlength="8" oninput="formatDegree(this)" onblur="formatDegreeOnBlur(this)"></td>
+           maxlength="8" oninput="formatDegree(this); computePlanetNL('${p}')"
+           onblur="formatDegreeOnBlur(this); computePlanetNL('${p}')"></td>
+      <td id="ppos-${p}-nl-cell" style="text-align:center;">
+        <span id="ppos-${p}-nl" style="
+          font-family:'Cinzel',serif; font-size:12px;
+          color:var(--text-muted); letter-spacing:0.5px;">—</span>
+      </td>
       <td style="text-align:center"><input type="checkbox" id="ppos-${p}-retro"></td>`;
     tbody.appendChild(tr);
   });
+}
+
+// ── Auto-compute Nakshatra Lord from sign + degree ──
+// Uses the same nakshatra table as the engine
+const NAKSHATRA_DATA_INPUT = [
+  { start:0,       lord:'Ketu'    }, { start:13.333,  lord:'Venus'   },
+  { start:26.667,  lord:'Sun'     }, { start:40.000,  lord:'Moon'    },
+  { start:53.333,  lord:'Mars'    }, { start:66.667,  lord:'Rahu'    },
+  { start:80.000,  lord:'Jupiter' }, { start:93.333,  lord:'Saturn'  },
+  { start:106.667, lord:'Mercury' }, { start:120.000, lord:'Ketu'    },
+  { start:133.333, lord:'Venus'   }, { start:146.667, lord:'Sun'     },
+  { start:160.000, lord:'Moon'    }, { start:173.333, lord:'Mars'    },
+  { start:186.667, lord:'Rahu'    }, { start:200.000, lord:'Jupiter' },
+  { start:213.333, lord:'Saturn'  }, { start:226.667, lord:'Mercury' },
+  { start:240.000, lord:'Ketu'    }, { start:253.333, lord:'Venus'   },
+  { start:266.667, lord:'Sun'     }, { start:280.000, lord:'Moon'    },
+  { start:293.333, lord:'Mars'    }, { start:306.667, lord:'Rahu'    },
+  { start:320.000, lord:'Jupiter' }, { start:333.333, lord:'Saturn'  },
+  { start:346.667, lord:'Mercury' }
+];
+
+const PLANET_NL_COLORS = {
+  Sun:'var(--planet-sun)', Moon:'var(--planet-moon)', Mars:'var(--planet-mars)',
+  Mercury:'var(--planet-mercury)', Jupiter:'var(--planet-jupiter)',
+  Venus:'var(--planet-venus)', Saturn:'var(--planet-saturn)',
+  Rahu:'var(--planet-rahu)', Ketu:'var(--planet-ketu)'
+};
+
+function computePlanetNL(planet) {
+  const signEl  = document.getElementById(`ppos-${planet}-sign`);
+  const degEl   = document.getElementById(`ppos-${planet}-deg`);
+  const nlSpan  = document.getElementById(`ppos-${planet}-nl`);
+  if (!signEl || !degEl || !nlSpan) return;
+
+  const sign   = signEl.value;
+  const raw    = degEl.dataset.raw || '';
+  if (!sign || raw.length < 2) {
+    nlSpan.textContent = '—';
+    nlSpan.style.color = 'var(--text-muted)';
+    return;
+  }
+
+  const signIdx  = SIGNS.indexOf(sign);
+  if (signIdx < 0) return;
+  const d = parseInt(raw.slice(0,2)) || 0;
+  const m = parseInt(raw.slice(2,4)) || 0;
+  const s = parseInt(raw.slice(4,6)) || 0;
+  const absLong  = signIdx * 30 + d + m/60 + s/3600;
+  const norm     = ((absLong % 360) + 360) % 360;
+
+  let found = NAKSHATRA_DATA_INPUT[0];
+  for (let i = NAKSHATRA_DATA_INPUT.length - 1; i >= 0; i--) {
+    if (norm >= NAKSHATRA_DATA_INPUT[i].start) { found = NAKSHATRA_DATA_INPUT[i]; break; }
+  }
+
+  nlSpan.textContent = found.lord;
+  nlSpan.style.color = PLANET_NL_COLORS[found.lord] || 'var(--gold-dim)';
+  nlSpan.style.fontWeight = '600';
 }
 function buildCuspTable() {
   const tbody = document.getElementById('cusp-body');
