@@ -165,6 +165,34 @@
     </div>
   </div>
 
+  <!-- ══ SECTION 2B — PLANET POSITIONS ══ -->
+  <div class="section" id="sec-planet-pos">
+    <div class="section-header" onclick="toggleSection('sec-planet-pos')">
+      <span class="section-num">02B</span>
+      <span class="section-title">Planet Positions</span>
+      <span class="section-badge">Sign & Degree</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-box">
+        Enter each planet's sign and degree from your KP chart.
+        Used to derive the true Star-lord of Sub-lord (NL of SL) for accurate interpretation.
+        Degree entry: type digits only — e.g. <strong>232616</strong> → <strong>23°26′16″</strong>
+      </div>
+      <table class="cusp-table" id="planet-pos-table">
+        <thead>
+          <tr>
+            <th style="width:80px;">Planet</th>
+            <th style="min-width:120px;">Sign (Rashi)</th>
+            <th style="min-width:120px;">Degree</th>
+            <th style="min-width:60px;">Retro?</th>
+          </tr>
+        </thead>
+        <tbody id="planet-pos-body"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- ══ SECTION 3 — CUSP DATA ══ -->
   <div class="section" id="sec-cusps">
     <div class="section-header" onclick="toggleSection('sec-cusps')">
@@ -302,7 +330,25 @@ function buildPlanetSigTable() {
   });
 }
 
-// ── Cusp Table ───────────────────────────────────────
+// ── Planet Positions Table ────────────────────────
+function buildPlanetPosTable() {
+  const tbody = document.getElementById('planet-pos-body');
+  const signOpts = SIGNS.map(s=>`<option value="${s}">${s}</option>`).join('');
+  PLANETS.forEach(p => {
+    const tr = document.createElement('tr');
+    const pColor = PLANET_COLORS[p] || 'var(--gold-dim)';
+    tr.innerHTML = `
+      <td><div class="planet-name-cell">
+        <div class="planet-dot" style="background:${pColor}"></div>
+        <span>${p}</span>
+      </div></td>
+      <td><select id="ppos-${p}-sign"><option value="">— sign —</option>${signOpts}</select></td>
+      <td><input type="text" id="ppos-${p}-deg" class="deg-input" placeholder="DDMMSS"
+           maxlength="8" oninput="formatDegree(this)" onblur="formatDegreeOnBlur(this)"></td>
+      <td style="text-align:center"><input type="checkbox" id="ppos-${p}-retro"></td>`;
+    tbody.appendChild(tr);
+  });
+}
 function buildCuspTable() {
   const tbody = document.getElementById('cusp-body');
   const signOpts = SIGNS.map(s=>`<option value="${s}">${s}</option>`).join('');
@@ -349,7 +395,45 @@ function formatDegreeOnBlur(input) {
   input.value = `${d}°${m}′${s}″`;
 }
 
-function getDegreeDecimal(raw) {
+// ── Derive which house a planet occupies ─────────────
+function derivePlanetHouse(planetSign, planetDegRaw, cusps) {
+  if (!planetSign || !cusps) return null;
+  const SIGN_ORDER = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                      'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  const signIdx = SIGN_ORDER.indexOf(planetSign);
+  if (signIdx < 0) return null;
+
+  const pDeg = signIdx * 30 + getDegreeDecimal(planetDegRaw || '000000');
+
+  // Get absolute longitudes of all cusps
+  const cuspLongs = [];
+  for (let h = 1; h <= 12; h++) {
+    const c = cusps[h];
+    if (!c || !c.sign) continue;
+    const cSignIdx = SIGN_ORDER.indexOf(c.sign);
+    if (cSignIdx < 0) continue;
+    const cDeg = cSignIdx * 30 + getDegreeDecimal(c.deg_raw || '000000');
+    cuspLongs.push({ house: h, long: cDeg });
+  }
+  if (cuspLongs.length < 12) return null;
+
+  // Find which house the planet falls in
+  for (let i = 0; i < 12; i++) {
+    const current = cuspLongs[i].long;
+    const next    = cuspLongs[(i + 1) % 12].long;
+    const house   = cuspLongs[i].house;
+
+    let inHouse = false;
+    if (current <= next) {
+      inHouse = pDeg >= current && pDeg < next;
+    } else {
+      // Wraps around 360
+      inHouse = pDeg >= current || pDeg < next;
+    }
+    if (inHouse) return house;
+  }
+  return null;
+}
   if (!raw || raw.length < 6) return null;
   const d = parseInt(raw.slice(0,2));
   const m = parseInt(raw.slice(2,4));
@@ -583,8 +667,21 @@ function collectData() {
     };
   });
 
-  // Ruling planets
-  RP_LABELS.forEach(rp => {
+  // Planet positions (sign + degree for NL of SL derivation)
+  const planets = {};
+  PLANETS.forEach(p => {
+    const sign   = document.getElementById(`ppos-${p}-sign`)?.value || '';
+    const degEl  = document.getElementById(`ppos-${p}-deg`);
+    const degRaw = degEl ? (degEl.dataset.raw || '') : '';
+    const retro  = document.getElementById(`ppos-${p}-retro`)?.checked || false;
+    // Derive which house the planet occupies from cusp degrees
+    let house = null;
+    if (sign) {
+      house = derivePlanetHouse(sign, degRaw, data.cusps);
+    }
+    planets[p] = { sign, deg_raw: degRaw, retro, house };
+  });
+  data.planets = planets;
     data.rp[rp.id] = document.getElementById(rp.id).value;
   });
 
@@ -694,6 +791,7 @@ document.addEventListener('change', updateStatus);
 document.addEventListener('input',  updateStatus);
 
 buildPlanetSigTable();
+buildPlanetPosTable();
 buildCuspTable();
 buildDBASelects();
 buildRPGrid();
