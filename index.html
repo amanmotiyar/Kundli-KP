@@ -366,290 +366,220 @@ function parseAstroSageDeg(str) {
 }
 
 // ── Parse date "DD/ MM/YY" or "DD/MM/YY" ─────────
+// ── Parse date "DD/ MM/YY" ────────────────────────
 function parseDate(str) {
   if (!str) return null;
   const parts = str.trim().split('/');
   if (parts.length < 3) return null;
-  const d = parseInt(parts[0]);
-  const m = parseInt(parts[1]);
+  const d = parseInt(parts[0]), m = parseInt(parts[1]);
   let y = parseInt(parts[2]);
+  if (isNaN(d)||isNaN(m)||isNaN(y)) return null;
   if (y < 100) y += (y < 50 ? 2000 : 1900);
-  return new Date(y, m - 1, d);
+  return new Date(y, m-1, d);
 }
 
-// ── Find current DBA from text ────────────────────
+// ── Find current DBA from row-sorted pratyantar text ──
 function findCurrentDBA(text) {
   const today = new Date();
+  const PMAP_LOCAL = {SUN:'Sun',MON:'Moon',MAR:'Mars',MER:'Mercury',JUP:'Jupiter',VEN:'Venus',SAT:'Saturn',RAH:'Rahu',KET:'Ketu'};
 
-  // Normalize text — PDF.js sometimes adds extra spaces
-  const norm = text.replace(/\s+/g, ' ');
+  // Each pratyantar page has rows like:
+  // "RAH -- MON RAH -- MAR JUP -- JUP ..."  (all block headers on one row)
+  // "From 19/ 5/25 - To 19/11/26 From 19/11/26 - To 7/12/27 ..." (all From/To on one row)
+  // "MON 4/ 7/25  MAR 11/12/26  JUP 20/ 3/28 ..."  (PD entries across columns)
 
-  // Pattern: "MD -- AD From DD/ MM/YY - To DD/ MM/YY"
-  const blockRx = /(\w+)\s*--\s*(\w+)\s+From\s+([\d]+\/\s*[\d]+\/\s*[\d]+)\s*-\s*To\s+([\d]+\/\s*[\d]+\/\s*[\d]+)/g;
-  // PD pattern: "PD DD/ MM/YY"
-  const pdRx = /(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+([\d]+\/\s*[\d]+\/\s*[\d]+)/g;
-
-  let current = { md: null, ad: null, pd: null };
-
-  let match;
-  while ((match = blockRx.exec(norm)) !== null) {
-    const md = match[1];
-    const ad = match[2];
-    // Skip if MD=AD and it's a period header not a block
-    if (['From','To','Page','Dasa'].includes(md)) continue;
-    const fromD = parseDate(match[3]);
-    const toD   = parseDate(match[4]);
+  // Strategy: find all From/To pairs, find the one where today falls in
+  // Then find the block header from the row just before it
+  const allFromToRx = /From\s+([\d]+\/\s*[\d]+\/\s*[\d]+)\s*-\s*To\s+([\d]+\/\s*[\d]+\/\s*[\d]+)/g;
+  let activeBlock = null;
+  let fm;
+  while ((fm = allFromToRx.exec(text)) !== null) {
+    const fromD = parseDate(fm[1]), toD = parseDate(fm[2]);
     if (!fromD || !toD) continue;
-
     if (today >= fromD && today <= toD) {
-      current.md = PMAP[md] || md;
-      current.ad = PMAP[ad] || ad;
-
-      // Find PD entries after this block header
-      const blockStart = match.index + match[0].length;
-      // Find next block
-      const nextBlock = /\w+\s*--\s*\w+/.exec(norm.slice(blockStart));
-      const blockEnd = nextBlock ? blockStart + nextBlock.index : blockStart + 600;
-      const blockText = norm.slice(blockStart, blockEnd);
-
-      let prevDate = fromD;
-      pdRx.lastIndex = 0;
-      let pdMatch;
-      while ((pdMatch = pdRx.exec(blockText)) !== null) {
-        const pdPlanet = pdMatch[1];
-        const pdEndDate = parseDate(pdMatch[2]);
-        if (!pdEndDate) continue;
-        if (today >= prevDate && today <= pdEndDate) {
-          current.pd = PMAP[pdPlanet] || pdPlanet;
-          break;
-        }
-        prevDate = pdEndDate;
+      // Find FIRST block header before this position
+      const before = text.slice(Math.max(0, fm.index - 400), fm.index);
+      const headers = [...before.matchAll(/(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s*--\s*(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g)];
+      if (headers.length > 0) {
+        activeBlock = { md: headers[0][1], ad: headers[0][2], from: fromD, to: toD, pos: fm.index };
+        break;
       }
-      break;
     }
   }
+  if (!activeBlock) return { md: null, ad: null, pd: null };
 
-  return current;
-}
-
-// ── Main PDF parser ───────────────────────────────
-async function handlePDFUpload(input) {
-  const file = input.files[0];
-  if (!file) return;
-
-  const statusEl = document.getElementById('pdf-status');
-  statusEl.style.display = 'block';
-  statusEl.className = 'pdf-status loading';
-  statusEl.innerHTML = '⏳ Reading PDF...';
-
-  try {
-    // Read file as ArrayBuffer
-    const arrayBuffer = await file.arrayBuffer();
-
-    // Extract text using PDF.js
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-    for (let i = 1; i <= Math.min(pdf.numPages, 6); i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items.map(item => item.str).join(' ') + '\n';
-      fullText += pageText;
-    }
-
-    // Check if it's an AstroSage KP chart
-    if (!fullText.includes('Cuspal Positions') && !fullText.includes('KP System')) {
-      throw new Error('This does not appear to be an AstroSage KP chart PDF. Please upload the correct file.');
-    }
-
-    // Parse the data
-    const parsed = parseAstroSagePDF(fullText);
-    const report = fillFormFromParsed(parsed);
-
-    // Show results
-    statusEl.className = 'pdf-status success';
-    statusEl.innerHTML = `
-      <strong>✓ Chart loaded successfully</strong><br>
-      <div class="parse-item"><span class="tick">✓</span> Native: ${parsed.native.name || 'Found'}</div>
-      <div class="parse-item"><span class="${report.cusps === 12 ? 'tick' : 'warn'}">${report.cusps === 12 ? '✓' : '⚠'}</span> Cusps: ${report.cusps}/12 loaded</div>
-      <div class="parse-item"><span class="${report.planets >= 9 ? 'tick' : 'warn'}">${report.planets >= 9 ? '✓' : '⚠'}</span> Planet positions: ${report.planets} loaded</div>
-      <div class="parse-item"><span class="${report.sigs >= 9 ? 'tick' : 'warn'}">${report.sigs >= 9 ? '✓' : '⚠'}</span> Planet significations: ${report.sigs}/9 loaded</div>
-      <div class="parse-item"><span class="${parsed.dba.md ? 'tick' : 'warn'}">${parsed.dba.md ? '✓' : '⚠'}</span> Current DBA: ${parsed.dba.md || '?'}-${parsed.dba.ad || '?'}-${parsed.dba.pd || '?'}</div>
-      <div class="parse-item"><span class="${parsed.rp.ascNL ? 'tick' : 'warn'}">${parsed.rp.ascNL ? '✓' : '⚠'}</span> Ruling planets loaded</div>
-      <br><em style="color:var(--text-muted)">Please verify the auto-filled data and make corrections if needed.</em>
-    `;
-
-  } catch(err) {
-    statusEl.className = 'pdf-status error';
-    statusEl.innerHTML = `<strong>✗ Parse error:</strong> ${err.message}<br>
-      <em>You can still enter data manually below.</em>`;
-    console.error('PDF parse error:', err);
-  }
-
-  // Reset input so same file can be re-uploaded
-  input.value = '';
-}
-
-// ── Core parser: text → structured data ──────────
-function parseAstroSagePDF(text) {
   const result = {
-    native: {}, cusps: {}, planets: {},
-    planetSig: {}, dba: {}, rp: {}
+    md: PMAP_LOCAL[activeBlock.md] || activeBlock.md,
+    ad: PMAP_LOCAL[activeBlock.ad] || activeBlock.ad,
+    pd: null
   };
 
-  // ── Native details ──
-  // PDF layout: "Sex Male" comes BEFORE "Name Amit Parashar" on page 1
-  // Name appears after "Sex Male\nName " so we match "Name" followed by the name then a line-break or known keyword
-  const nameM = text.match(/\bName\s+([A-Za-z][A-Za-z\s]{1,50}?)(?:\s*[\r\n]|\s+(?:Ayan|Get\s))/);
-  if (nameM) result.native.name = nameM[1].trim();
-
-  const dateM = text.match(/Date\s+([\d]+)\.([\d]+)\.([\d]+)/);
-  if (dateM) {
-    const d = dateM[1].padStart(2,'0');
-    const m = dateM[2].padStart(2,'0');
-    let y = dateM[3];
-    if (y.length === 2) y = parseInt(y) < 50 ? '20'+y : '19'+y;
-    result.native.dob = `${y}-${m}-${d}`;
+  // Find PD: scan rows after the From/To line
+  // Each row has interleaved PD entries: "MON 4/ 7/25  MAR 11/12/26  JUP 20/ 3/28 ..."
+  // Extract all planet+date pairs from these rows and find today's PD
+  const afterText = text.slice(activeBlock.pos, activeBlock.pos + 2000);
+  const pdPairs = [];
+  const pdRx = /(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+([\d]+\/\s*[\d]+\/\s*[\d]+)/g;
+  let pm;
+  while ((pm = pdRx.exec(afterText)) !== null) {
+    const endDate = parseDate(pm[2]);
+    if (endDate) pdPairs.push({ planet: pm[1], endDate });
   }
 
-  const timeM = text.match(/Time of Birth\s+([\d.]+)/);
-  if (timeM) {
-    const tparts = timeM[1].split('.');
-    result.native.tob_h = tparts[0] || '00';
-    result.native.tob_m = tparts[1] || '00';
-    result.native.tob_s = tparts[2] || '00';
+  // Sort by endDate, find which PD today falls in
+  pdPairs.sort((a, b) => a.endDate - b.endDate);
+  let prev = activeBlock.from;
+  for (const pair of pdPairs) {
+    if (today >= prev && today <= pair.endDate) {
+      result.pd = PMAP_LOCAL[pair.planet] || pair.planet;
+      break;
+    }
+    prev = pair.endDate;
+  }
+  return result;
+}
+
+// ── Core parser: row-sorted PDF text → structured data ──
+// Input: text where each visual row is one line (items sorted by y then x)
+function parseAstroSagePDF(text) {
+  const result = { native:{}, cusps:{}, planets:{}, planetSig:{}, dba:{}, rp:{} };
+  const PMAP_LOCAL = {SUN:'Sun',MON:'Moon',MAR:'Mars',MER:'Mercury',JUP:'Jupiter',VEN:'Venus',SAT:'Saturn',RAH:'Rahu',KET:'Ketu'};
+  const P2 = {RA:'Rahu',SU:'Sun',MO:'Moon',MA:'Mars',ME:'Mercury',JU:'Jupiter',VE:'Venus',SA:'Saturn',KE:'Ketu'};
+  const PLANET_NAMES = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+
+  // Split into rows, collapse whitespace
+  const lines = text.split('\n').map(l => l.trim().replace(/\s+/g,' ')).filter(l => l.length > 0);
+  const n = lines.length;
+  const L = (i) => (i>=0&&i<n) ? lines[i] : '';
+  const findLine = (fn) => lines.findIndex(fn);
+
+  // ── NATIVE DETAILS ──
+  // Row 2: "Name Aman Motiyar Sunrise 07.16.48 ..."
+  const nameRow = findLine(l => /^Name\s+[A-Z]/.test(l));
+  if (nameRow >= 0) {
+    const m = L(nameRow).match(/Name\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+?)(?:\s+Sunrise|\s+Get\s)/);
+    if (m) result.native.name = m[1].trim();
   }
 
-  // PDF layout: "Place\nLatitude\nLongitude\nK. P. New\n023-39-53\nKota\n25.21.N"
-  // City name comes after the SID/ayanamsa value (3-digit degree string like "023-39-53")
-  const placeM = text.match(/\d{3}-\d{2}-\d{2}[\s\r\n]+([A-Za-z][A-Za-z\s]{1,30}?)[\s\r\n]/);
-  if (placeM) result.native.place = placeM[1].trim();
-
-  // Lat/Lon are on their own lines: "25.21.N" and "75.50.E"
-  const latM = text.match(/\b(\d{1,3})\.(\d{1,2})\.([NS])\b/);
-  if (latM) {
-    const val = parseInt(latM[1]) + parseInt(latM[2])/60;
-    result.native.lat = latM[3] === 'S' ? (-val).toFixed(4) : val.toFixed(4);
+  // Row 3: "Sex Male Longitude 73.17.E ..."
+  const sexRow = findLine(l => /^Sex\s+(Male|Female)/i.test(l));
+  if (sexRow >= 0) {
+    const m = L(sexRow).match(/Sex\s+(Male|Female)/i);
+    if (m) result.native.gender = m[1].toLowerCase();
+    const lonM = L(sexRow).match(/(\d{1,3})\.(\d{1,2})\.([EW])/);
+    if (lonM) result.native.lon = ((lonM[3]==='W'?-1:1)*(parseInt(lonM[1])+parseInt(lonM[2])/60)).toFixed(4);
   }
 
-  const lonM = text.match(/\b(\d{1,3})\.(\d{1,2})\.([EW])\b/);
-  if (lonM) {
-    const val = parseInt(lonM[1]) + parseInt(lonM[2])/60;
-    result.native.lon = lonM[3] === 'W' ? (-val).toFixed(4) : val.toFixed(4);
+  // Row 4: "Date 9.12.1992 Latitude 28.1.N ..."
+  const dateRow = findLine(l => /^Date\s+\d/.test(l));
+  if (dateRow >= 0) {
+    const dm = L(dateRow).match(/Date\s+(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+    if (dm) result.native.dob = `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`;
+    const latM = L(dateRow).match(/(\d{1,3})\.(\d{1,2})\.([NS])/);
+    if (latM) result.native.lat = ((latM[3]==='S'?-1:1)*(parseInt(latM[1])+parseInt(latM[2])/60)).toFixed(4);
   }
 
-  const sexM = text.match(/Sex\s+(Male|Female)/i);
-  if (sexM) result.native.gender = sexM[1].toLowerCase();
+  // Row 6: "Day Wednesday Place Bikaner Lagna Libra ..."
+  const dayRow = findLine(l => /^Day\s+\w/.test(l));
+  if (dayRow >= 0) {
+    const pm = L(dayRow).match(/Place\s+([A-Za-z][A-Za-z\s]+?)\s+Lagna/);
+    if (pm) result.native.place = pm[1].trim();
+  }
 
-  // ── Cuspal positions ──
-  // Format: "1 066-01-32 MER MAR MON JUP"
-  const cuspRx = /(\d{1,2})\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g;
-  let cm;
-  while ((cm = cuspRx.exec(text)) !== null) {
-    const h = parseInt(cm[1]);
-    if (h >= 1 && h <= 12) {
-      const degInfo = parseAstroSageDeg(cm[2]);
-      result.cusps[h] = {
-        sign:    degInfo.sign,
-        deg_raw: degInfo.raw,
-        deg_fmt: cm[2],
-        rl:      PMAP[cm[3]] || cm[3],
-        nl:      PMAP[cm[4]] || cm[4],
-        sl:      PMAP[cm[5]] || cm[5],
-        ss:      PMAP[cm[6]] || cm[6]
-      };
+  // Row 7: "Time of Birth 3.42.0 ..."
+  const tobRow = findLine(l => /^Time of Birth\s+\d/.test(l));
+  if (tobRow >= 0) {
+    const tm = L(tobRow).match(/Time of Birth\s+(\d{1,2})\.(\d{1,2})\.(\d{1,2})/);
+    if (tm) {
+      result.native.tob_h = tm[1].padStart(2,'0');
+      result.native.tob_m = tm[2].padStart(2,'0');
+      result.native.tob_s = tm[3].padStart(2,'0');
     }
   }
 
-  // ── Planetary positions ──
-  // Saturn[R] may appear as "Saturn[R]" or "Saturn [R]" depending on PDF.js extraction
-  const planetRx = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn\s*(?:\[R\])?|Rahu|Ketu)\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g;
-  let pm;
-  while ((pm = planetRx.exec(text)) !== null) {
-    const name  = pm[1].replace(/\s*\[R\]/, '').trim();
-    const retro = pm[1].includes('[R]');
-    const degInfo = parseAstroSageDeg(pm[2]);
-    // Derive house occupation from absolute degree vs cusps
-    result.planets[name] = {
-      sign:    degInfo.sign,
-      deg_raw: degInfo.raw,
-      abs:     degInfo.abs,
-      retro,
-      rl: PMAP[pm[3]] || pm[3],
-      nl: PMAP[pm[4]] || pm[4],
-      sl: PMAP[pm[5]] || pm[5],
-      ss: PMAP[pm[6]] || pm[6]
-    };
+  // ── RULING PLANETS ──
+  // Row: "Ra(8) Lagna VEN MAR MON" and "Ju(6) Moon VEN MON MON"
+  const lagnaRPRow = findLine(l => l.includes('Lagna') && /VEN|MAR|MON|MER|JUP|SAT|RAH|KET|SUN/.test(l) && l.includes('Lagna VEN')||l.includes('Lagna MER')||l.includes('Lagna MAR')||/Lagna\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/.test(l));
+  if (lagnaRPRow >= 0) {
+    const m = L(lagnaRPRow).match(/Lagna\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+    if (m) { result.rp.ascRL=PMAP_LOCAL[m[1]]||m[1]; result.rp.ascNL=PMAP_LOCAL[m[2]]||m[2]; result.rp.ascSL=PMAP_LOCAL[m[3]]||m[3]; }
+  }
+  const moonRPRow = findLine(l => /^(Ju|Ra|Sa|Ma|Me|Ve|Su|Mo)\(\d+\)\s+Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/.test(l) || /^Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/.test(l));
+  if (moonRPRow >= 0) {
+    const m = L(moonRPRow).match(/Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+    if (m) { result.rp.moonRL=PMAP_LOCAL[m[1]]||m[1]; result.rp.moonNL=PMAP_LOCAL[m[2]]||m[2]; }
+  }
+  // Day Lord row
+  const dayLordRow = findLine(l => l.includes('Day Lord'));
+  if (dayLordRow >= 0) {
+    const m = L(dayLordRow).match(/Day Lord\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+    if (m) result.rp.day = PMAP_LOCAL[m[1]]||m[1];
   }
 
-  // Derive house occupation after cusps are parsed
-  // pData.abs is the precise absolute longitude already set by parseAstroSageDeg
-  Object.entries(result.planets).forEach(([pName, pData]) => {
-    pData.house = derivePlanetHouseFromAbs(pData.abs, result.cusps);
-  });
-
-  // ── Planet significations ──
-  // In the PDF "Planet Signification" section comes AFTER "Significators of Houses"
-  // We search forward from "Planet Signification" to the next known section or end.
-  const sigStart = text.indexOf('Planet Signification');
-  if (sigStart > 0) {
-    // End at next major section or take up to 800 chars
-    const sigEnd = text.search(new RegExp('VEN\\s*[-–]\\s*\\d+\\s*Years|VEN --', 'i'));
-    const sigText = sigEnd > sigStart
-      ? text.slice(sigStart, sigEnd)
-      : text.slice(sigStart, sigStart + 800);
-    // Works for both newline-separated and space-separated (PDF.js) text
-    const sigRx = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\s+([\d\s]+?)(?=Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu|VEN\s*[-–]|$)/g;
-    let sm;
-    while ((sm = sigRx.exec(sigText)) !== null) {
-      const planet = sm[1];
-      const houses = sm[2].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
-      if (houses.length > 0) {
-        result.planetSig[planet] = houses;
+  // ── CUSPAL POSITIONS ──
+  // Rows like: "1 186-23-55 VEN MAR MON KET"
+  // Also some rows have extra noise: "Pl(8) 2 215-18-44 MAR SAT SAT JUP"
+  const CUSP_RX = /(?:^|\s)(\d{1,2})\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/;
+  const cuspHeaderRow = findLine(l => l.includes('Cuspal Positions'));
+  if (cuspHeaderRow >= 0) {
+    for (let i = cuspHeaderRow; i < Math.min(cuspHeaderRow + 25, n); i++) {
+      const m = L(i).match(CUSP_RX);
+      if (!m) continue;
+      const h = parseInt(m[1]);
+      if (h >= 1 && h <= 12) {
+        const degInfo = parseAstroSageDeg(m[2]);
+        result.cusps[h] = {
+          sign: degInfo.sign, deg_raw: degInfo.raw, deg_fmt: m[2],
+          rl: PMAP_LOCAL[m[3]]||m[3], nl: PMAP_LOCAL[m[4]]||m[4],
+          sl: PMAP_LOCAL[m[5]]||m[5], ss: PMAP_LOCAL[m[6]]||m[6]
+        };
       }
     }
   }
 
-  // ── Ruling Planets ──
-  // PDF layout (values may be on separate lines from labels):
-  //   "Lagna MER MAR MON"  → RL=MER, NL=MAR, SL=MON
-  //   "Moon MAR VEN"        → RL=MAR, NL=VEN  (only 2 values shown)
-  //   "Day Lord\nSAT\nMER"  → Day=SAT  (value on next line; MER is lagna lord, not day lord)
-  const rpStart = text.indexOf('Ruling Planet');
-  const rpEnd   = text.indexOf('Cuspal Positions');
-  const rpSection = (rpStart >= 0 && rpEnd > rpStart)
-    ? text.slice(rpStart, rpEnd)
-    : (rpStart >= 0 ? text.slice(rpStart, rpStart + 400) : '');
-
-  const rpLagna = rpSection.match(/Lagna\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
-  const rpMoon  = rpSection.match(/Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
-  // Day Lord value may be on the same line OR the next line
-  const rpDay   = rpSection.match(/Day Lord[\s\r\n]+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
-
-  if (rpLagna) {
-    result.rp.ascRL = PMAP[rpLagna[1]] || rpLagna[1];
-    result.rp.ascNL = PMAP[rpLagna[2]] || rpLagna[2];
-    result.rp.ascSL = PMAP[rpLagna[3]] || rpLagna[3];
-  }
-  if (rpMoon) {
-    result.rp.moonRL = PMAP[rpMoon[1]] || rpMoon[1];
-    result.rp.moonNL = PMAP[rpMoon[2]] || rpMoon[2];
-  }
-  if (rpDay) {
-    result.rp.day = PMAP[rpDay[1]] || rpDay[1];
+  // ── PLANETARY POSITIONS ──
+  // Rows like: "Sun 233-25-37 MAR MER MAR RAH" or "Mars[R] 093-12-57 MON JUP RAH MON"
+  const PLANET_ROW_RX = /(Sun|Moon|Mars(?:\[R\])?|Mercury|Jupiter|Venus|Saturn(?:\[R\])?|Rahu|Ketu)\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/;
+  const planHeaderRow = findLine(l => l.includes('Planetary Positions'));
+  if (planHeaderRow >= 0) {
+    for (let i = planHeaderRow; i < Math.min(planHeaderRow + 30, n); i++) {
+      const m = L(i).match(PLANET_ROW_RX);
+      if (!m) continue;
+      const rawName = m[1], cleanName = rawName.replace('[R]','').trim();
+      if (!PLANET_NAMES.includes(cleanName)) continue;
+      const degInfo = parseAstroSageDeg(m[2]);
+      result.planets[cleanName] = {
+        sign: degInfo.sign, deg_raw: degInfo.raw, abs: degInfo.abs,
+        retro: rawName.includes('[R]'),
+        rl: PMAP_LOCAL[m[3]]||m[3], nl: PMAP_LOCAL[m[4]]||m[4],
+        sl: PMAP_LOCAL[m[5]]||m[5], ss: PMAP_LOCAL[m[6]]||m[6]
+      };
+    }
+    Object.entries(result.planets).forEach(([p,d]) => { d.house = derivePlanetHouseFromAbs(d.abs, result.cusps); });
   }
 
-  // Moon SL: attempt to find a 3rd value after Moon RL NL
-  const moonSLm = rpSection.match(/Moon\s+(?:SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(?:SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
-  if (moonSLm) result.rp.moonSL = PMAP[moonSLm[1]] || moonSLm[1];
+  // ── PLANET SIGNIFICATION ──
+  // Rows like: "Sun 1 2 9 11 12" — complete row with all houses
+  // Skip Uranus, Neptune, Pluto
+  const sigHeaderRow = findLine(l => l.includes('Planet Signification'));
+  if (sigHeaderRow >= 0) {
+    const SIG_ROW_RX = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\s+([\d][\d\s]*)$/;
+    for (let i = sigHeaderRow + 1; i < Math.min(sigHeaderRow + 30, n); i++) {
+      const m = L(i).match(SIG_ROW_RX);
+      if (!m) continue;
+      const planet = m[1];
+      const houses = m[2].trim().split(/\s+/).map(Number).filter(h => h >= 1 && h <= 12);
+      if (houses.length > 0) result.planetSig[planet] = houses;
+    }
+  }
 
-  // ── Current DBA ──
-  // Need full text including pratyantar pages
+  // ── CURRENT DBA ──
   result.dba = findCurrentDBA(text);
 
   return result;
 }
 
-// ── Derive planet house from absolute degree ──────
+
 function derivePlanetHouseFromAbs(absTotal, cusps) {
   if (!cusps || Object.keys(cusps).length < 12) return null;
   const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
