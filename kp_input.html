@@ -341,35 +341,24 @@ const PMAP = {
   JUP:'Jupiter', VEN:'Venus', SAT:'Saturn', RAH:'Rahu', KET:'Ketu'
 };
 
-// ── Absolute degree → sign name ───────────────────
-function absToSign(abs) {
-  const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
-                 'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
-  const idx = Math.floor(parseFloat(abs) / 30);
-  return (idx >= 0 && idx < 12) ? SIGNS[idx] : null;
-}
-
-// ── Absolute degree → DDMMSS within sign ─────────
-function absToDegRaw(abs) {
-  const total = parseFloat(abs);
-  const inSign = total % 30;
-  const d = Math.floor(inSign);
-  const mf = (inSign - d) * 60;
-  const m = Math.floor(mf);
-  const s = Math.floor((mf - m) * 60);
-  return `${String(d).padStart(2,'0')}${String(m).padStart(2,'0')}${String(s).padStart(2,'0')}`;
-}
-
 // ── Parse AstroSage degree string "DDD-MM-SS" ─────
+// e.g. "066-01-32" = absolute 66°01'32" → Gemini 06°01'32"
+// Integer arithmetic throughout — no floating-point precision loss on M/S.
 function parseAstroSageDeg(str) {
-  // e.g. "066-01-32" = 66 degrees 01 min 32 sec absolute
   const parts = str.split('-');
   if (parts.length < 3) return { abs: 0, sign: null, raw: '000000' };
-  const abs = parseFloat(parts[0]) + parseFloat(parts[1])/60 + parseFloat(parts[2])/3600;
+  const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                 'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  const absDeg    = parseInt(parts[0], 10);  // e.g. 66
+  const absMin    = parseInt(parts[1], 10);  // e.g. 01
+  const absSec    = parseInt(parts[2], 10);  // e.g. 32
+  const signIdx   = Math.floor(absDeg / 30);
+  const degInSign = absDeg % 30;             // e.g. 6 within Gemini
   return {
-    abs,
-    sign: absToSign(parts[0]),
-    raw: absToDegRaw(str)
+    abs:  absDeg + absMin/60 + absSec/3600,
+    sign: SIGNS[signIdx] || null,
+    // DDMMSS within the sign — minutes & seconds are unchanged from source
+    raw:  `${String(degInSign).padStart(2,'0')}${String(absMin).padStart(2,'0')}${String(absSec).padStart(2,'0')}`
   };
 }
 
@@ -505,7 +494,9 @@ function parseAstroSagePDF(text) {
   };
 
   // ── Native details ──
-  const nameM = text.match(/Name\s+([A-Za-z\s]+?)\s+(?:Sunrise|Sex)/);
+  // PDF layout: "Sex Male" comes BEFORE "Name Amit Parashar" on page 1
+  // Name appears after "Sex Male\nName " so we match "Name" followed by the name then a line-break or known keyword
+  const nameM = text.match(/\bName\s+([A-Za-z][A-Za-z\s]{1,50}?)(?:\s*[\r\n]|\s+(?:Ayan|Get\s))/);
   if (nameM) result.native.name = nameM[1].trim();
 
   const dateM = text.match(/Date\s+([\d]+)\.([\d]+)\.([\d]+)/);
@@ -525,25 +516,22 @@ function parseAstroSagePDF(text) {
     result.native.tob_s = tparts[2] || '00';
   }
 
-  const placeM = text.match(/Place\s+([A-Za-z]+)/);
-  if (placeM) result.native.place = placeM[1];
+  // PDF layout: "Place\nLatitude\nLongitude\nK. P. New\n023-39-53\nKota\n25.21.N"
+  // City name comes after the SID/ayanamsa value (3-digit degree string like "023-39-53")
+  const placeM = text.match(/\d{3}-\d{2}-\d{2}[\s\r\n]+([A-Za-z][A-Za-z\s]{1,30}?)[\s\r\n]/);
+  if (placeM) result.native.place = placeM[1].trim();
 
-  const latM = text.match(/Latitude\s+([\d.]+)\.([NS])/);
+  // Lat/Lon are on their own lines: "25.21.N" and "75.50.E"
+  const latM = text.match(/\b(\d{1,3})\.(\d{1,2})\.([NS])\b/);
   if (latM) {
-    const parts = latM[1].split('.');
-    const deg = parseInt(parts[0]);
-    const min = parseInt(parts[1] || '0');
-    const val = deg + min/60;
-    result.native.lat = latM[2] === 'S' ? -val.toFixed(4) : val.toFixed(4);
+    const val = parseInt(latM[1]) + parseInt(latM[2])/60;
+    result.native.lat = latM[3] === 'S' ? (-val).toFixed(4) : val.toFixed(4);
   }
 
-  const lonM = text.match(/Longitude\s+([\d.]+)\.([EW])/);
+  const lonM = text.match(/\b(\d{1,3})\.(\d{1,2})\.([EW])\b/);
   if (lonM) {
-    const parts = lonM[1].split('.');
-    const deg = parseInt(parts[0]);
-    const min = parseInt(parts[1] || '0');
-    const val = deg + min/60;
-    result.native.lon = lonM[2] === 'W' ? -val.toFixed(4) : val.toFixed(4);
+    const val = parseInt(lonM[1]) + parseInt(lonM[2])/60;
+    result.native.lon = lonM[3] === 'W' ? (-val).toFixed(4) : val.toFixed(4);
   }
 
   const sexM = text.match(/Sex\s+(Male|Female)/i);
@@ -570,17 +558,18 @@ function parseAstroSagePDF(text) {
   }
 
   // ── Planetary positions ──
-  const planetRx = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn(?:\[R\])?|Rahu|Ketu)\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g;
+  // Saturn[R] may appear as "Saturn[R]" or "Saturn [R]" depending on PDF.js extraction
+  const planetRx = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn\s*(?:\[R\])?|Rahu|Ketu)\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/g;
   let pm;
   while ((pm = planetRx.exec(text)) !== null) {
-    const name = pm[1].replace('[R]','').trim();
+    const name  = pm[1].replace(/\s*\[R\]/, '').trim();
     const retro = pm[1].includes('[R]');
     const degInfo = parseAstroSageDeg(pm[2]);
     // Derive house occupation from absolute degree vs cusps
     result.planets[name] = {
       sign:    degInfo.sign,
       deg_raw: degInfo.raw,
-      deg_abs: pm[2],
+      abs:     degInfo.abs,
       retro,
       rl: PMAP[pm[3]] || pm[3],
       nl: PMAP[pm[4]] || pm[4],
@@ -590,17 +579,23 @@ function parseAstroSagePDF(text) {
   }
 
   // Derive house occupation after cusps are parsed
+  // pData.abs is the precise absolute longitude already set by parseAstroSageDeg
   Object.entries(result.planets).forEach(([pName, pData]) => {
-    pData.house = derivePlanetHouseFromAbs(parseFloat(pData.deg_abs.replace(/-/g,'.')), result.cusps);
+    pData.house = derivePlanetHouseFromAbs(pData.abs, result.cusps);
   });
 
   // ── Planet significations ──
-  // Find "Planet Signification" section
+  // In the PDF "Planet Signification" section comes AFTER "Significators of Houses"
+  // We search forward from "Planet Signification" to the next known section or end.
   const sigStart = text.indexOf('Planet Signification');
-  const sigEnd   = text.indexOf('Significators of Houses', sigStart);
   if (sigStart > 0) {
-    const sigText = sigEnd > 0 ? text.slice(sigStart, sigEnd) : text.slice(sigStart, sigStart + 500);
-    const sigRx = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\s+([\d\s]+?)(?=\n|Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu|$)/g;
+    // End at next major section or take up to 800 chars
+    const sigEnd = text.search(new RegExp('VEN\\s*[-–]\\s*\\d+\\s*Years|VEN --', 'i'));
+    const sigText = sigEnd > sigStart
+      ? text.slice(sigStart, sigEnd)
+      : text.slice(sigStart, sigStart + 800);
+    // Works for both newline-separated and space-separated (PDF.js) text
+    const sigRx = /(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\s+([\d\s]+?)(?=Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu|VEN\s*[-–]|$)/g;
     let sm;
     while ((sm = sigRx.exec(sigText)) !== null) {
       const planet = sm[1];
@@ -612,15 +607,25 @@ function parseAstroSagePDF(text) {
   }
 
   // ── Ruling Planets ──
-  const rpSection = text.slice(text.indexOf('Ruling Planet'), text.indexOf('Cuspal Positions'));
+  // PDF layout (values may be on separate lines from labels):
+  //   "Lagna MER MAR MON"  → RL=MER, NL=MAR, SL=MON
+  //   "Moon MAR VEN"        → RL=MAR, NL=VEN  (only 2 values shown)
+  //   "Day Lord\nSAT\nMER"  → Day=SAT  (value on next line; MER is lagna lord, not day lord)
+  const rpStart = text.indexOf('Ruling Planet');
+  const rpEnd   = text.indexOf('Cuspal Positions');
+  const rpSection = (rpStart >= 0 && rpEnd > rpStart)
+    ? text.slice(rpStart, rpEnd)
+    : (rpStart >= 0 ? text.slice(rpStart, rpStart + 400) : '');
+
   const rpLagna = rpSection.match(/Lagna\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
   const rpMoon  = rpSection.match(/Moon\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
-  const rpDay   = rpSection.match(/Day Lord\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+  // Day Lord value may be on the same line OR the next line
+  const rpDay   = rpSection.match(/Day Lord[\s\r\n]+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
 
   if (rpLagna) {
-    result.rp.ascRL  = PMAP[rpLagna[1]] || rpLagna[1];
-    result.rp.ascNL  = PMAP[rpLagna[2]] || rpLagna[2];
-    result.rp.ascSL  = PMAP[rpLagna[3]] || rpLagna[3];
+    result.rp.ascRL = PMAP[rpLagna[1]] || rpLagna[1];
+    result.rp.ascNL = PMAP[rpLagna[2]] || rpLagna[2];
+    result.rp.ascSL = PMAP[rpLagna[3]] || rpLagna[3];
   }
   if (rpMoon) {
     result.rp.moonRL = PMAP[rpMoon[1]] || rpMoon[1];
@@ -630,8 +635,8 @@ function parseAstroSagePDF(text) {
     result.rp.day = PMAP[rpDay[1]] || rpDay[1];
   }
 
-  // Moon SL — from Moon's position NL? or from rpSection
-  const moonSLm = rpSection.match(/Moon\s+\w+\s+\w+\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
+  // Moon SL: attempt to find a 3rd value after Moon RL NL
+  const moonSLm = rpSection.match(/Moon\s+(?:SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(?:SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/);
   if (moonSLm) result.rp.moonSL = PMAP[moonSLm[1]] || moonSLm[1];
 
   // ── Current DBA ──
