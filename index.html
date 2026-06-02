@@ -212,7 +212,7 @@
       <div class="note-box">
         Enter each planet's sign and degree from your KP chart.
         Used to derive the true Star-lord of Sub-lord (NL of SL) for accurate interpretation.
-        Degree entry: type digits only — e.g. <strong>232616</strong> → <strong>23°26′16″</strong>
+        Degree entry: type absolute degree digits — e.g. <strong>232616</strong> → <strong>232°26′16″</strong>
       </div>
       <table class="cusp-table" id="planet-pos-table">
         <thead>
@@ -241,7 +241,7 @@
     </div>
     <div class="section-body">
       <div class="note-box">
-        Degree entry: type digits only — e.g. <strong>062639</strong> → auto-formats to <strong>06°26′39″</strong>.
+        Degree entry: type absolute degree digits — e.g. <strong>662639</strong> → auto-formats to <strong>066°26′39″</strong>. Sign is derived automatically.
         Sub-lord decides if the house promise is ON or OFF.
         Star-lord colors the nature and type of the result.
       </div>
@@ -650,7 +650,7 @@ function parseAstroSagePDF(text) {
       if (!PLANET_NAMES.includes(cleanName)) continue;
       const degInfo = parseAstroSageDeg(m[2]);
       result.planets[cleanName] = {
-        sign: degInfo.sign, deg_raw: degInfo.raw, abs: degInfo.abs,
+        sign: degInfo.sign, deg_raw: degInfo.raw, deg_fmt: m[2], abs: degInfo.abs,
         retro: rawName.includes('[R]'),
         rl: PMAP_LOCAL[m[3]]||m[3], nl: PMAP_LOCAL[m[4]]||m[4],
         sl: PMAP_LOCAL[m[5]]||m[5], ss: PMAP_LOCAL[m[6]]||m[6]
@@ -779,10 +779,16 @@ function fillFormFromParsed(parsed) {
     const ssEl   = document.getElementById(`cusp-${hNum}-ss`);
 
     if (signEl && c.sign) { signEl.value = c.sign; report.cusps++; }
-    if (degEl  && c.deg_raw) {
-      degEl.dataset.raw = c.deg_raw;
-      const d = c.deg_raw.slice(0,2), m = c.deg_raw.slice(2,4), s = c.deg_raw.slice(4,6);
-      degEl.value = `${d}°${m}′${s}″`;
+    if (degEl && c.deg_raw) {
+      degEl.dataset.raw = c.deg_raw; // within-sign DDMMSS for calculations
+      // Display absolute degree from deg_fmt (e.g. "066-01-32" → "066°01′32″")
+      if (c.deg_fmt) {
+        const parts = c.deg_fmt.split('-');
+        degEl.value = parts.length === 3 ? `${parts[0]}°${parts[1]}′${parts[2]}″` : `${c.deg_raw.slice(0,2)}°${c.deg_raw.slice(2,4)}′${c.deg_raw.slice(4,6)}″`;
+      } else {
+        const d = c.deg_raw.slice(0,2), m = c.deg_raw.slice(2,4), s = c.deg_raw.slice(4,6);
+        degEl.value = `${d}°${m}′${s}″`;
+      }
     }
     if (rlEl && c.rl) rlEl.value = c.rl;
     if (nlEl && c.nl) nlEl.value = c.nl;
@@ -796,10 +802,16 @@ function fillFormFromParsed(parsed) {
     const degEl   = document.getElementById(`ppos-${pName}-deg`);
     const retroEl = document.getElementById(`ppos-${pName}-retro`);
     if (signEl && pData.sign) { signEl.value = pData.sign; report.planets++; }
-    if (degEl  && pData.deg_raw) {
-      degEl.dataset.raw = pData.deg_raw;
-      const d = pData.deg_raw.slice(0,2), m = pData.deg_raw.slice(2,4), s = pData.deg_raw.slice(4,6);
-      degEl.value = `${d}°${m}′${s}″`;
+    if (degEl && pData.deg_raw) {
+      degEl.dataset.raw = pData.deg_raw; // within-sign DDMMSS for calculations
+      // Display absolute degree from deg_fmt (e.g. "150-27-57" → "150°27′57″")
+      if (pData.deg_fmt) {
+        const parts = pData.deg_fmt.split('-');
+        degEl.value = parts.length === 3 ? `${parts[0]}°${parts[1]}′${parts[2]}″` : `${pData.deg_raw.slice(0,2)}°${pData.deg_raw.slice(2,4)}′${pData.deg_raw.slice(4,6)}″`;
+      } else {
+        const d = pData.deg_raw.slice(0,2), m = pData.deg_raw.slice(2,4), s = pData.deg_raw.slice(4,6);
+        degEl.value = `${d}°${m}′${s}″`;
+      }
     }
     if (retroEl) retroEl.checked = pData.retro || false;
   });
@@ -931,8 +943,8 @@ function buildPlanetPosTable() {
       <td><select id="ppos-${p}-sign" onchange="computePlanetNL('${p}')">
         <option value="">— sign —</option>${signOpts}
       </select></td>
-      <td><input type="text" id="ppos-${p}-deg" class="deg-input" placeholder="DDMMSS"
-           maxlength="8" oninput="formatDegree(this); computePlanetNL('${p}')"
+      <td><input type="text" id="ppos-${p}-deg" class="deg-input" placeholder="DDDMMSS"
+           maxlength="9" oninput="formatDegree(this); computePlanetNL('${p}')"
            onblur="formatDegreeOnBlur(this); computePlanetNL('${p}')"></td>
       <td id="ppos-${p}-nl-cell" style="text-align:center;">
         <span id="ppos-${p}-nl" style="
@@ -1010,7 +1022,7 @@ function buildCuspTable() {
     tr.innerHTML = `
       <td class="cusp-num">${h}</td>
       <td><select id="cusp-${h}-sign"><option value="">— sign —</option>${signOpts}</select></td>
-      <td><input type="text" id="cusp-${h}-deg" class="deg-input" placeholder="DDMMSS" maxlength="8"
+      <td><input type="text" id="cusp-${h}-deg" class="deg-input" placeholder="DDDMMSS" maxlength="9"
            oninput="formatDegree(this)" onblur="formatDegreeOnBlur(this)"></td>
       <td><select id="cusp-${h}-rl"><option value="">— select —</option>${pOpts}</select></td>
       <td><select id="cusp-${h}-nl"><option value="">— select —</option>${pOpts}</select></td>
@@ -1021,30 +1033,49 @@ function buildCuspTable() {
 }
 
 // ── Degree formatting ────────────────────────────────
-// User types: 062639 → displays 06°26′39″
-// Internally stores raw digits, formats on display
+// User types absolute degree: 0662639 (7 digits) → displays 066°26′39″
+// dataset.raw stores within-sign 6-digit DDMMSS for engine calculations
+// The sign select is auto-updated when a valid absolute degree is entered
 
 function formatDegree(input) {
-  // Strip non-digits
-  let raw = input.value.replace(/\D/g, '').slice(0, 6);
-  input.dataset.raw = raw;
+  let raw = input.value.replace(/\D/g, '').slice(0, 7);
+  input.dataset.absraw = raw; // store absolute raw while typing
   // Show formatted preview while typing
-  if (raw.length <= 2) {
+  if (raw.length <= 3) {
     input.value = raw;
-  } else if (raw.length <= 4) {
-    input.value = raw.slice(0,2) + '°' + raw.slice(2);
+  } else if (raw.length <= 5) {
+    input.value = raw.slice(0,3) + '°' + raw.slice(3);
   } else {
-    input.value = raw.slice(0,2) + '°' + raw.slice(2,4) + '′' + raw.slice(4);
+    input.value = raw.slice(0,3) + '°' + raw.slice(3,5) + '′' + raw.slice(5);
   }
 }
 
 function formatDegreeOnBlur(input) {
-  let raw = (input.dataset.raw || input.value.replace(/\D/g,'')).padEnd(6,'0').slice(0,6);
-  input.dataset.raw = raw;
-  const d = raw.slice(0,2);
-  const m = raw.slice(2,4);
-  const s = raw.slice(4,6);
-  input.value = `${d}°${m}′${s}″`;
+  const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                 'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  let raw = (input.dataset.absraw || input.value.replace(/\D/g,'')).padEnd(7,'0').slice(0,7);
+  input.dataset.absraw = raw;
+  const absDeg = parseInt(raw.slice(0,3));
+  const mm     = raw.slice(3,5);
+  const ss     = raw.slice(5,7);
+  input.value  = `${String(absDeg).padStart(3,'0')}°${mm}′${ss}″`;
+
+  // Compute within-sign degree and store in dataset.raw for engine
+  const signIdx   = Math.floor(absDeg / 30);
+  const degInSign = absDeg % 30;
+  input.dataset.raw = `${String(degInSign).padStart(2,'0')}${mm}${ss}`;
+
+  // Auto-update the sign select if it exists (cusp or planet row)
+  const id = input.id; // e.g. cusp-1-deg or ppos-Sun-deg
+  let signEl = null;
+  if (id.startsWith('cusp-')) {
+    const h = id.split('-')[1];
+    signEl = document.getElementById(`cusp-${h}-sign`);
+  } else if (id.startsWith('ppos-')) {
+    const p = id.split('-')[1];
+    signEl = document.getElementById(`ppos-${p}-sign`);
+  }
+  if (signEl && SIGNS[signIdx]) signEl.value = SIGNS[signIdx];
 }
 
 // ── Derive which house a planet occupies ─────────────
