@@ -1875,7 +1875,7 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
 
       4: 'Home and property undergo transformation. Sudden change of residence, loss of property or inherited real estate define this dimension of life. The domestic environment does not remain fixed — it changes significantly. Mother may face a significant health or life event.',
 
-      5: 'Childbirth may involve surgical intervention — caesarean delivery is indicated when combined with the second house. Creative output undergoes deep transformation. Children may come through an unexpected or medically significant process.',
+      5: 'Children or creative work undergo sudden and unexpected transformation. Past life karma is powerfully operative here. Creative output may carry qualities of depth, research or the uncovering of hidden things. Intelligence and creative gifts are the channel through which transformation is experienced and expressed.',
 
       6: (has(12)
         ? 'The most significant health combination is present — surgery, hospitalisation and serious illness are all indicated. Medical care at a serious level is required. If recovery indicators are also present, the patient comes through. If not, the medical situation is genuinely critical and demands immediate professional attention. Mars in this combination is associated specifically with surgical instruments and intervention.'
