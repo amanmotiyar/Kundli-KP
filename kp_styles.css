@@ -796,3 +796,19 @@ body {
   padding: 8px 12px;
   border-top: 1px solid var(--border);
 }
+
+/* ── Chart Positions Table ── */
+.chart-pos-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.chart-pos-tbl thead tr { border-bottom: 1px solid var(--border); }
+.chart-pos-tbl th {
+  padding: 6px 4px; text-align: center;
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+.chart-pos-tbl th:first-child { text-align: left; padding-left: 8px; width: 48px; }
+.chart-pos-tbl tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+.chart-pos-tbl tbody tr:hover { background: rgba(180,150,80,0.05); }
+.chart-pos-tbl td { padding: 5px 4px; text-align: center; }
+.chart-pos-tbl td:first-child { text-align: left; padding-left: 8px; font-weight: 600; color: var(--gold); font-size: 12px; }
+.chart-pos-tbl input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; accent-color: var(--gold); }
+.cp-planet { font-size: 10px !important; }

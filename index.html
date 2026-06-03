@@ -262,10 +262,26 @@
     </div>
   </div>
 
-  <!-- ══ SECTION 4 — DBA PERIOD ══ -->
+  <!-- ══ SECTION 4 — CHART POSITIONS ══ -->
+  <div class="section" id="sec-chart-pos">
+    <div class="section-header" onclick="toggleSection('sec-chart-pos')">
+      <span class="section-num">04</span>
+      <span class="section-title">Chart Positions</span>
+      <span class="section-badge">Planets in Houses</span>
+      <span class="section-arrow">▾</span>
+    </div>
+    <div class="section-body" id="sec-chart-pos-body">
+      <div class="section-hint">
+        Which planets are physically placed in each house. Auto-filled from planet positions above — verify and adjust if needed.
+      </div>
+      <div id="chart-pos-table"></div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 5 — DBA PERIOD ══ -->
   <div class="section" id="sec-dba">
     <div class="section-header" onclick="toggleSection('sec-dba')">
-      <span class="section-num">04</span>
+      <span class="section-num">05</span>
       <span class="section-title">DBA Period</span>
       <span class="section-badge">Vimshottari Dasha</span>
       <span class="section-toggle">▾</span>
@@ -301,10 +317,10 @@
     </div>
   </div>
 
-  <!-- ══ SECTION 5 — RULING PLANETS ══ -->
+  <!-- ══ SECTION 6 — RULING PLANETS ══ -->
   <div class="section" id="sec-rp">
     <div class="section-header" onclick="toggleSection('sec-rp')">
-      <span class="section-num">05</span>
+      <span class="section-num">06</span>
       <span class="section-title">Ruling Planets</span>
       <span class="section-badge">At Time of Judgment</span>
       <span class="section-toggle">▾</span>
@@ -640,7 +656,7 @@ function parseAstroSagePDF(text) {
 
   // ── PLANETARY POSITIONS ──
   // Rows like: "Sun 233-25-37 MAR MER MAR RAH" or "Mars[R] 093-12-57 MON JUP RAH MON"
-  const PLANET_ROW_RX = /(Sun|Moon|Mars(?:\[R\])?|Mercury|Jupiter|Venus|Saturn(?:\[R\])?|Rahu|Ketu)\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/;
+  const PLANET_ROW_RX = /(Sun|Moon|Mars(?:\[R\])?|Mercury(?:\[R\])?|Jupiter(?:\[R\])?|Venus|Saturn(?:\[R\])?|Rahu|Ketu)\s+(\d{3}-\d{2}-\d{2})\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)\s+(SUN|MON|MAR|MER|JUP|VEN|SAT|RAH|KET)/;
   const planHeaderRow = findLine(l => l.includes('Planetary Positions'));
   if (planHeaderRow >= 0) {
     for (let i = planHeaderRow; i < Math.min(planHeaderRow + 30, n); i++) {
@@ -861,6 +877,19 @@ function fillFormFromParsed(parsed) {
   // Update status — deferred until main script loads
   if (typeof updateStatus === 'function') updateStatus();
   else setTimeout(() => { if (typeof updateStatus === 'function') updateStatus(); }, 100);
+
+  // Auto-fill chart positions from parsed planet house data
+  if (parsed.planets) {
+    // Clear all checkboxes first
+    document.querySelectorAll('.cp-cb').forEach(cb => cb.checked = false);
+    // Set based on parsed house data
+    Object.entries(parsed.planets).forEach(([planet, pData]) => {
+      if (pData && pData.house) {
+        const cb = document.getElementById(`cp-H${pData.house}-${planet}`);
+        if (cb) cb.checked = true;
+      }
+    });
+  }
 
   // Recompute NL column for all planets after fill
   setTimeout(() => {
@@ -1134,6 +1163,50 @@ function buildDBASelects() {
   });
 }
 
+function buildChartPosTable() {
+  const container = document.getElementById('chart-pos-table');
+  if (!container) return;
+
+  const PLANETS_LIST = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+
+  let html = '<table class="chart-pos-tbl"><thead><tr>';
+  html += '<th>House</th>';
+  PLANETS_LIST.forEach(p => { html += `<th class="cp-planet cp-${p.toLowerCase()}">${p}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  for (let h = 1; h <= 12; h++) {
+    html += `<tr><td class="cp-house">H${h}</td>`;
+    PLANETS_LIST.forEach(p => {
+      html += `<td><input type="checkbox" id="cp-H${h}-${p}" class="cp-cb" data-house="${h}" data-planet="${p}"></td>`;
+    });
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+// Auto-fill chart positions from planet positions already entered
+function syncChartPositions() {
+  const PLANETS_LIST = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+  // Clear all first
+  document.querySelectorAll('.cp-cb').forEach(cb => cb.checked = false);
+  // Set based on current planet positions
+  PLANETS_LIST.forEach(p => {
+    const signEl = document.getElementById(`ppos-${p}-sign`);
+    if (!signEl || !signEl.value) return;
+    // Derive house from planet sign vs cusp signs
+    const sign = signEl.value;
+    for (let h = 1; h <= 12; h++) {
+      const cuspSign = document.getElementById(`cusp-${h}-sign`);
+      if (cuspSign && cuspSign.value === sign) {
+        const cb = document.getElementById(`cp-H${h}-${p}`);
+        if (cb) cb.checked = true;
+        break;
+      }
+    }
+  });
+}
+
 function buildRPGrid() {
   const grid = document.getElementById('rp-grid');
   const opts = PLANETS.map(p=>`<option value="${p}">${p}</option>`).join('');
@@ -1354,6 +1427,7 @@ function collectData() {
       todayPlace:document.getElementById('today-place').value.trim(),
     },
     planetSig: {},
+    chartPositions: {}, // which planets are in each house
     cusps: {},
     dba: {
       md:   document.getElementById('dba-md').value,
@@ -1371,6 +1445,15 @@ function collectData() {
     HOUSES.forEach(h => {
       const cb = document.getElementById(`sig-${p}-H${h}`);
       if (cb && cb.checked) data.planetSig[p].push(h);
+    });
+  });
+
+  // Chart positions — which planets are in each house
+  HOUSES.forEach(h => {
+    data.chartPositions[h] = [];
+    PLANETS.forEach(p => {
+      const cb = document.getElementById(`cp-H${h}-${p}`);
+      if (cb && cb.checked) data.chartPositions[h].push(p);
     });
   });
 
@@ -1485,6 +1568,17 @@ function restoreFromData(data) {
       HOUSES.forEach(h => {
         const cb = document.getElementById(`sig-${p}-H${h}`);
         if (cb) cb.checked = (data.planetSig[p] || []).includes(h);
+      });
+    });
+  }
+
+  // Chart positions
+  if (data.chartPositions) {
+    document.querySelectorAll('.cp-cb').forEach(cb => cb.checked = false);
+    HOUSES.forEach(h => {
+      (data.chartPositions[h] || []).forEach(p => {
+        const cb = document.getElementById(`cp-H${h}-${p}`);
+        if (cb) cb.checked = true;
       });
     });
   }
@@ -1624,8 +1718,16 @@ buildPlanetSigTable();
 buildPlanetPosTable();
 buildCuspTable();
 buildDBASelects();
+buildChartPosTable();
 buildRPGrid();
 setDefaults();
+
+// Auto-sync chart positions when planet signs or cusp signs change
+document.addEventListener('change', function(e) {
+  if (e.target && (e.target.id.startsWith('ppos-') || e.target.id.startsWith('cusp-'))) {
+    syncChartPositions();
+  }
+});
 
 // Restore saved input if coming back from output page
 const saved = sessionStorage.getItem('kp_input');
