@@ -1482,334 +1482,221 @@ const PLANET_PLAIN = {
 };
 
 // ═══════════════════════════════════════════════════
-// MAIN HOUSE INTERPRETATION — 4-STEP FORMULA
-// Step 1: SL promise + what its significations mean for this house
-// Step 2: NL significations as type/style indicator
-// Step 3: Lagnesh connection
-// Step 4: Planets physically in this house (from KP table)
+// KP HOUSE INTERPRETATION
+// Formula:
+//   Step 1 — Sub-lord: does it signify the house? (promise)
+//   Step 2 — Star-lord (NL of SL): what houses does it signify? (channels)
+//   Step 3 — Plain client-facing paragraph
+// Planet placement NOT used (pure KP approach)
 // ═══════════════════════════════════════════════════
+
+// Channel meanings lookup
+const KP_CHANNELS = {"house_meanings":{"1":{"core":"personality, physical body, health, appearance and overall vitality","keywords":["personality","body","health","identity","self","physical appearance","vitality","head"],"plain":"matters related to your personality, physical body and overall health"},"2":{"core":"wealth, savings, family life, speech and food","keywords":["wealth","money","savings","family","speech","food","right eye","accumulated assets"],"plain":"financial accumulation, family matters and speech"},"3":{"core":"courage, communication, short travels, siblings and mental strength","keywords":["courage","communication","siblings","short travel","writing","mental strength","initiative"],"plain":"courage, communication skills, siblings and short journeys"},"4":{"core":"home, property, mother, vehicles, emotional security and education","keywords":["home","property","mother","vehicle","land","happiness","learning","roots"],"plain":"home, property, mother and emotional foundations"},"5":{"core":"children, intellect, past life merit, creativity and speculation","keywords":["children","intellect","creativity","education","speculation","romance","merit"],"plain":"children, intelligence, creative pursuits and speculative gains"},"6":{"core":"debts, diseases, enemies, service and daily work","keywords":["health challenges","enemies","debts","service","competition","litigation","loans"],"plain":"health, debts, enemies, service and overcoming obstacles"},"7":{"core":"marriage, partnerships, spouse, public dealings and desires","keywords":["marriage","spouse","partner","public","desires","love","contracts"],"plain":"marriage, partnerships and public dealings"},"8":{"core":"longevity, sudden events, transformation, hidden matters and inheritance","keywords":["death","transformation","inheritance","hidden wealth","sudden changes","occult","longevity","obstacles"],"plain":"sudden changes, transformation, inheritance and hidden matters"},"9":{"core":"luck, fortune, father, spirituality, higher education and long journeys","keywords":["luck","fortune","father","religion","philosophy","long travel","guru","higher learning"],"plain":"luck, fortune, father, spirituality and long distance travel"},"10":{"core":"career, profession, status, authority and public reputation","keywords":["career","profession","status","authority","government","business","honour","livelihood"],"plain":"career, profession, public status and authority"},"11":{"core":"gains, income, fulfilment of desires, elder siblings and social network","keywords":["gains","income","desires fulfilled","friends","elder siblings","profits","ambitions"],"plain":"gains, income, fulfilment of desires and social connections"},"12":{"core":"losses, expenses, foreign lands, spirituality, isolation and bed pleasures","keywords":["foreign","isolation","expenses","loss","behind the scenes","spirituality","moksha","seclusion"],"plain":"foreign lands, isolation, behind-the-scenes work and spiritual matters"}},"channel_meanings":{"1":{"1":"your personality and identity are directly and strongly shaped","2":"family values and financial security drive your sense of self","3":"your courage, communication and initiative define who you are","4":"emotional security and roots are central to your identity","5":"creativity, intelligence and self-expression shape your personality","6":"challenges and hard work forge your character and strength","7":"relationships and public dealings are part of how you define yourself","8":"transformation, depth and reinvention are core to your identity","9":"wisdom, fortune and philosophical outlook shape your personality","10":"career and public reputation are deeply tied to your sense of self","11":"ambitions, desires and social connections drive your identity","12":"solitude, spirituality and working behind the scenes shape who you are"},"2":{"1":"your personal efforts and initiative are the main driver of wealth","2":"wealth and family matters are directly and strongly activated","3":"communication skills, business and short ventures bring financial gains","4":"property, home and family assets are sources of wealth","5":"investments, speculation and creative work generate income","6":"service, employment and resolving debts shape your financial life","7":"spouse or business partner plays a key role in finances","8":"inheritance, hidden money or sudden unexpected gains are possible","9":"luck and good fortune enhance financial growth","10":"career and professional achievement are the primary wealth source","11":"network, connections and desire fulfilment bring financial gains","12":"foreign sources, hidden expenses or spiritual spending affect finances"},"3":{"1":"personal strength and body are the source of your courage","2":"family support and financial stability back your efforts","3":"communication and courage are directly and strongly activated","4":"home environment and emotional security fuel your initiative","5":"intelligence and creative thinking drive bold communication","6":"obstacles and competition sharpen your courage and resolve","7":"partnerships and collaborations enhance your communication","8":"inner transformation and deep willpower drive courageous acts","9":"luck and higher wisdom guide your communication style","10":"professional standing enhances your communication and authority","11":"social network and connections amplify your reach","12":"foreign or behind-the-scenes communication becomes important"},"4":{"1":"personal effort and drive in acquiring home and property","2":"family wealth and savings fund property acquisition","3":"skills and short ventures contribute to property matters","4":"home, property and mother are directly and strongly activated","5":"speculative investments and children are connected to property","6":"legal matters, loans or disputes arise around property","7":"spouse or partner is involved in property and home decisions","8":"inherited property or sudden changes in assets","9":"luck and good fortune favour property acquisition","10":"career success and earnings fund home and property","11":"gains and desires are fulfilled through property","12":"foreign property, loss of home or spiritual retreat"},"5":{"1":"personal creativity and self-expression are the focus","2":"family wealth supports education and children","3":"communication and skills drive creative expression","4":"home environment nurtures children and creativity","5":"children, intellect and creative pursuits are directly activated","6":"health or work challenges affect children or creativity","7":"partner plays a key role in children and romance","8":"deep transformation shapes creative output and parenting","9":"luck and higher learning enhance education and children","10":"career involves creativity, teaching or working with children","11":"gains come through creative work and desire fulfilment","12":"foreign education or hidden talent becomes significant"},"6":{"1":"personal health and daily routines are at the centre","2":"financial obligations and family debts need attention","3":"courage and initiative help resolve challenges and enemies","4":"home environment and emotions affect health","5":"children or creative work creates health-related concerns","6":"health, service, enemies and debts are directly activated","7":"partner or others are involved in disputes or health matters","8":"chronic conditions or hidden health challenges are possible","9":"luck and fortune help overcome illness and obstacles","10":"career-related stress or workplace competition affects health","11":"gains come from overcoming challenges and competition","12":"hospitalisation, retreat or hidden healing becomes important"},"7":{"1":"personal identity and independence shape the union","2":"family approval and wealth are tied to marriage","3":"communication and short journeys play a role in partnerships","4":"home, emotional security and mother are important in marriage","5":"romance, love and children are foundations of the relationship","6":"health or work challenges create friction in partnerships","7":"marriage and long-term partnerships are directly and strongly activated","8":"transformation and intense experiences define the relationship","9":"luck, tradition and father bless the union","10":"career and public reputation are closely tied to marriage","11":"social gains and desires are fulfilled through partnership","12":"foreign connection, sacrifice or spiritual dimension in marriage"},"8":{"1":"personal identity goes through deep transformation","2":"sudden financial changes or inherited wealth","3":"hidden communication, research or courage in adversity","4":"home and property undergo unexpected transformation","5":"sudden changes to children or creative life","6":"health crises, accidents or defeat of enemies","7":"partner brings transformation or sudden unexpected events","8":"transformation, research, longevity and hidden matters are directly activated","9":"fortune through occult, philosophical or foreign channels","10":"sudden career changes or unexpected professional shifts","11":"unexpected gains or sudden fulfilment of desires","12":"deep spiritual transformation and moksha become significant"},"9":{"1":"personal energy and initiative attract good fortune","2":"wealth grows through luck and good karma","3":"fortune comes through communication and short journeys","4":"property and home are blessed by fortune","5":"children and education are fortunate and well-supported","6":"luck overcomes obstacles, debts and enemies","7":"spouse or partner brings luck and fortune","8":"fortune through transformation and hidden matters","9":"luck, father, higher learning and long journeys are directly activated","10":"professional success and recognition bring fortune","11":"gains and desires are fulfilled through luck and good karma","12":"spiritual merit, long journeys and foreign fortune"},"10":{"1":"personal drive, ambition and identity define the career","2":"family support and wealth fund career ambitions","3":"communication, writing and skills are career domains","4":"home-based work or property as a profession","5":"creativity, education and speculation shape the career","6":"service, medicine and competition are career themes","7":"partnerships and public dealings advance the career","8":"research, investigation or transformative work defines the career","9":"law, philosophy, teaching or foreign work as a profession","10":"career, authority and public recognition are directly activated","11":"network and connections are key to career growth","12":"foreign career, behind-the-scenes work or spiritual vocation"},"11":{"1":"personal ambition and drive bring gains and desired results","2":"family wealth and savings fulfil financial desires","3":"communication skills and business ventures bring gains","4":"property and home-related goals are fulfilled","5":"creative, investment and speculative gains come through","6":"overcoming competition and challenges leads to gains","7":"partner and social dealings bring gains and fulfilment","8":"sudden unexpected gains or inheritance come through","9":"luck and fortune bring desired results","10":"career success creates gains and fulfils ambitions","11":"gains, income, elder siblings and desires are directly activated","12":"foreign gains or spiritual fulfilment of desires"},"12":{"1":"personal identity is shaped by isolation or foreign experience","2":"family expenses or foreign financial dealings arise","3":"foreign communication or seclusion from siblings","4":"foreign residence or loss of home environment","5":"children abroad or hidden creative work","6":"hospitalisation, seclusion or retreat for healing","7":"partner from a foreign land or a period of separation","8":"deep spiritual transformation or occult experiences","9":"foreign travel, pilgrimage or spiritual journey abroad","10":"foreign career, working in isolation or secret work","11":"foreign gains or spiritual fulfilment of desires","12":"foreign lands, isolation, spirituality and expenses are directly activated"}}};
+
 function generateHouseInterpretation(houseResult, chartData) {
   const { house, name, slPlanet, nlPlanet, cuspSign,
-          signData, houseNature, houseVerdict,
-          slSignif, totalSupport, totalObstruct } = houseResult;
+          houseNature, houseVerdict, slSignif,
+          totalSupport, totalObstruct } = houseResult;
 
-  const hData  = HOUSE_DATA[house];
-  const slData = PLANET_DATA[slPlanet] || {};
-  const nlData = PLANET_DATA[nlPlanet] || {};
-  const slSig  = slSignif || [];
-  const occupants = getOccupyingPlanets(house, chartData);
-  const ownStar = nlPlanet === slPlanet;
+  const hData = HOUSE_DATA[house] || {};
+  const slSig = slSignif || [];
+  const nlSig = chartData.planetSig ? (chartData.planetSig[nlPlanet] || []) : [];
 
-  // House topic label
-  const H_TOPIC = {
-    1:'personality and physical self',2:'wealth and family life',3:'communication and courage',
-    4:'home and property',5:'children and creative life',6:'health and daily work',
-    7:'marriage and partnerships',8:'transformation and hidden matters',
-    9:'luck and higher wisdom',10:'career and public reputation',
-    11:'gains and fulfilment of desires',12:'foreign and spiritual matters'
-  };
-  const houseTopic = H_TOPIC[house] || name.toLowerCase();
-
-  // SL promise phrase
+  // ── STEP 1: Sub-lord promise ──
   const mainPresent  = slSig.includes(house);
-  const clusterHits  = (hData.cluster||[]).filter(h => slSig.includes(h));
-  const obstructHits = (hData.obstruct||[]).filter(h => slSig.includes(h));
+  const cluster      = hData.cluster || [];
+  const obstruct     = hData.obstruct || [];
+  const supportHits  = cluster.filter(h => slSig.includes(h));
+  const obstructHits = obstruct.filter(h => slSig.includes(h));
+  const netScore     = (mainPresent ? 2 : 0) + supportHits.length - obstructHits.length;
 
-  // ── STEP 1: Sub-lord — Promise + what its signified houses mean for THIS house ──
-  let step1 = '';
-
-  // Promise sentence
+  let promiseLine = '';
   if (mainPresent && obstructHits.length === 0) {
-    step1 = `<strong>${slPlanet}</strong> as the sub-lord directly and clearly promises ${houseTopic}. `;
-  } else if (mainPresent && obstructHits.length > 0) {
-    step1 = `<strong>${slPlanet}</strong> as the sub-lord promises ${houseTopic} — but with complications. `;
-  } else if (clusterHits.length >= 2) {
-    step1 = `<strong>${slPlanet}</strong> as the sub-lord gives an indirect promise for ${houseTopic}. Results come through a longer route. `;
-  } else if (clusterHits.length === 1) {
-    step1 = `<strong>${slPlanet}</strong> as the sub-lord gives a weak indication for ${houseTopic}. `;
+    promiseLine = `<strong>${slPlanet}</strong> as the sub-lord directly and clearly promises strong results for this house.`;
+  } else if (mainPresent && obstructHits.length === 1) {
+    promiseLine = `<strong>${slPlanet}</strong> as the sub-lord promises results here, but with one complicating factor that may cause delays or friction.`;
+  } else if (mainPresent && obstructHits.length >= 2) {
+    promiseLine = `<strong>${slPlanet}</strong> as the sub-lord promises results here, but with ${obstructHits.length} complicating factors — results will come, but not without significant effort or obstacles.`;
+  } else if (supportHits.length >= 2) {
+    promiseLine = `<strong>${slPlanet}</strong> as the sub-lord gives an indirect but real promise — supported through ${supportHits.length} connecting houses. Results will come through a longer or indirect route.`;
+  } else if (supportHits.length === 1 && obstructHits.length === 0) {
+    promiseLine = `<strong>${slPlanet}</strong> as the sub-lord gives a weak promise — only one supporting factor connects. Results are possible but depend on the right planetary period arriving.`;
+  } else if (supportHits.length >= 1 && obstructHits.length >= 1) {
+    promiseLine = `<strong>${slPlanet}</strong> as the sub-lord gives a mixed indication — some supporting factors but also complicating ones. Outcomes here will be uneven.`;
   } else {
-    step1 = `<strong>${slPlanet}</strong> as the sub-lord does not strongly support ${houseTopic} in this chart. `;
+    promiseLine = `<strong>${slPlanet}</strong> as the sub-lord does not connect to this house — this area of life is not strongly promised in the chart.`;
   }
 
-  // What the SL's signified houses mean for this specific house
-  if (slSig.length > 0) {
-    const houseCtx = (HSM[house] || HSM[String(house)]) || {};
-    const sigMeanings = slSig.map(h => houseCtx[h] || houseCtx[String(h)]).filter(Boolean);
+  // SL signified houses — what they mean for this house
+  const slHouseCtx = KP_CHANNELS.channel_meanings[house] || KP_CHANNELS.channel_meanings[String(house)] || {};
+  const slMeanings = slSig.map(h => {
+    const m = slHouseCtx[h] || slHouseCtx[String(h)];
+    const tag = h === house ? ' <em>(main)</em>'
+               : cluster.includes(h) ? ' <em>(supporting)</em>'
+               : obstruct.includes(h) ? ' <em>(complicating)</em>'
+               : '';
+    return m ? m + tag : null;
+  }).filter(Boolean);
 
-    if (sigMeanings.length > 0) {
-      // Separate into main/support/obstruct
-      const mainMeaning  = mainPresent ? houseCtx[house] || houseCtx[String(house)] : null;
-      const supportMeanings = clusterHits.map(h => houseCtx[h]||houseCtx[String(h)]).filter(Boolean);
-      const obstructMeanings = obstructHits.map(h => houseCtx[h]||houseCtx[String(h)]).filter(Boolean);
-      // Other connected houses
-      const otherSig = slSig.filter(h => h !== house && !clusterHits.includes(h) && !obstructHits.includes(h));
-      const otherMeanings = otherSig.map(h => houseCtx[h]||houseCtx[String(h)]).filter(Boolean).slice(0,2);
-
-      let sigText = `${slPlanet} signifies: `;
-      const parts = [];
-      if (mainMeaning) parts.push(`<em>${mainMeaning}</em> (main)`);
-      supportMeanings.forEach(m => parts.push(`<em>${m}</em> (supporting)`));
-      obstructMeanings.forEach(m => parts.push(`<em>${m}</em> (complicating)`));
-      otherMeanings.forEach(m => parts.push(`<em>${m}</em>`));
-      if (parts.length > 0) step1 += sigText + parts.join(', ') + '.';
-    }
+  let step1 = promiseLine;
+  if (slMeanings.length > 0) {
+    step1 += '<br><br><strong>' + slPlanet + ' signifies:</strong><ul>' +
+      slMeanings.map(m => '<li>' + m + '</li>').join('') + '</ul>';
   }
 
-  // ── STEP 2: Star-lord — Style and type through its significations ──
+  // ── STEP 2: Star-lord channels ──
   let step2 = '';
   if (nlPlanet) {
-    const nlSig = chartData.planetSig ? (chartData.planetSig[nlPlanet] || []) : [];
-    const houseCtx = (HSM[house] || HSM[String(house)]) || {};
+    const ownStar = nlPlanet === slPlanet;
+    const nlHouseCtx = KP_CHANNELS.channel_meanings[house] || KP_CHANNELS.channel_meanings[String(house)] || {};
+    const nlMeanings = nlSig.map(h => {
+      const m = nlHouseCtx[h] || nlHouseCtx[String(h)];
+      return m || null;
+    }).filter(Boolean);
 
     if (ownStar) {
-      step2 = `<strong>${slPlanet}</strong> sits in its own star — full, undivided strength. `;
+      step2 = `<strong>${slPlanet}</strong> sits in its own star — it operates at full, undivided strength here.`;
     } else {
-      step2 = `The star-lord is <strong>${nlPlanet}</strong> — this shapes the style and character of ${houseTopic}. `;
+      step2 = `The star-lord is <strong>${nlPlanet}</strong> — this shows the channels through which results will manifest.`;
     }
 
-    if (nlSig.length > 0) {
-      const nlMeanings = nlSig.map(h => houseCtx[h]||houseCtx[String(h)]).filter(Boolean);
-      if (nlMeanings.length > 0) {
-        step2 += `${ownStar?slPlanet:nlPlanet} signifies: ` + nlMeanings.map(m => `<em>${m}</em>`).join(', ') + '.';
-      }
+    if (nlMeanings.length > 0) {
+      step2 += '<br><br><strong>' + (ownStar ? slPlanet : nlPlanet) + ' channels through:</strong><ul>' +
+        nlMeanings.map(m => '<li>' + m + '</li>').join('') + '</ul>';
     }
   }
 
-  // ── STEP 3: Lagnesh connection ──
-  let step3 = '';
-  if (chartData.cusps && chartData.cusps[1]) {
-    const lagneshSign = chartData.cusps[1].sign;
-    const SIGN_LORD = {
-      Aries:'Mars',Taurus:'Venus',Gemini:'Mercury',Cancer:'Moon',Leo:'Sun',Virgo:'Mercury',
-      Libra:'Venus',Scorpio:'Mars',Sagittarius:'Jupiter',Capricorn:'Saturn',Aquarius:'Saturn',Pisces:'Jupiter'
-    };
-    const lagnesh = SIGN_LORD[lagneshSign];
-    if (lagnesh && chartData.planetSig) {
-      const lagneshSig = chartData.planetSig[lagnesh] || [];
-      const houseCtx = (HSM[house] || HSM[String(house)]) || {};
-      const lagneshConnected = lagneshSig.includes(house) ||
-        (hData.cluster||[]).some(h => lagneshSig.includes(h));
-
-      if (lagnesh === slPlanet) {
-        step3 = `The Lagnesh <strong>${lagnesh}</strong> (lord of the ascendant) is also the sub-lord here — this area of life is personally very important to the native.`;
-      } else if (lagneshConnected) {
-        const lagneshMeanings = lagneshSig.map(h => houseCtx[h]||houseCtx[String(h)]).filter(Boolean).slice(0,2);
-        step3 = `The Lagnesh <strong>${lagnesh}</strong> connects to this house — ${lagneshMeanings.length>0?lagneshMeanings.join('; '):houseTopic+' matters are personally important to the native'}.`;
-      }
-    }
-  }
-
-  // ── STEP 4: Planets in this house ──
-  let step4 = '';
-  if (occupants.length > 0) {
-    const domain = HOUSE_DOMAIN_MAP[house] || 'general';
-    const [pi, ni] = DOMAIN_IDX[domain];
-    const occLines = occupants.map(p => {
-      const sign = cuspSign || '';
-      const key = p + '_' + house + '_' + sign.slice(0,3);
-      const entry = KP_PLANET_TABLE[key];
-      const condLabel = entry ? {E:' (exalted — very strong)',O:' (in own sign — strong)',D:' (weakened here)',N:''}[entry[0]]||'' : '';
-      if (entry) {
-        const isDebil = entry[0] === 'D';
-        const raw = isDebil ? entry[ni] : entry[pi];
-        const parts = raw.split(';').map(s=>s.trim()).filter(Boolean);
-        const sentence = parts.length >= 2
-          ? parts[0] + ' — ' + parts[1]
-          : parts[0] || raw;
-        return `<strong>${p}</strong>${condLabel}: ${sentence}`;
-      }
-      // Fallback to karakatva
-      const pd = PLANET_DATA[p] || {};
-      return `<strong>${p}</strong>: ${pd.karakatva ? pd.karakatva.slice(0,2).join(', ') : p}`;
-    });
-    step4 = occLines.join('<br>');
-  }
-
-  // ── Summary ──
+  // ── STEP 3: Plain client-facing summary ──
   const summary = generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
-                                        occupants, null, houseNature, houseVerdict,
-                                        ownStar, chartData, cuspSign);
+    getOccupyingPlanets(house, chartData), null, houseNature, houseVerdict,
+    nlPlanet === slPlanet, chartData, cuspSign);
 
-  const parts = [step1, step2, step3, step4].filter(p => p && p.trim());
+  const parts = [step1, step2].filter(p => p && p.trim());
   let text = parts.join('<br><br>');
-  if (summary) text += `<br><br><strong>In summary —</strong> ${summary}`;
+  if (summary) text += '<br><br><strong>In summary —</strong> ' + summary;
   return text;
 }
 
 
-/**
- * Generate Style 2 story-based summary per house
- * Simple language, 2-3 sentences
- */
+// ═══════════════════════════════════════════════════
+// HOUSE SUMMARY — Client-facing second-person narrative
+// Combines promise strength + NL channel meanings
+// ═══════════════════════════════════════════════════
 function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
                                occupants, lagnesh, houseNature, houseVerdict,
                                ownStar, chartData, cuspSign) {
-  const hData = HOUSE_DATA[house];
-  const clusterHits = hData.cluster ? hData.cluster.filter(h => slSig.includes(h)) : [];
-  const mainPresent = slSig.includes(house);
-  const slData = PLANET_DATA[slPlanet] || {};
-  const nlData = PLANET_DATA[nlPlanet] || {};
+  const hData    = HOUSE_DATA[house] || {};
+  const cluster  = hData.cluster  || [];
+  const obstruct = hData.obstruct || [];
+  const nlSig    = chartData.planetSig ? (chartData.planetSig[nlPlanet] || []) : [];
 
-  // Build story elements
-  const promise = mainPresent ? 'directly promised' :
-                  clusterHits.length >= 2 ? 'promised through indirect path' :
-                  clusterHits.length === 1 ? 'moderately indicated' :
-                  'not strongly promised';
+  const mainPresent  = slSig.includes(house);
+  const supportHits  = cluster.filter(function(h) { return slSig.includes(h); });
+  const obstructHits = obstruct.filter(function(h) { return slSig.includes(h); });
 
-  const slKarak = slData.karakatva ? slData.karakatva.slice(0,2).join(' and ') : slPlanet;
-  const nlKarak = nlData.karakatva ? nlData.karakatva.slice(0,2).join(' and ') : nlPlanet;
+  const isStrong   = mainPresent && obstructHits.length === 0;
+  const isMixed    = mainPresent && obstructHits.length > 0;
+  const isIndirect = !mainPresent && supportHits.length >= 2;
+  const isWeak     = !mainPresent && supportHits.length === 1;
 
-  // ── Plain language promise phrase ──
-  const promisePhrase = {
-    'directly promised':              'strongly shown',
-    'promised through indirect path': 'indicated, though through an indirect path',
-    'moderately indicated':           'possible but not guaranteed',
-    'not strongly promised':          'not clearly shown in this chart'
-  }[promise] || promise;
+  const channelCtx = (KP_CHANNELS.channel_meanings[house] || KP_CHANNELS.channel_meanings[String(house)]) || {};
+  const channels   = nlSig.map(function(h) { return channelCtx[h] || channelCtx[String(h)]; }).filter(Boolean);
+  const ch         = channels.slice(0, 3);
 
-  // ── Occupant description using table ──
-  const occLine = (function() {
-    if (!occupants.length) return '';
-    const parts = occupants.map(p => {
-      const sign = cuspSign || '';
-      const desc = sign ? getPlanetInHouseDesc(p, house, sign) : null;
-      if (desc && desc.pos && desc.condition !== 'D') {
-        const pts = desc.pos.split(';').map(s => s.trim()).filter(Boolean);
-        return pts[0] ? `${p} brings ${pts[0].toLowerCase()}` : p;
-      } else if (desc && desc.neg && desc.condition === 'D') {
-        const pts = desc.neg.split(';').map(s => s.trim()).filter(Boolean);
-        return pts[0] ? `${p} creates some ${pts[0].toLowerCase()}` : p;
-      }
-      const pd = PLANET_DATA[p];
-      return pd ? `${p} adds ${pd.karakatva.slice(0,1).join('')}` : p;
-    });
-    return ` ${parts.join(', ')}.`;
-  })();
+  function channelPhrase(chs) {
+    if (!chs.length) return '';
+    if (chs.length === 1) return chs[0];
+    if (chs.length === 2) return chs[0] + ', and that ' + chs[1];
+    return chs.slice(0,-1).join(', ') + ', and ' + chs[chs.length-1];
+  }
 
-  // ── NL flavour in plain words ──
-  const nlLine = ownStar
-    ? `${slPlanet} is working at full strength here with no outside influence filtering it.`
-    : `The style of how this plays out is shaped by ${nlPlanet}, which brings ${PLANET_PLAIN[nlPlanet]||nlKarak}.`;
+  const cp = channelPhrase(ch);
 
-  // ── House-specific plain language summaries ──
-  const stories = {
-    1: (function() {
-      const base = mainPresent
-        ? `This person has a strong, well-defined personality and sense of self. They know who they are and carry themselves with presence.`
-        : clusterHits.length >= 2
-          ? `The personality is present and developing — it may take time for this person to fully own their identity, but they get there.`
-          : `A quieter, more private personality — this person may not always put themselves forward, but their inner world is rich.`;
-      return `${base} ${nlLine}${occLine}`;
-    })(),
+  var stories = {
+    1: isStrong
+      ? ('You have a strong, clear sense of who you are. Your personality is well-defined and you carry yourself with presence.' + (cp ? ' This identity is expressed through: ' + cp + '.' : ''))
+      : isMixed
+        ? ('You have a real sense of self, but it develops through friction and challenge rather than ease.' + (cp ? ' The main themes shaping your personality are: ' + cp + '.' : ''))
+        : (isIndirect || isWeak)
+          ? ('Your personality develops gradually over time, shaped more by experience than by an innate certainty of identity.' + (cp ? ' The forces that shape who you become include: ' + cp + '.' : ''))
+          : (cp ? 'You are someone who prefers to shape life on your own terms. Major growth comes through the themes that define your path: ' + cp + '. Rather than following a fixed script, your identity evolves continuously through these experiences.' : 'Your sense of self is built gradually through lived experience. Life itself is your teacher.'),
 
-    2: (function() {
-      const base = mainPresent
-        ? `Financial accumulation is clearly promised in this chart. This person has the capacity to build wealth and hold onto it.`
-        : clusterHits.length >= 2
-          ? `Money comes, but through effort and indirect means. Financial growth is possible — it just doesn't come without work.`
-          : `Wealth is not the primary story in this chart. Money may come and go — consistent accumulation requires conscious effort.`;
-      const familyLine = occupants.length ? ` Family matters and speech are also influenced by ${occupants.join(' and ')}.` : '';
-      return `${base} ${nlLine}${familyLine}`;
-    })(),
+    2: isStrong
+      ? ('Wealth and financial stability are clearly promised in your chart. You have the natural capacity to accumulate money and build lasting assets.' + (cp ? ' Your financial story is shaped by: ' + cp + '.' : ''))
+      : isMixed
+        ? ('Money will come, but not without effort. You have financial potential that needs the right conditions to fully express itself.' + (cp ? ' The channels through which wealth moves in your life include: ' + cp + '.' : ''))
+        : (isIndirect || isWeak)
+          ? ('Wealth comes through a longer, more indirect path in your chart. Consistent effort matters more than luck here.' + (cp ? ' Your financial growth is likely to come through: ' + cp + '.' : ''))
+          : ('Consistent financial accumulation is not the primary story in your chart. Money may flow in and out.' + (cp ? ' When wealth does come, it tends to arrive through: ' + cp + '.' : ' Building financial security will require conscious and deliberate effort.')),
 
-    3: (function() {
-      const base = mainPresent
-        ? `Communication, courage and initiative are strong suits for this person. They are not afraid to speak up or take action.`
-        : clusterHits.length >= 2
-          ? `This person has good communication abilities, though their courage and assertiveness may need situations that bring it out.`
-          : `Not a particularly bold or communicative chart placement — this person may prefer to observe before acting.`;
-      const sibLine = occupants.length ? ` Siblings and short travels are also coloured by ${occupants.join(' and ')}.` : '';
-      return `${base} ${nlLine}${sibLine}`;
-    })(),
+    3: isStrong
+      ? ('You are naturally courageous, communicative and action-oriented. You do not wait — you initiate.' + (cp ? ' These qualities express themselves through: ' + cp + '.' : ''))
+      : isMixed
+        ? ('You have courage and communication ability, but they are tested. Your boldness is earned through overcoming resistance.' + (cp ? ' The arenas where this plays out include: ' + cp + '.' : ''))
+        : ('Communication and initiative are areas you develop through practice and experience rather than natural ease.' + (cp ? ' Growth in these areas comes through: ' + cp + '.' : '')),
 
-    4: (function() {
-      const base = mainPresent
-        ? `Home, property and mother are strongly indicated. This person is likely to own property and has a meaningful connection with their roots and homeland.`
-        : clusterHits.length >= 2
-          ? `Property and home are possible — perhaps through inheritance, family support, or a late acquisition rather than early in life.`
-          : `Property and home comforts are not the dominant theme here. This person may live away from their place of birth or have a complicated relationship with home.`;
-      return `${base} ${nlLine}${occLine}`;
-    })(),
+    4: isStrong
+      ? ('Home, property and a sense of belonging are clearly promised in your life. You are likely to own property and have strong roots.' + (cp ? ' These come through: ' + cp + '.' : ''))
+      : isMixed
+        ? ('Home and property are part of your story, but they come with complexity — disputes, delays or transformation along the way.' + (cp ? ' Property matters in your life tend to come through: ' + cp + '.' : ''))
+        : ('A settled home or property ownership may take longer or come through unconventional means in your chart.' + (cp ? ' When it does arrive, it tends to come through: ' + cp + '.' : '')),
 
-    5: (function() {
-      const base = mainPresent
-        ? `Children and creative pursuits are strongly promised. This person has a natural talent for expression — whether through children, arts, or speculative ventures.`
-        : clusterHits.length >= 2
-          ? `Children and creativity are indicated but may need time or the right circumstances to fully blossom.`
-          : `Children or creative fulfilment may come with delays or be limited in this chart. Romance and speculation also need careful handling.`;
-      return `${base} ${nlLine}${occLine}`;
-    })(),
+    5: isStrong
+      ? ('Children, creativity and intelligence are strongly promised. You have a natural gift for expression, education and creative pursuits.' + (cp ? ' These blessings come through: ' + cp + '.' : ''))
+      : isMixed
+        ? ('Children and creative pursuits are part of your life, but they may come with delays, complications or unexpected circumstances.' + (cp ? ' The channels through which this plays out include: ' + cp + '.' : ''))
+        : ('Children and creative fulfilment may take time or come through indirect means in your chart.' + (cp ? ' When they arrive, the path tends to run through: ' + cp + '.' : '')),
 
-    6: (function() {
-      const base = mainPresent
-        ? `This person has strong work ethic and the ability to overcome obstacles. They handle competition, enemies and illness with resilience.`
-        : clusterHits.length >= 2
-          ? `Service, work and health matters are present in the chart — this person can handle challenges but may need to pace themselves.`
-          : `Work and health require conscious attention in this chart. Enemies and litigation are not dominant themes — this person mostly avoids conflict.`;
-      return `${base} ${nlLine}${occLine}`;
-    })(),
+    6: isStrong
+      ? ('You have strong capacity to overcome illness, enemies and obstacles. Service, competition and hard work are your strengths.' + (cp ? ' These qualities are expressed through: ' + cp + '.' : ''))
+      : isMixed
+        ? ('Health and work challenges are present in your chart, but so is the resilience to deal with them.' + (cp ? ' The areas where this plays out include: ' + cp + '.' : ''))
+        : ('Health and adversity are not dominant themes in your chart. You tend to avoid major conflicts.' + (cp ? ' When challenges do arise, they tend to come through: ' + cp + '.' : '')),
 
-    7: (function() {
-      const base = mainPresent
-        ? `Marriage and long-term partnerships are clearly promised. This person is meant to be in a relationship — partnerships are a major chapter of their life.`
-        : clusterHits.length >= 2
-          ? `Marriage or a significant partnership is indicated, though it may come through an indirect route or after some delay.`
-          : `Partnership and marriage are not the strongest promise in this chart. Relationships may be complicated, delayed, or take an unconventional form.`;
-      return `${base} ${nlLine}${occLine}`;
-    })(),
+    7: isStrong
+      ? ('Marriage and long-term partnership are clearly promised in your chart. You are meant to be in a committed relationship — it is a major chapter of your life.' + (cp ? ' The character of your union is shaped by: ' + cp + '.' : ''))
+      : isMixed
+        ? ('Partnership is part of your life, but it comes with complexity. Marriage may involve challenges, delays or significant transformation along the way.' + (cp ? ' The nature of your partnerships is shaped by: ' + cp + '.' : ''))
+        : (isIndirect || isWeak)
+          ? ('Partnership is indicated in your chart through an indirect route. It may come later than expected or through unusual circumstances.' + (cp ? ' When it arrives, it tends to be shaped by: ' + cp + '.' : ''))
+          : ('Marriage or partnership is not strongly promised in the conventional sense for your chart.' + (cp ? ' The themes that shape your relationships include: ' + cp + '.' : '')),
 
-    8: (function() {
-      const base = mainPresent
-        ? `This chart carries a strong theme of transformation, research and the hidden side of life. Sudden changes — both challenges and windfalls — are part of the story.`
-        : clusterHits.length >= 2
-          ? `Transformation and depth are present themes — this person goes through significant changes that shape who they become.`
-          : `Major upheavals and sudden events are not a dominant theme. Life tends to move in a more steady, predictable direction.`;
-      return `${base} ${nlLine}${occLine}`;
-    })(),
+    8: isStrong
+      ? ('Transformation, sudden events and the hidden side of life are major themes for you. You go through deep changes that most people never experience.' + (cp ? ' These transformations come through: ' + cp + '.' : ''))
+      : isMixed
+        ? ('There are moments of sudden change and deep transformation in your life, but they are balanced by stabilising forces.' + (cp ? ' The channels through which this operates include: ' + cp + '.' : ''))
+        : ('Major upheavals and sudden crises are not the dominant pattern in your chart. Life tends to move more steadily.' + (cp ? ' Any transformative events in your life tend to come through: ' + cp + '.' : '')),
 
-    9: (function() {
-      const base = mainPresent
-        ? `Fortune, luck and higher wisdom are clearly indicated. This person benefits from a natural grace — things often fall into place for them in the bigger picture.`
-        : clusterHits.length >= 2
-          ? `Luck and fortune are present but may come through effort and right action rather than effortlessly.`
-          : `Fortune is not a dominant theme here — this person creates their own luck through hard work rather than receiving it freely.`;
-      const fatherLine = occupants.length ? ` Long-distance travel and connection with father figures are also influenced by ${occupants.join(' and ')}.` : '';
-      return `${base} ${nlLine}${fatherLine}`;
-    })(),
+    9: isStrong
+      ? ('Fortune, luck and the blessings of past deeds are clearly on your side. Things tend to fall into place in the bigger picture of your life.' + (cp ? ' This fortune expresses itself through: ' + cp + '.' : ''))
+      : isMixed
+        ? ('Luck and fortune are present in your life, but they are not unconditional — right action and effort are needed to activate them.' + (cp ? ' Fortune comes most readily through: ' + cp + '.' : ''))
+        : ('Good fortune is something you create through your own effort rather than something that falls from the sky.' + (cp ? ' When luck does show up, it tends to come through: ' + cp + '.' : '')),
 
-    10: (function() {
-      const base = mainPresent
-        ? `Career and public reputation are a central, defining chapter of this life. This person is meant to achieve something visible in the world — status and recognition are genuinely promised.`
-        : clusterHits.length >= 2
-          ? `Career is important and growth is possible, though it may come through sustained effort over time rather than quick success.`
-          : `Career is not the most dominant promise in this chart. This person may find fulfilment outside conventional professional achievement.`;
-      const lagneshLine = lagnesh === slPlanet ? ` Career and identity are deeply linked for this person — what they do professionally is a big part of who they are.` : '';
-      return `${base}${lagneshLine} ${nlLine}`;
-    })(),
+    10: isStrong
+      ? ('Career, public reputation and professional achievement are a central and defining chapter of your life. You are meant to be seen and recognised for what you do.' + (cp ? ' Your career path expresses itself through: ' + cp + '.' : ''))
+      : isMixed
+        ? ('Career and professional ambition are part of your story, but they require sustained effort and navigation of obstacles. Success comes — but not easily.' + (cp ? ' Your professional journey moves through: ' + cp + '.' : ''))
+        : (isIndirect || isWeak)
+          ? ('Career success comes through a longer, more winding path in your chart. Direct, conventional achievement may not be your route.' + (cp ? ' Your professional growth tends to come through: ' + cp + '.' : ''))
+          : ('Career and conventional professional achievement are not the primary promise of this chart. Your work may take a less traditional form.' + (cp ? ' When professional success does arrive, it tends to come through: ' + cp + '.' : '')),
 
-    11: (function() {
-      const base = mainPresent
-        ? `Gains, income from multiple sources, and fulfilment of desires are strongly indicated. This person has a good capacity to earn and accumulate over time.`
-        : clusterHits.length >= 2
-          ? `Gains and wish-fulfilment are present — this person reaches their goals, though it may take patience and the right network.`
-          : `Gains are possible but are not the strongest promise. This person may achieve desires in some areas while finding others elusive.`;
-      const networkLine = occupants.length ? ` Friends, elder siblings and social circle are also coloured by ${occupants.join(' and ')}.` : '';
-      return `${base} ${nlLine}${networkLine}`;
-    })(),
+    11: isStrong
+      ? ('Gains, income and the fulfilment of your desires are strongly promised. What you wish for, you tend to achieve.' + (cp ? ' These gains come through: ' + cp + '.' : ''))
+      : isMixed
+        ? ('Gains and desired outcomes are possible in your chart, but they come with conditions and require effort.' + (cp ? ' The primary channels for gains in your life include: ' + cp + '.' : ''))
+        : ('Consistent gains and effortless desire fulfilment are not the strongest promise in your chart. What you want, you must work towards.' + (cp ? ' When gains do come, they tend to arrive through: ' + cp + '.' : '')),
 
-    12: (function() {
-      const base = mainPresent
-        ? `Foreign connection, spirituality and letting go are strong themes. This person may live or work abroad, or have a significant spiritual dimension to their life.`
-        : clusterHits.length >= 2
-          ? `Foreign matters and spiritual interests are present in the chart — travel abroad or a connection to distant lands is indicated.`
-          : `Foreign settlement or heavy expenses are not the primary story. This person tends to build life close to home.`;
-      const expLine = occupants.length ? ` Bed comforts, isolation and losses are also influenced by ${occupants.join(' and ')}.` : '';
-      return `${base} ${nlLine}${expLine}`;
-    })()
+    12: isStrong
+      ? ('Foreign connection, spirituality and behind-the-scenes activity are major themes in your life. You may live abroad, work in private or develop a deep inner world.' + (cp ? ' These themes express themselves through: ' + cp + '.' : ''))
+      : isMixed
+        ? ('Foreign and spiritual themes are present in your life, but balanced with losses and expenses. Wisdom comes through letting go.' + (cp ? ' These experiences come through: ' + cp + '.' : ''))
+        : ('Foreign settlement or heavy losses are not a dominant story in your chart. Life tends to stay closer to home.' + (cp ? ' When foreign or spiritual themes arise, they tend to come through: ' + cp + '.' : ''))
   };
 
-  return stories[house] || `This area of life is ${promisePhrase}. ${nlLine}${occLine}`;
+  return stories[house] || '';
 }
+
 
 // ═══════════════════════════════════════════════════
 // MAIN HOUSE PREDICTION RUNNER
