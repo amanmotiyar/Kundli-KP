@@ -2029,6 +2029,23 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
 
   // Find the best channel to use for the summary
   // If NL is in own star (ownStar), use the SL itself as channel
+  // Channel priority order per topic house — picks most relevant NL channel
+  var CHANNEL_PRIORITY = {
+    1:  [1, 3, 10, 9, 2, 7, 11, 4, 8, 5, 12, 6],
+    2:  [2, 10, 6, 11, 9, 3, 7, 1, 4, 5, 8, 12],
+    3:  [3, 9, 10, 1, 2, 11, 7, 4, 5, 8, 12, 6],
+    4:  [4, 2, 11, 9, 10, 1, 7, 3, 5, 8, 12, 6],
+    5:  [5, 2, 11, 9, 7, 1, 3, 4, 10, 6, 8, 12],
+    6:  [6, 11, 5, 1, 10, 9, 2, 3, 7, 4, 8, 12],
+    7:  [7, 2, 11, 5, 9, 4, 3, 1, 8, 10, 12, 6],
+    8:  [8, 11, 9, 2, 3, 10, 7, 4, 1, 12, 5, 6],
+    9:  [9, 11, 5, 1, 10, 2, 7, 3, 4, 6, 8, 12],
+    10: [10, 6, 2, 11, 9, 7, 3, 1, 4, 5, 8, 12],
+    11: [11, 10, 6, 9, 2, 5, 7, 1, 3, 4, 8, 12],
+    12: [12, 9, 11, 3, 7, 10, 4, 2, 1, 5, 8, 6]
+  };
+  var priority = CHANNEL_PRIORITY[house] || [];
+
   var channelHouse = null;
 
   // Priority 1: NL signifies the topic house directly
@@ -2041,14 +2058,16 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
     }
   }
 
-  // Priority 3: Any other signified house (non-obstruct)
+  // Priority 3: Pick the most relevant NL channel using per-house priority order
   if (!channelHouse) {
-    for (var j = 0; j < nlSig.length; j++) {
-      if (obstruct.indexOf(nlSig[j]) === -1) { channelHouse = nlSig[j]; break; }
+    for (var p = 0; p < priority.length; p++) {
+      if (has(priority[p]) && obstruct.indexOf(priority[p]) === -1) {
+        channelHouse = priority[p]; break;
+      }
     }
   }
 
-  // Priority 4: Obstruct house if nothing else
+  // Priority 4: Any obstruct house if nothing else found
   if (!channelHouse && nlSig.length > 0) channelHouse = nlSig[0];
 
   if (!channelHouse) return '';
