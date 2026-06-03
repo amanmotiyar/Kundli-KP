@@ -61,6 +61,13 @@
   display: block;
 }
 .dba-sep { color: var(--text-hint); font-size: 20px; }
+.dba-dates {
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+}
 
 
 
@@ -365,6 +372,7 @@
             <span class="dba-pill-value" id="dba-pd-display">—</span>
           </div>
         </div>
+        <div class="dba-dates" id="dba-dates-display"></div>
       </div>
     </div>
 
@@ -406,6 +414,18 @@ function renderDashboard(chartData, results) {
   document.getElementById('dba-md-display').textContent = chartData.dba.md || '—';
   document.getElementById('dba-ad-display').textContent = chartData.dba.ad || '—';
   document.getElementById('dba-pd-display').textContent = chartData.dba.pd || '—';
+
+  // Show period dates if entered
+  const dbaFrom = chartData.dba.from;
+  const dbaTo   = chartData.dba.to;
+  const dbaDateEl = document.getElementById('dba-dates-display');
+  if (dbaDateEl) {
+    if (dbaFrom || dbaTo) {
+      dbaDateEl.textContent = `Period: ${dbaFrom || '—'}  to  ${dbaTo || '—'}`;
+    } else {
+      dbaDateEl.textContent = '';
+    }
+  }
 
 
 
@@ -456,7 +476,6 @@ function renderDashboard(chartData, results) {
           <span>Support <strong>${r.totalSupport}</strong></span>
           <span>Obstruct <strong>${r.totalObstruct}</strong></span>
           <span>Sub-events <strong>${r.subEvents.length}</strong></span>
-          <span>AD Gate <strong>${r.adActive ? '✓ Open' : '✗ Closed'}</strong></span>
         </div>
         <span class="row-detail-link">View Detail →</span>
       </div>`;
