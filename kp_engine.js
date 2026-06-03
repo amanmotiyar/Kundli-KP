@@ -1443,10 +1443,14 @@ const KP_PLANET_TABLE = {"Sun_1_Ari":["E","Authority, vitality, government; Bold
 
 // Domain to use per house for planet-in-house lookup
 const HOUSE_DOMAIN_MAP = {
-  1:'general', 2:'general', 3:'general', 4:'property',
+  1:'general', 2:'property', 3:'general', 4:'property',
   5:'children', 6:'health', 7:'marriage', 8:'general',
   9:'general', 10:'career', 11:'general', 12:'spiritual'
 };
+
+// House signification meanings: what each signified house means in context of the analysed house
+// HSM[analysed_house][signified_house] = plain meaning
+const HSM = {"1":{"1":"directly activates personality and physical body","2":"connects family and speech to identity","3":"brings courage and communication skills to the personality","4":"emotional roots and mother shape the self","5":"adds creativity and self-expression","6":"health challenges and work pressures shape identity","7":"others and relationships define or challenge the self","8":"deep transformation and psychological depth shape the person","9":"luck, philosophy and spirituality are part of the identity","10":"career and public image are central to who they are","11":"ambitions and network drive the personality","12":"introspection, isolation or foreign influences shape the self"},"2":{"1":"personal effort and initiative drive wealth creation","2":"directly activates accumulated wealth and family life","3":"communication skills and business ventures bring income","4":"property and home-related assets contribute to wealth","5":"investments, speculation and creative ventures are income sources","6":"employment, service and loans are financial pathways","7":"partner or spouse contributes to finances","8":"inheritance, hidden wealth or sudden gains","9":"luck, foreign income and good fortune enhance wealth","10":"salary, career and professional success are the main income source","11":"network gains, social connections and fulfilment of financial desires","12":"foreign spending, hidden expenses or financial sacrifice"},"3":{"1":"personal courage and initiative are strong","2":"family support and resources back the efforts","3":"directly activates communication, courage and initiative","4":"emotional grounding supports courageous action","5":"creative intelligence drives communication","6":"challenges and competition strengthen courage","7":"partnerships and others inspire bold moves","8":"transformation and deep will power drive initiative","9":"philosophical outlook and fortune guide communication","10":"professional standing and authority enhance communication","11":"gains and social network amplify communication","12":"behind-the-scenes work or foreign communication"},"4":{"1":"personal effort shapes home and property","2":"family wealth and savings fund property","3":"siblings and short ventures affect property life","4":"directly activates home, mother and property","5":"investments and speculative gains fund property","6":"legal issues, loans or disputes are property-related","7":"spouse or partner plays a key role in property","8":"inherited property or sudden change in assets","9":"luck and good fortune favour property acquisition","10":"professional success and career income fund property","11":"gains and desires fulfilled through property ownership","12":"foreign property, loss of home or spiritual residence"},"5":{"1":"personal creativity and self-expression shine","2":"family wealth supports education and children","3":"communication and skills boost creativity","4":"home and mother are connected to children and creativity","5":"directly activates children, education and creative pursuits","6":"health or work challenges affect children or creativity","7":"partner plays a role in children and romance","8":"transformation brings deep creative or parental experiences","9":"luck and higher learning enhance education and children","10":"career and professional work involve creativity or teaching","11":"gains through creative work and desire fulfilment","12":"foreign education, hidden talent or spiritual creativity"},"6":{"1":"personal health and daily habits are central","2":"financial disputes, loans or family debts","3":"courage and effort resolve challenges and enemies","4":"home environment affects health","5":"children or creative work-related health matters","6":"directly activates health, service, enemies and disputes","7":"partner or others are involved in disputes or health","8":"chronic health issues or hidden enemies possible","9":"luck and fortune help overcome illness and obstacles","10":"career-related health issues or workplace competition","11":"gains from overcoming challenges and legal victories","12":"hospitalisation, hidden health issues or spiritual healing"},"7":{"1":"personal identity and independence affect the union","2":"family approval and wealth are tied to marriage","3":"communication and short travels play a role","4":"home and emotional security are important in marriage","5":"romance, love and children are foundations","6":"health or work challenges affect marriage","7":"directly activates marriage and long-term partnerships","8":"transformation, intensity and hidden matters in marriage","9":"luck, tradition and father bless the union","10":"career and reputation are tied to marriage","11":"social gains and desires fulfilled through marriage","12":"foreign partner, sacrifice or spiritual dimension in marriage"},"8":{"1":"personal transformation and identity crisis","2":"sudden financial changes, inherited wealth or losses","3":"hidden courage, occult communication, research","4":"home and property undergo transformation","5":"sudden changes to children or creative life","6":"health crises, accidents or defeat of enemies","7":"partner brings transformation or sudden events","8":"directly activates transformation, research and hidden matters","9":"luck through occult, foreign or philosophical channels","10":"sudden career changes or unexpected rise/fall","11":"sudden gains or unexpected fulfilment of desires","12":"deep spiritual transformation, foreign occult, moksha"},"9":{"1":"personal fortune and luck are strong","2":"wealth grows through luck and good karma","3":"fortune comes through communication and short journeys","4":"property and home connected to fortune","5":"children, education and creativity are fortunate","6":"luck overcomes obstacles and enemies","7":"partner brings luck and fortune","8":"fortune through hidden or transformative events","9":"directly activates luck, father, higher learning and long journeys","10":"professional success brings fortune and recognition","11":"gains and desires fulfilled through luck and good fortune","12":"foreign fortune, spiritual merit and long journeys"},"10":{"1":"personal drive and ambition define the career","2":"family support and wealth fund career ambitions","3":"communication, skills and media are career domains","4":"home-based work or property as profession","5":"creativity, education and speculation as career","6":"service, medicine and competition as career themes","7":"partnerships, public dealings or spouse advance career","8":"research, investigation or transformative work","9":"law, philosophy, foreign work and teaching","10":"directly activates career, authority and public recognition","11":"gains and network connections advance career goals","12":"foreign career, behind-the-scenes roles or spiritual vocation"},"11":{"1":"personal ambition and identity drive gains","2":"family wealth and savings fulfil desires","3":"communication and short ventures bring gains","4":"property and home related gains","5":"creative, speculative or investment gains","6":"service and competition bring financial gains","7":"partner or public bring gains and social connections","8":"sudden unexpected gains or inheritance","9":"luck and fortune bring desired results","10":"career and professional success create gains","11":"directly activates gains, desires, elder siblings and social network","12":"foreign gains or spiritual fulfilment of desires"},"12":{"1":"self and body require rest or seclusion","2":"family expenses or foreign financial dealings","3":"foreign communication or seclusion from siblings","4":"foreign residence or loss of home","5":"children in foreign lands or hidden creative work","6":"hospitalisation, seclusion or retreat","7":"partner from foreign land or separation","8":"spiritual seclusion, past life matters or hidden transformation","9":"foreign travel, pilgrimage or spiritual journey","10":"foreign career or work done in secret","11":"foreign gains or dissolution of desires","12":"directly activates foreign lands, spirituality, bed pleasures and expenses"}};
 
 // Domain index in table array
 const DOMAIN_IDX = {
@@ -1479,10 +1483,10 @@ const PLANET_PLAIN = {
 
 // ═══════════════════════════════════════════════════
 // MAIN HOUSE INTERPRETATION — 4-STEP FORMULA
-// 1. Sub-lord → promise (what is indicated)
-// 2. Star-lord (NL of SL) → style/type (how it manifests)
-// 3. Karakatva → planet qualities in this house context
-// 4. Planets in house → specific domain impact from table
+// Step 1: SL promise + what its significations mean for this house
+// Step 2: NL significations as type/style indicator
+// Step 3: Lagnesh connection
+// Step 4: Planets physically in this house (from KP table)
 // ═══════════════════════════════════════════════════
 function generateHouseInterpretation(houseResult, chartData) {
   const { house, name, slPlanet, nlPlanet, cuspSign,
@@ -1496,82 +1500,137 @@ function generateHouseInterpretation(houseResult, chartData) {
   const occupants = getOccupyingPlanets(house, chartData);
   const ownStar = nlPlanet === slPlanet;
 
-  // ── House domain label for plain language ──
-  const H = {
-    1:'personality and self',2:'wealth and family',3:'communication and courage',
-    4:'home and property',5:'children and creativity',6:'health and work',
-    7:'marriage and partnerships',8:'transformation and challenges',
-    9:'luck and higher learning',10:'career and reputation',
+  // House topic label
+  const H_TOPIC = {
+    1:'personality and physical self',2:'wealth and family life',3:'communication and courage',
+    4:'home and property',5:'children and creative life',6:'health and daily work',
+    7:'marriage and partnerships',8:'transformation and hidden matters',
+    9:'luck and higher wisdom',10:'career and public reputation',
     11:'gains and fulfilment of desires',12:'foreign and spiritual matters'
   };
-  const houseTopic = H[house] || name.toLowerCase();
+  const houseTopic = H_TOPIC[house] || name.toLowerCase();
 
-  // ── STEP 1: Sub-lord Promise ──
+  // SL promise phrase
   const mainPresent  = slSig.includes(house);
   const clusterHits  = (hData.cluster||[]).filter(h => slSig.includes(h));
   const obstructHits = (hData.obstruct||[]).filter(h => slSig.includes(h));
 
+  // ── STEP 1: Sub-lord — Promise + what its signified houses mean for THIS house ──
   let step1 = '';
+
+  // Promise sentence
   if (mainPresent && obstructHits.length === 0) {
-    step1 = `<strong>${slPlanet}</strong> as the sub-lord directly promises strong results in ${houseTopic}. The chart clearly supports this area of life.`;
+    step1 = `<strong>${slPlanet}</strong> as the sub-lord directly and clearly promises ${houseTopic}. `;
   } else if (mainPresent && obstructHits.length > 0) {
-    step1 = `<strong>${slPlanet}</strong> as the sub-lord promises results in ${houseTopic}, but there are ${obstructHits.length} complicating factor${obstructHits.length>1?'s':''} that introduce delays or challenges. The outcome is real but requires effort.`;
+    step1 = `<strong>${slPlanet}</strong> as the sub-lord promises ${houseTopic} — but with complications. `;
   } else if (clusterHits.length >= 2) {
-    step1 = `<strong>${slPlanet}</strong> as the sub-lord gives an indirect but real promise for ${houseTopic}. Results come through a longer route but they do materialise.`;
+    step1 = `<strong>${slPlanet}</strong> as the sub-lord gives an indirect promise for ${houseTopic}. Results come through a longer route. `;
   } else if (clusterHits.length === 1) {
-    step1 = `<strong>${slPlanet}</strong> as the sub-lord gives a weak indication for ${houseTopic}. Results are possible but depend heavily on the right planetary period arriving.`;
+    step1 = `<strong>${slPlanet}</strong> as the sub-lord gives a weak indication for ${houseTopic}. `;
   } else {
-    step1 = `<strong>${slPlanet}</strong> as the sub-lord does not strongly support ${houseTopic} in this chart. This area of life is not the primary focus — results here will need exceptional conditions.`;
+    step1 = `<strong>${slPlanet}</strong> as the sub-lord does not strongly support ${houseTopic} in this chart. `;
   }
 
-  // ── STEP 2: Star-lord Style ──
-  let step2 = '';
-  if (nlPlanet) {
-    const nlKarak = nlData.karakatva ? nlData.karakatva.slice(0,3).join(', ') : nlPlanet;
-    if (ownStar) {
-      step2 = `<strong>${slPlanet}</strong> is placed in its own star, operating at full strength with no outside influence. Everything about ${houseTopic} for this person carries the pure qualities of ${slPlanet} — ${PLANET_PLAIN[slPlanet]||nlKarak}.`;
-    } else {
-      step2 = `The style and nature of how ${houseTopic} unfolds is determined by <strong>${nlPlanet}</strong>. ${nlPlanet} brings ${PLANET_PLAIN[nlPlanet]||nlKarak} into this picture — this shapes the tone and character of how events here play out.`;
+  // What the SL's signified houses mean for this specific house
+  if (slSig.length > 0) {
+    const houseCtx = (HSM[house] || HSM[String(house)]) || {};
+    const sigMeanings = slSig.map(h => houseCtx[h] || houseCtx[String(h)]).filter(Boolean);
+
+    if (sigMeanings.length > 0) {
+      // Separate into main/support/obstruct
+      const mainMeaning  = mainPresent ? houseCtx[house] || houseCtx[String(house)] : null;
+      const supportMeanings = clusterHits.map(h => houseCtx[h]||houseCtx[String(h)]).filter(Boolean);
+      const obstructMeanings = obstructHits.map(h => houseCtx[h]||houseCtx[String(h)]).filter(Boolean);
+      // Other connected houses
+      const otherSig = slSig.filter(h => h !== house && !clusterHits.includes(h) && !obstructHits.includes(h));
+      const otherMeanings = otherSig.map(h => houseCtx[h]||houseCtx[String(h)]).filter(Boolean).slice(0,2);
+
+      let sigText = `${slPlanet} signifies: `;
+      const parts = [];
+      if (mainMeaning) parts.push(`<em>${mainMeaning}</em> (main)`);
+      supportMeanings.forEach(m => parts.push(`<em>${m}</em> (supporting)`));
+      obstructMeanings.forEach(m => parts.push(`<em>${m}</em> (complicating)`));
+      otherMeanings.forEach(m => parts.push(`<em>${m}</em>`));
+      if (parts.length > 0) step1 += sigText + parts.join(', ') + '.';
     }
   }
 
-  // ── STEP 3: Occupying Planets ──
-  let step3 = '';
-  if (occupants.length > 0) {
-    const occLines = occupants.map(p => {
-      const desc = getPlanetInHouseDesc(p, house, cuspSign);
-      const pd = PLANET_DATA[p] || {};
-      const condLabel = desc
-        ? {E:' — very strong placement',O:' — strong placement',D:' — challenging placement',N:''}[desc.condition]||''
-        : '';
-      const impactRaw = desc
-        ? (desc.condition === 'D' ? desc.neg : desc.pos)
-        : (pd.karakatva ? pd.karakatva.slice(0,2).join(' and ') : p);
-      const impactParts = impactRaw.split(';').map(s => s.trim()).filter(Boolean);
-      // Pick most descriptive part — prefer sign-specific (part 2) if available
-      let impactSentence;
-      if (impactParts.length >= 2) {
-        // Combine: "part1 and part2" if they don't overlap
-        const p1 = impactParts[0], p2 = impactParts[1];
-        // If part2 looks like it adds new info (not just rephrasing p1)
-        impactSentence = p1.toLowerCase().includes(p2.split(' ')[0].toLowerCase())
-          ? p1 // parts overlap, just use first
-          : `${p1} — ${p2}`;
-      } else {
-        impactSentence = impactParts[0] || impactRaw;
+  // ── STEP 2: Star-lord — Style and type through its significations ──
+  let step2 = '';
+  if (nlPlanet) {
+    const nlSig = chartData.planetSig ? (chartData.planetSig[nlPlanet] || []) : [];
+    const houseCtx = (HSM[house] || HSM[String(house)]) || {};
+
+    if (ownStar) {
+      step2 = `<strong>${slPlanet}</strong> sits in its own star — full, undivided strength. `;
+    } else {
+      step2 = `The star-lord is <strong>${nlPlanet}</strong> — this shapes the style and character of ${houseTopic}. `;
+    }
+
+    if (nlSig.length > 0) {
+      const nlMeanings = nlSig.map(h => houseCtx[h]||houseCtx[String(h)]).filter(Boolean);
+      if (nlMeanings.length > 0) {
+        step2 += `${ownStar?slPlanet:nlPlanet} signifies: ` + nlMeanings.map(m => `<em>${m}</em>`).join(', ') + '.';
       }
-      return `<strong>${p}</strong>${condLabel}: ${impactSentence}`;
-    });
-    step3 = occLines.join('<br>');
+    }
   }
 
-  // ── STEP 4: Summary ──
+  // ── STEP 3: Lagnesh connection ──
+  let step3 = '';
+  if (chartData.cusps && chartData.cusps[1]) {
+    const lagneshSign = chartData.cusps[1].sign;
+    const SIGN_LORD = {
+      Aries:'Mars',Taurus:'Venus',Gemini:'Mercury',Cancer:'Moon',Leo:'Sun',Virgo:'Mercury',
+      Libra:'Venus',Scorpio:'Mars',Sagittarius:'Jupiter',Capricorn:'Saturn',Aquarius:'Saturn',Pisces:'Jupiter'
+    };
+    const lagnesh = SIGN_LORD[lagneshSign];
+    if (lagnesh && chartData.planetSig) {
+      const lagneshSig = chartData.planetSig[lagnesh] || [];
+      const houseCtx = (HSM[house] || HSM[String(house)]) || {};
+      const lagneshConnected = lagneshSig.includes(house) ||
+        (hData.cluster||[]).some(h => lagneshSig.includes(h));
+
+      if (lagnesh === slPlanet) {
+        step3 = `The Lagnesh <strong>${lagnesh}</strong> (lord of the ascendant) is also the sub-lord here — this area of life is personally very important to the native.`;
+      } else if (lagneshConnected) {
+        const lagneshMeanings = lagneshSig.map(h => houseCtx[h]||houseCtx[String(h)]).filter(Boolean).slice(0,2);
+        step3 = `The Lagnesh <strong>${lagnesh}</strong> connects to this house — ${lagneshMeanings.length>0?lagneshMeanings.join('; '):houseTopic+' matters are personally important to the native'}.`;
+      }
+    }
+  }
+
+  // ── STEP 4: Planets in this house ──
+  let step4 = '';
+  if (occupants.length > 0) {
+    const domain = HOUSE_DOMAIN_MAP[house] || 'general';
+    const [pi, ni] = DOMAIN_IDX[domain];
+    const occLines = occupants.map(p => {
+      const sign = cuspSign || '';
+      const key = p + '_' + house + '_' + sign.slice(0,3);
+      const entry = KP_PLANET_TABLE[key];
+      const condLabel = entry ? {E:' (exalted — very strong)',O:' (in own sign — strong)',D:' (weakened here)',N:''}[entry[0]]||'' : '';
+      if (entry) {
+        const isDebil = entry[0] === 'D';
+        const raw = isDebil ? entry[ni] : entry[pi];
+        const parts = raw.split(';').map(s=>s.trim()).filter(Boolean);
+        const sentence = parts.length >= 2
+          ? parts[0] + ' — ' + parts[1]
+          : parts[0] || raw;
+        return `<strong>${p}</strong>${condLabel}: ${sentence}`;
+      }
+      // Fallback to karakatva
+      const pd = PLANET_DATA[p] || {};
+      return `<strong>${p}</strong>: ${pd.karakatva ? pd.karakatva.slice(0,2).join(', ') : p}`;
+    });
+    step4 = occLines.join('<br>');
+  }
+
+  // ── Summary ──
   const summary = generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
                                         occupants, null, houseNature, houseVerdict,
                                         ownStar, chartData, cuspSign);
 
-  // Combine all steps
-  const parts = [step1, step2, step3].filter(p => p.trim());
+  const parts = [step1, step2, step3, step4].filter(p => p && p.trim());
   let text = parts.join('<br><br>');
   if (summary) text += `<br><br><strong>In summary —</strong> ${summary}`;
   return text;
