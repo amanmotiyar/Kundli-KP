@@ -1801,7 +1801,7 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
         ? 'Your personal health and body are the site of the challenge — but also of the recovery. The body faces illness or adversity but has the strength to bounce back. Success in competition through personal effort is confirmed. Health challenges arise and are overcome through the native\'s own vitality.'
         : 'Your personal health and body are directly involved in the challenges of this area. Illness may affect you personally. Adversity is experienced first-hand. The body is the primary site of both the struggle and the recovery.'),
 
-      2: 'Financial debts and family-related disputes are the challenge. Money is borrowed out of necessity or family assets are depleted through illness or legal matters. Speech or family situations generate conflict. Financial obligations are a recurring and manageable theme.',
+      2: 'Family-related health obligations and financial debts arising from illness or medical care are the channels. The health challenge has a domestic or financial dimension — family assets may be affected by medical expenses, or family disputes may create stress that manifests as health issues. Speech and family relationships are caught in the crossfire.',
 
       3: 'Courage, communication and boldness are the tools for overcoming challenges. You fight enemies through words and negotiation. Written or verbal disputes are the arena of competition. Siblings may be involved in conflicts. Your ability to communicate directly is what gives you the edge.',
 
@@ -2042,7 +2042,7 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
     9:  [9, 11, 5, 1, 10, 2, 7, 3, 4, 6, 8, 12],
     10: [10, 6, 2, 11, 9, 7, 3, 1, 4, 5, 8, 12],
     11: [11, 10, 6, 9, 2, 5, 7, 1, 3, 4, 8, 12],
-    12: [12, 9, 11, 3, 7, 10, 4, 2, 1, 5, 8, 6]
+    12: [12, 9, 11, 3, 7, 10, 4, 2, 1, 6, 5, 8]
   };
   var priority = CHANNEL_PRIORITY[house] || [];
 
@@ -2080,7 +2080,58 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
   if (!channelHouse) return '';
 
   var story = houseStories[channelHouse];
-  return story || '';
+  if (!story) return '';
+
+  // Prefix with verdict context when story would contradict the verdict
+  var notPromised = (houseVerdict === 'Not Promised');
+  var isObstructive = (houseNature === 'Obstructive');
+
+  // Houses where "not promised" prefix matters most (avoid contradicting)
+  var contradictPhrases = [
+    'directly and strongly activated',
+    'clearly promised',
+    'desires are fulfilled',
+    'strongly promised',
+    'clearly confirmed',
+    'union will happen',
+    'this is the clearest confirmation',
+    'strongest possible position',
+    'most direct fortune indicator',
+    'directly activated',
+    'central to the marriage',
+    'supporting pillars of the marriage promise',
+    'love will happen',
+    'you achieve',
+    'clearly indicated',
+    'fully activated',
+    'victory over enemies',
+    'hospitalisation',
+    'surgery and hospitalisation',
+    'moksha'
+  ];
+  var wouldContradict = false;
+  var storyLower = story.toLowerCase();
+  contradictPhrases.forEach(function(p){ if(storyLower.indexOf(p.toLowerCase())>=0) wouldContradict=true; });
+
+  if ((notPromised || isObstructive) && wouldContradict) {
+    var notPromisedStories = {
+      1: 'The personality and sense of self develop gradually and quietly in this chart. There is no dramatic statement of identity — instead, character builds through lived experience over time.',
+      2: 'Consistent wealth accumulation is not the primary promise of this chart. Financial life tends to fluctuate rather than build steadily. Conscious effort and discipline around money are essential.',
+      3: 'Communication and bold initiative are not the primary focus of this chart. Expression develops slowly and works best in specific, focused contexts rather than broadly.',
+      4: 'A settled home and property ownership are not strongly indicated in this chart. Domestic life may be unconventional, delayed or subject to change. Roots may be found in unexpected places.',
+      5: 'Children and creative fulfilment are not the primary promise here. These matters may come later than expected, through unconventional means, or may take forms different from what is imagined.',
+      6: 'Health challenges and service are not dominant themes in this chart. The native tends to avoid major illness and conflict. When challenges do arise, they are manageable.',
+      7: 'Marriage and conventional partnership are not strongly promised in this chart. Relationships may arrive in unconventional forms, later than expected, or with significant conditions attached.',
+      8: 'Major transformation and sudden upheaval are not the defining pattern in this chart. Life tends to move more steadily. Deep change, when it comes, is gradual rather than dramatic.',
+      9: 'Fortune and luck are not the primary promise here. Good outcomes in life come through sustained effort and right action rather than grace or windfall. The native creates their own fortune.',
+      10: 'Career and conventional professional achievement are not the primary promise of this chart. Professional life may take an unconventional form or develop through a longer, less direct route.',
+      11: 'Significant gains and easy desire fulfilment are not the strongest promise here. What the native wants, they must work deliberately towards. Income comes through effort, not fortune.',
+      12: 'Foreign settlement and major spiritual renunciation are not the primary story in this chart. Life tends to stay anchored closer to home. Foreign and spiritual themes play a supporting role rather than a defining one.'
+    };
+    return notPromisedStories[house] || 'This area is not strongly promised in this chart. Results here depend on exceptional conditions and the right timing.';
+  }
+
+  return story;
 }
 
 
