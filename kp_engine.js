@@ -2038,7 +2038,7 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
     5:  [5, 2, 11, 9, 7, 1, 3, 4, 10, 6, 8, 12],
     6:  [6, 11, 5, 1, 10, 9, 2, 3, 7, 4, 8, 12],
     7:  [7, 2, 11, 5, 9, 4, 3, 1, 8, 10, 12, 6],
-    8:  [8, 11, 9, 2, 3, 10, 7, 4, 1, 12, 5, 6],
+    8:  [8, 11, 9, 2, 3, 10, 7, 4, 1, 12, 6, 5],
     9:  [9, 11, 5, 1, 10, 2, 7, 3, 4, 6, 8, 12],
     10: [10, 6, 2, 11, 9, 7, 3, 1, 4, 5, 8, 12],
     11: [11, 10, 6, 9, 2, 5, 7, 1, 3, 4, 8, 12],
@@ -2067,7 +2067,14 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
     }
   }
 
-  // Priority 4: Any obstruct house if nothing else found
+  // Priority 4: Obstruct house from priority order (still more relevant than distant non-obstruct)
+  if (!channelHouse) {
+    for (var p2 = 0; p2 < priority.length; p2++) {
+      if (has(priority[p2])) { channelHouse = priority[p2]; break; }
+    }
+  }
+
+  // Priority 5: Any signified house as last resort
   if (!channelHouse && nlSig.length > 0) channelHouse = nlSig[0];
 
   if (!channelHouse) return '';
