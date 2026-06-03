@@ -1692,6 +1692,7 @@ function proceedToAnalysis() {
     });
     return;
   }
+  sessionStorage.setItem('kp_returning', '1'); // flag for Back navigation restore
   sessionStorage.setItem('kp_input', JSON.stringify(data));
   window.location.href = 'kp_output.html';
 }
@@ -1708,9 +1709,15 @@ function clearAll() {
   setDefaults();
   updateStatus();
 }
-// On load: restore saved form data if returning from output page
-// (don't clear session — that wipes data when user presses Back)
+// On load: clear all data UNLESS user is returning via Back button from output page
 localStorage.removeItem('kp_chart_data');
+
+// Check if returning from output (flag set by proceedToAnalysis)
+const isReturning = sessionStorage.getItem('kp_returning') === '1';
+if (!isReturning) {
+  // Fresh load or refresh — wipe everything
+  sessionStorage.clear();
+}
 document.addEventListener('change', updateStatus);
 document.addEventListener('input',  updateStatus);
 
@@ -1729,13 +1736,16 @@ document.addEventListener('change', function(e) {
   }
 });
 
-// Restore saved input if coming back from output page
-const saved = sessionStorage.getItem('kp_input');
-if (saved) {
-  try {
-    const data = JSON.parse(saved);
-    restoreFromData(data);
-  } catch(e) { /* ignore parse errors */ }
+// Restore saved input only if returning from output page via Back button
+if (isReturning) {
+  sessionStorage.removeItem('kp_returning'); // clear flag immediately
+  const saved = sessionStorage.getItem('kp_input');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      restoreFromData(data);
+    } catch(e) { /* ignore */ }
+  }
 }
 
 updateStatus();
