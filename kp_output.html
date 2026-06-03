@@ -62,39 +62,8 @@
 }
 .dba-sep { color: var(--text-hint); font-size: 20px; }
 
-/* Summary stats */
-.summary-stats {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.stat-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  padding: 14px 24px;
-  min-width: 120px;
-  text-align: center;
-  box-shadow: var(--shadow-sm);
-}
-.stat-num {
-  font-family: 'Cinzel', serif;
-  font-size: 28px;
-  display: block;
-  line-height: 1;
-}
-.stat-label {
-  font-size: 9px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  display: block;
-  margin-top: 6px;
-}
-.stat-box.s-support  .stat-num { color: var(--nature-support); }
-.stat-box.s-mixed    .stat-num { color: var(--nature-mixed); }
-.stat-box.s-obstruct .stat-num { color: var(--nature-obstruct); }
-.stat-box.s-neutral  .stat-num { color: var(--text-muted); }
+
+
 
 /* Houses list — one per row */
 .houses-list {
@@ -397,7 +366,6 @@
           </div>
         </div>
       </div>
-      <div class="summary-stats" id="summary-stats"></div>
     </div>
 
     <div class="houses-list" id="houses-list"></div>
@@ -439,12 +407,7 @@ function renderDashboard(chartData, results) {
   document.getElementById('dba-ad-display').textContent = chartData.dba.ad || '—';
   document.getElementById('dba-pd-display').textContent = chartData.dba.pd || '—';
 
-  const summary = getChartSummary(results);
-  document.getElementById('summary-stats').innerHTML = `
-    <div class="stat-box s-support"><span class="stat-num">${summary.supportive}</span><span class="stat-label">Supportive</span></div>
-    <div class="stat-box s-mixed"><span class="stat-num">${summary.mixed}</span><span class="stat-label">Mixed</span></div>
-    <div class="stat-box s-obstruct"><span class="stat-num">${summary.obstructive}</span><span class="stat-label">Obstructive</span></div>
-    <div class="stat-box s-neutral"><span class="stat-num">${summary.notPromised}</span><span class="stat-label">Not Promised</span></div>`;
+
 
   const list = document.getElementById('houses-list');
   list.innerHTML = '';
