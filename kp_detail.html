@@ -438,6 +438,717 @@
 
 <script src="kp_engine.js"></script>
 <script>
+// Override generateHouseSummary with latest version
+// ═══════════════════════════════════════════════════
+// HOUSE SUMMARY — Client-facing second-person narrative
+// Combines promise strength + NL channel meanings
+// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// HOUSE SUMMARY — 144 client-facing combination stories
+// Input: NL's signified houses as channels for the topic
+// Output: plain second-person narrative, no house numbers shown
+// ═══════════════════════════════════════════════════
+function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
+                               occupants, lagnesh, houseNature, houseVerdict,
+                               ownStar, chartData, cuspSign) {
+  const hData    = HOUSE_DATA[house] || {};
+  const cluster  = hData.cluster  || [];
+  const obstruct = hData.obstruct || [];
+  const nlSig    = chartData.planetSig ? (chartData.planetSig[nlPlanet] || []) : [];
+
+  const mainPresent  = slSig.includes(house);
+  const supportHits  = cluster.filter(function(h) { return slSig.includes(h); });
+  const obstructHits = obstruct.filter(function(h) { return slSig.includes(h); });
+
+  const isStrong   = mainPresent && obstructHits.length === 0;
+  const isMixed    = mainPresent && obstructHits.length > 0;
+  const isIndirect = !mainPresent && supportHits.length >= 2;
+  const isWeak     = !mainPresent && supportHits.length === 1;
+
+  // Combination flags from NL signified houses
+  var n = nlSig;
+  var has = function(x) { return n.indexOf(x) !== -1; };
+
+  // Key combination detectors
+  var hasRecovery   = has(11);
+  var hasObstacle   = has(6);
+  var hasHospital   = has(12);
+  var hasSurgery    = has(8);
+  var hasForeign    = has(12);
+  var hasCareer     = has(10);
+  var hasFamily     = has(2);
+  var hasGains      = has(11);
+  var hasLuck       = has(9);
+  var hasRomance    = has(5);
+  var hasProperty   = has(4);
+
+  // COMBINATION STORIES — 12 houses x 12 channels = 144 entries
+  var STORIES = {
+
+    // ── HOUSE 1: Personality, Body, Vitality ──────────────────────────────
+    1: {
+      1: isStrong
+        ? 'You have a strong, clear sense of who you are. Your personality is well-defined and you carry yourself with presence. Vitality and health are personally important — and when life is supportive, your body reflects your inner strength.'
+        : 'Your sense of self and identity are central themes in your life. The personality develops continuously through direct personal experience. Health and physical energy are recurring areas of attention throughout life.',
+
+      2: 'Your identity is shaped significantly by your family background, values and the environment you grew up in. How you speak, what you own and what your family stands for all become extensions of who you are. There is a strong connection between your personality and your roots — your upbringing is visible in how you carry yourself.',
+
+      3: 'Courage, communication and initiative define your personality. You are not a passive person — you act, you speak, you move forward. Mental boldness and the willingness to take the first step are core qualities of your character. Siblings and the immediate environment have also played a role in shaping who you are.',
+
+      4: 'Emotional security and a sense of belonging are the foundations of your personality. You are deeply shaped by your home environment, your mother and your roots. Stability matters to you — your identity is anchored in where you come from and the emotional safety that your early life either gave or denied you.',
+
+      5: 'Intelligence, creativity and a natural brightness define your personality. You are quick-thinking, expressive and drawn to learning and creative work. There is a quality of past life merit about you — certain gifts appear almost effortlessly, as if carried from before. Creative self-expression is not just a hobby, it is a core part of your identity.',
+
+      6: (has(11)
+        ? 'Your character is forged through challenges, competition and hard work. Adversity has made you stronger — you do not shy away from difficult situations, you use them as fuel. Health challenges may arise in life but you have the resilience to recover and come back stronger. Success in competition and self-driven effort is clearly indicated — the struggle is real but so is the victory.'
+        : 'Your personality is shaped through service, struggle and overcoming obstacles. Challenges — health, competition or adversity — are recurring themes. The character you develop is tough and capable because it has been tested. Health matters require ongoing attention throughout life.'),
+
+      7: 'You define yourself significantly through your relationships and public interactions. Partnerships, marriage and how others respond to you are deeply formative. You are strongly aware of how you are perceived and your identity evolves through your closest bonds. At your best, you bring a quality of harmony and awareness to everything you do.',
+
+      8: 'Transformation, depth and reinvention are core to who you are. You go through significant personal changes in life — phases that most people never experience. Your personality has layers that others find hard to fully read. Sudden upheavals reshape your identity. Life does not stay still for you, and each transformation leaves you more complex and more resilient.',
+
+      9: 'Wisdom, fortune and a naturally philosophical outlook colour your personality. You carry a quality of grace — things tend to work out for you in the bigger picture. Your father, a guru or a formative teacher may have played a defining role in who you became. Long journeys and higher learning have left their mark on your character.',
+
+      10: 'Career, authority and public reputation are deeply tied to your sense of self. What you do professionally is a large part of who you are. You are naturally drawn to positions of responsibility and tend to be more comfortable when in a position of command or leadership.',
+
+      11: (has(6)
+        ? 'You are driven by ambition, social recognition and the desire to achieve. Success in competition and self-driven effort is a recurring theme. Challenges may arise — but they tend to resolve in your favour. Friends and networks are important to your identity, and you often define yourself by what you have built and achieved.'
+        : 'Ambitions, gains and the desire to fulfil personal goals drive your personality. You are motivated by results and achievements. Social recognition matters. Friends, networks and elder siblings are important to your sense of who you are. You define yourself by what you accomplish.'),
+
+      12: 'Solitude, spirituality, foreign environments and behind-the-scenes work shape your personality in deep ways. You have a rich inner world that others rarely see fully. Retreat, introspection and periods of isolation are recurring themes — and often the most formative ones. Foreign lands or spiritual pursuit may have been defining experiences.'
+    },
+
+    // ── HOUSE 2: Wealth, Family, Speech, Savings ──────────────────────────
+    2: {
+      1: 'Wealth comes entirely through your own personal effort and initiative. You are self-made — income depends directly on your energy and drive. No windfall or inherited wealth defines your financial story. What you earn, you earn through your own hands and mind.',
+
+      2: 'Wealth and family matters are directly and strongly activated. Money accumulates steadily, family life is stable and speech is a genuine asset. Financial desires are fulfilled — this is one of the clearest confirmations of financial promise in a chart. Family additions and gains come together.',
+
+      3: 'Communication skills, business negotiations, writing, media and short ventures are your primary income channels. You earn through your words, skills and mental sharpness. Siblings or local business networks may play a financially significant role. Your ability to articulate, negotiate and connect is your financial engine.',
+
+      4: 'Family assets, ancestral property and home-related income are wealth channels. Real estate contributes to financial growth. The mother or family tradition plays a role in how wealth is accumulated. A stable domestic environment and property ownership form the financial foundation of your life.',
+
+      5: 'Speculation, investments, creative work and education are income channels. Past life merit supports financial growth. Family expansion and financial fulfilment come together — the arrival of children may coincide with an improvement in finances. Intelligent risk-taking and creative ventures are productive.',
+
+      6: (has(11)
+        ? 'Service, employment, hard work and overcoming financial competition are your wealth channels. You earn through consistent effort and service rendered. Loans or debts may arise but they are manageable and can be repaid. Financial gain through employment, investment and service is confirmed — what you work for, you receive.'
+        : 'Service and employment are the primary financial channels. Money comes through hard work and dedicated service. Debts or financial obligations may be a recurring theme. Competing for income is part of the story — but the effort is what produces results. Financial accumulation requires patience and discipline.'),
+
+      7: 'Spouse or business partner plays a key role in your finances. Joint ventures, contracts and public dealings are productive income channels. Your financial life is significantly linked to your partnerships — the right collaboration can be transformative for your financial picture.',
+
+      8: (has(11)
+        ? 'Inheritance, unexpected gains, insurance and unearned income are financial channels. Wealth may arrive through sudden or unconventional means — a legacy, an insurance settlement or a transformation of assets. Financial desires are ultimately fulfilled even through unexpected paths.'
+        : 'Hidden wealth, inheritance and sudden financial changes are the channels. Wealth may come through unconventional means but so may sudden losses. Financial life is not steady or predictable — it moves in significant shifts. Caution with speculative or high-risk financial decisions is advisable.'),
+
+      9: 'Luck, fortune and past good karma support your financial growth. The father or a guiding figure may open financial doors at key moments. Long-distance dealings or foreign income channels contribute to wealth. Financial grace operates in your life — what others struggle for tends to come more naturally to you.',
+
+      10: 'Career and professional achievement are the primary wealth engine. Salary, business profit and professional status drive income growth. This is the most stable and conventional source of wealth — what you build professionally, you earn financially. Professional recognition directly translates into financial advancement.',
+
+      11: (has(6)
+        ? 'Gains from your network, social connections and competitive efforts accumulate over time. Income is multi-sourced and builds steadily. Friends, elder siblings and community contacts are financially valuable. Financial desires are fulfilled — what you work and compete for, you receive.'
+        : 'Gains, fulfilment of financial desires and accumulation through your social network are the channels. Income comes from multiple directions and builds steadily over time. Friends and connections are financially productive. What you wish for financially, you tend to achieve.'),
+
+      12: (has(11)
+        ? 'Foreign income, unconventional financial channels and spiritual investments are part of your wealth story. Money may come from abroad or through non-traditional means. Expenses are also significant — the financial flow is active in both directions. Ultimately, financial desires are met even through this unusual path.'
+        : 'Foreign sources, hidden financial dealings and significant expenses define your financial picture. Wealth may arrive through foreign channels but outflow is equally present. Financial life requires careful management — the tendency to spend, donate or invest in invisible ways needs to be balanced against accumulation.')
+    },
+
+    // ── HOUSE 3: Courage, Communication, Siblings, Short Travel ──────────
+    3: {
+      1: 'Personal strength and physical confidence are the source of your courage. You are bold because you trust your own capabilities. Communication is direct, frank and driven by self-expression. You act before others have finished thinking.',
+
+      2: 'Family support and financial backing give you confidence to take initiative. Your communication style is shaped by family values and upbringing. Speech is connected to financial interests — you negotiate and communicate for gain and family benefit.',
+
+      3: 'Communication, courage and initiative are directly and fully activated. Writing, speaking, short travel and sibling relationships are all expressed without obstruction. This is the clearest indication of bold self-expression and the ability to act with confidence.',
+
+      4: 'Emotional security and a stable home give you the foundation for courageous action. Communication is rooted in tradition and domestic values. Short travel may be home-related or property-oriented. The safety of your roots is what allows you to take bold steps.',
+
+      5: 'Intelligence drives your communication and courageous acts. Creative writing, intellectually bold expression and education-related communication are highlighted. You think before you act, and your boldness is backed by genuine intelligence.',
+
+      6: (has(11)
+        ? 'Challenges and competition sharpen your courage and communication. You become bold through adversity — the more you are tested, the more direct and assertive you become. Written or verbal disputes, negotiations and legal matters may be handled with skill. You tend to win the battles you fight.'
+        : 'Obstacles and competition challenge your communication and courage. Disputes, negotiations and difficult conversations are recurring themes. Courage is needed and eventually develops — but it comes through friction, not ease.'),
+
+      7: 'Partnerships and public dealings enhance your communication and boldness. Your courage is expressed through negotiation, contracts and dealing with others. Siblings or short journeys may be connected to marriage or partnership matters.',
+
+      8: 'Hidden information, research and deep investigation drive your communication. You are drawn to uncovering what is not immediately visible. Courage in the face of sudden events or transformations. Communication may involve secrets, sensitive matters or occult subjects.',
+
+      9: 'Fortune and philosophical wisdom guide your communication and initiatives. Your boldness is backed by good judgment and a broad perspective. Publishing, teaching, long-distance learning and fortune-favoured negotiations are highlighted.',
+
+      10: 'Professional standing and career demands drive your communication. You speak with authority and act decisively in professional contexts. Communication is a tool for career advancement. Your boldness is at its strongest in professional arenas.',
+
+      11: (has(12)
+        ? 'Social connections and networks amplify your communication reach, with some of this activity happening behind the scenes or through foreign channels. Gains come through communication efforts. Your boldness in reaching out, negotiating and connecting pays off — even when the work is not visible to others.'
+        : 'Social connections and networks amplify your communication reach. Gains come through communication efforts. Elder siblings and friends may be involved. Your boldness is aimed at achieving desired outcomes and tends to produce results.'),
+
+      12: 'Foreign or hidden communication becomes significant. Behind-the-scenes negotiations, correspondence with distant places or work done away from public view are your channels. Courage is expressed in isolation or in foreign environments — you may do your boldest work where others are not watching.'
+    },
+
+    // ── HOUSE 4: Home, Property, Mother, Education, Vehicles ──────────────
+    4: {
+      1: 'Personal effort and your own initiative are the channel for acquiring home and property. Domestic life and emotional security are deeply personal achievements — no one gives them to you. You build your home through your own hands and will.',
+
+      2: 'Family wealth, ancestral assets and savings are the primary channel for property acquisition. Home is tied to family tradition and the resources built across generations. Mother and family provide both the financial and emotional foundation for property.',
+
+      3: 'Skills, short ventures and siblings play a role in property matters. Property may be acquired through negotiation, short-term business or with a sibling involved. Communication around property decisions is active and significant.',
+
+      4: 'Home, property and mother are directly and strongly activated. A stable domestic life, meaningful connection with the mother and property ownership are all clearly promised. This is the clearest confirmation of domestic fulfilment.',
+
+      5: 'Speculative gains, investments and past life merit are channels for property acquisition. An intelligent or well-timed property decision may be the key. Creative or financially bold approaches to home ownership are favoured.',
+
+      6: (has(11)
+        ? 'Legal matters, mortgages and loans are connected to property — but they resolve in your favour. Property may come through overcoming a legal challenge or after a dispute is settled. Debts related to property are manageable. The struggle around home and property eventually produces the desired result.'
+        : 'Legal disputes, mortgages, loans or complications are connected to property matters. The path to home ownership involves obstacles, paperwork or litigation. Property does not come easily — it requires effort and patience to resolve the complications around it.'),
+
+      7: 'Spouse or business partner is involved in property acquisition. Joint ownership, shared home or the partner\'s assets contribute to domestic life. Legal property contracts are significant. The home you build is fundamentally a shared endeavour.',
+
+      8: (has(11)
+        ? 'Inherited property, sudden acquisition or a significant transformation of domestic circumstances defines your property story. What arrives unexpectedly can become your most important asset. Even through sudden change, the outcome is ultimately positive.'
+        : 'Inherited property, sudden change of residence or transformation of assets defines your domestic life. The home environment does not stay fixed — it changes significantly. Loss and rebuild of domestic circumstances is possible.'),
+
+      9: 'Luck and good fortune favour property acquisition. A father, guru or guiding figure plays a role in home matters. Property may come through long-distance dealings or appear when least expected. Fortune actively supports your domestic life.',
+
+      10: 'Career success and professional earnings directly fund home and property. Promotion or business achievement enables major domestic decisions. The home you build is a reflection of your professional achievement and status.',
+
+      11: (has(12)
+        ? 'Property desires are fulfilled — though the route may involve investment, expenditure or acquisition of property in a distant or foreign location. The desire for home ownership is met, though the property itself may be unusual or far from the birthplace.'
+        : 'Property desires are fulfilled. The home you want, you get. Social connections and gains support domestic life. This is one of the most positive indicators for property ownership — what you desire domestically, you achieve.'),
+
+      12: 'Property in a foreign land, loss of ancestral home or spiritual residence are the channels. The home may be located far from your birthplace. A permanent residence abroad is possible. Some natives find their most significant home is in a place they did not expect — distant, unconventional or spiritually oriented.'
+    },
+
+    // ── HOUSE 5: Children, Intellect, Creativity, Speculation ─────────────
+    5: {
+      1: 'Conception and childbirth are connected to the native\'s own health and physical constitution. The body\'s vitality plays a direct role in matters of children. Creative expression is a deeply personal outlet — your creativity is an extension of your physical and vital energy.',
+
+      2: 'Family expansion and children are financially and emotionally connected. The arrival of a child is tied to family wealth and the domestic setup. Children bring financial implications that are planned for and managed within the family structure. Creative work also generates income.',
+
+      3: 'Children are communicative and bold by nature. Siblings may play a role in children\'s lives. Creative expression runs through writing, teaching, media or education. Short journeys may be connected to matters of children or creative endeavours.',
+
+      4: 'Home and a stable emotional foundation support children and creativity. A grounded domestic environment is the soil in which creative talents and children flourish. The mother plays a central role in nurturing both children and creative gifts.',
+
+      5: 'Children, intellect and creative pursuits are directly and strongly activated. Past life merit is strong — gifts appear almost effortlessly. Speculation may be favoured. This is the clearest confirmation of the 5th house promise — children arrive and creative talents shine.',
+
+      6: (has(12) && has(11)
+        ? 'Children may come after overcoming a health challenge or medical treatment — but they do come. Pregnancy may require medical attention or care, and hospitalisation during childbirth or delivery is possible. However, recovery follows — the outcome is ultimately positive. The bond with children, once formed after the struggle, becomes very strong.'
+        : has(12)
+          ? 'Children and creative fulfilment carry a challenging flavour. Medical care during pregnancy is likely, and the path to childbirth involves health matters that require professional attention. Hospitalisation around delivery is possible. Without strong recovery indicators, this path requires careful medical monitoring.'
+          : has(11)
+            ? 'Children may come after overcoming obstacles — service, medical care or competition may be involved first. But the 11th house connection strongly indicates that ultimately, children arrive and desires are fulfilled. The journey to parenthood may require effort but the destination is confirmed.'
+            : 'Health challenges, service obligations or obstacles are the channel through which children and creativity manifest. The path to parenthood is not smooth — medical intervention or significant effort may be required. Creative work may also involve overcoming competition or serving in demanding conditions.'),
+
+      7: 'The partner plays a key role in children and creative matters. Children are a joint desire and a shared chapter. Creative work benefits from collaboration. Romance is part of the foundation — love marriage may be indicated when combined with the 7th house theme.',
+
+      8: (has(2)
+        ? 'Caesarean delivery or a medically significant birth is indicated — surgical intervention during childbirth is possible. Despite the intensity of the process, the child arrives and the family is expanded. Creative work may also involve research, investigation or deep intellectual work.'
+        : 'Sudden changes, transformation and unexpected events surround children and creativity. The path to parenthood may involve an unexpected turn. Creative work may carry a quality of depth, research or the uncovering of hidden things.'),
+
+      9: 'Luck, fortune and higher wisdom support children and creativity. Children are born under auspicious circumstances and carry good karma. Education connected to philosophy, religion or distant institutions is favoured. Past life merit is active and supporting.',
+
+      10: 'Creative talents are expressed professionally. Children may be involved in the parent\'s career or inherit professional qualities. Speculation is career-linked — calculated professional risk-taking is part of the story. Creative work becomes publicly recognised.',
+
+      11: (has(6) && has(12)
+        ? 'Despite the presence of medical challenges and hospitalisation in the journey to parenthood, the recovery and fulfilment indicator is strong. Children come — and when they do, they fulfil your deepest desires. The bond formed after the struggle is particularly meaningful and lasting.'
+        : 'Children arrive and fulfil your deepest desires. Gains through creative work are confirmed. Speculation tends to yield profit. The fulfilment of what you most wish for in this area of life is indicated — the desire for children and creative expression is met with real satisfaction.'),
+
+      12: (has(6)
+        ? 'Medical care and hospitalisation are connected to children — pregnancy or delivery may require a hospital stay. The 12th house indicates the hospitalisation clearly. If recovery indicators are also present, the outcome is positive despite the difficulty. Children may also have a connection to foreign lands.'
+        : 'Children may be born abroad or live in foreign lands. Creative work is done behind the scenes or in isolation — your talents may not be immediately visible to the world. There is a hidden or unconventional dimension to creative expression and to your connection with children.')
+    },
+
+    // ── HOUSE 6: Health, Service, Debts, Enemies, Competition ─────────────
+    6: {
+      1: (has(11)
+        ? 'Your personal health and body are the site of the challenge — but also of the recovery. The body faces illness or adversity but has the strength to bounce back. Success in competition through personal effort is confirmed. Health challenges arise and are overcome through the native\'s own vitality.'
+        : 'Your personal health and body are directly involved in the challenges of this area. Illness may affect you personally. Adversity is experienced first-hand. The body is the primary site of both the struggle and the recovery.'),
+
+      2: 'Family-related health obligations and financial debts arising from illness or medical care are the channels. The health challenge has a domestic or financial dimension — family assets may be affected by medical expenses, or family disputes may create stress that manifests as health issues. Speech and family relationships are caught in the crossfire.',
+
+      3: 'Courage, communication and boldness are the tools for overcoming challenges. You fight enemies through words and negotiation. Written or verbal disputes are the arena of competition. Siblings may be involved in conflicts. Your ability to communicate directly is what gives you the edge.',
+
+      4: 'Home, property or mother are connected to debt, illness or legal disputes. Property litigation is possible. The home environment may create health challenges. Domestic disputes around assets or family matters are part of the story.',
+
+      5: 'Creative intelligence and past life merit are the channels of recovery and resolution. This is a deeply positive sign in the context of health — the 5th house is the natural negation of disease in KP (it is the twelfth from the sixth). Illness has a natural resolution. Recovery is indicated. Creative thinking and inner wisdom help overcome adversity.',
+
+      6: 'Health challenges, debts and service obligations are directly and fully activated. All sixth house matters are present in full — illness, competition, debts and the need for hard work. This is not a diluted picture. The challenge is real and must be addressed directly.',
+
+      7: (has(8) || has(12)
+        ? 'A legal dispute, litigation or serious conflict involving a partner or known opponent is the channel. Danger from opponents is indicated. The adversary is a specific person — a spouse, business partner or legal adversary. Legal proceedings may become significant.'
+        : 'Disputes and conflicts involving a partner or opponent are the channel. The competition or conflict is with a known person. Legal matters or disputes within relationships are possible. The challenge is relational rather than anonymous.'),
+
+      8: (has(12)
+        ? 'Severe illness with possible surgery and hospitalisation is indicated. The combination of disease, surgery and hospitalisation is the most medically significant grouping in this chart. Professional medical care is essential. If recovery indicators are also present, the patient comes through — but the path is genuinely difficult and should not be taken lightly.'
+        : 'Severe or chronic illness and possible surgical intervention are indicated. The health challenge goes beyond routine illness — it reaches the level of a significant medical event. Chronic conditions, surgical procedures and deep physical transformation are part of the story.'),
+
+      9: 'Luck and fortune ultimately help overcome illness, debts and enemies. The father, a guiding figure or a fortunate turn of events brings resolution. Long-distance medical treatment may be beneficial. Fortune actively works in your favour even through the difficulty.',
+
+      10: 'Career-related stress, professional competition or workplace health challenges are the channels. The illness or conflict arises in the professional context. Workplace disputes, overwork-related health issues and professional competition are recurring themes.',
+
+      11: 'Victory over enemies, recovery from illness and resolution of debts are confirmed. The eleventh house is the clearest recovery and victory indicator in KP. Whatever the challenge — health, competition or debt — the outcome tilts in your favour. You come through the struggle and emerge with gains.',
+
+      12: (has(11)
+        ? 'Hospitalisation is indicated — a medical facility becomes necessary. However, recovery follows. The stay in hospital resolves the condition and the patient comes out stronger. The hospitalisation is a necessary step in the healing process, not a dead end.'
+        : 'Hospitalisation and medical confinement are indicated. The illness reaches the level of requiring institutional care. Debts may reach a point of financial isolation. Legal matters result in loss or confinement. Medical care is necessary and the duration may be extended.')
+    },
+
+    // ── HOUSE 7: Marriage, Spouse, Partnership, Public Dealings ───────────
+    7: {
+      1: 'Personal independence and a strong sense of self shape the union. Marriage may be delayed because the native\'s own identity takes precedence. The partner may be equally independent and self-directed. The relationship requires space for both individuals to maintain their own identity.',
+
+      2: 'Family approval and family-based arrangement are central to the marriage. The union is tied to family wealth and the formal addition of a spouse to the family fold. Financial matters are connected to the union. This is one of the supporting pillars of the marriage promise in KP — family, spouse and fulfilment together confirm the union.',
+
+      3: 'Communication, negotiation and a meeting of minds define the marital path. Marriage may come through communication channels — introductions, conversations or correspondence. Siblings may play a role in bringing the match. The relationship is mentally active and communicative.',
+
+      4: 'Home, emotional security and mother are deeply important in marriage. The spouse comes from close by or the same locality. The marriage is rooted in domestic values and emotional stability. Mother\'s role in the marriage process is significant.',
+
+      5: 'Romance and love are the foundations of the union. The marriage is love-based or carries a strong romantic element. There is likely a deep personal connection before the formal union. A lasting bond through love and romantic chemistry is indicated.',
+
+      6: (has(10)
+        ? 'Conflict, separation tendencies and marital friction are indicated. Career pressures and competing obligations create distance in the relationship. Marriage may not happen in the conventional sense, or if it does, it faces ongoing challenges. Legal separation or divorce is a genuine possibility if these themes dominate without recovery indicators.'
+        : 'Disputes, friction and service obligations enter the marriage. The relationship involves ongoing effort and sometimes conflict. Health matters or work pressures create friction. The marriage is real but not without its challenges — both partners must work actively to maintain harmony.'),
+
+      7: 'Marriage and long-term partnership are directly and strongly activated. The union will happen — this is the clearest confirmation. The spouse is prominent in life and the partnership becomes one of the defining chapters of existence.',
+
+      8: (has(11)
+        ? 'Transformation and intensity define the relationship. The marriage goes through significant change — perhaps a crisis that ultimately deepens the bond. Legal matters or financial complications may arise after marriage. But the eleventh house presence indicates the relationship survives and is fulfilled. What is transformed emerges stronger.'
+        : (has(6) || has(12)
+          ? 'The marriage faces serious challenges — litigation, intense conflict or circumstances that threaten the union. The relationship involves significant transformation and upheaval. Legal proceedings or deep personal crises connected to the partner are possible.'
+          : 'The relationship is intense and transformative. The partner brings depth and change into your life. The union is not conventional — it carries weight and significance beyond the ordinary. Deep bonds form through shared transformation.')),
+
+      9: 'Luck, tradition and blessings from father or higher forces support the union. The spouse comes from a different background or a distant place — perhaps a different town, community or country. The marriage is auspicious and receives the blessing of tradition and higher dharma.',
+
+      10: 'Career pressures and professional obligations compete with marriage. The tenth house is one of the denial indicators for marriage in KP. Marriage may be delayed or complicated by professional priorities. If career is the dominant theme without marriage indicators, the union may not come easily or conventionally.',
+
+      11: 'Fulfilment of the desire for marriage, social happiness and gains through the partnership are confirmed. The union happens and brings joy. Friends and social circle may play a role in bringing the match. Marriage is a source of happiness and social advancement — this is the strongest positive indicator for marital happiness.',
+
+      12: (has(6)
+        ? 'Separation, physical distance between partners or the partner living abroad are the dominant themes. The marriage may involve living apart for periods. Divorce or legal separation is possible if the obstructing factors outweigh the supporting ones.'
+        : 'The spouse may come from a foreign land or a distant place. The marriage has an unconventional or foreign dimension. Physical intimacy is an important aspect of the union. Partners may live at a distance or the marriage may involve travel and foreign connection.')
+    },
+
+    // ── HOUSE 8: Longevity, Transformation, Inheritance, Hidden Matters ───
+    8: {
+      1: 'The native\'s own body and constitution are directly involved in transformation. Health crises that affect longevity, personal identity crises and deep physical change are the channels. The body itself is the site of the most significant transformations of your life.',
+
+      2: 'Financial transformation, family upheaval or sudden change in accumulated wealth are the channels. Inheritance from within the family is possible. The family unit may face a crisis that reshapes its financial structure. Speech or family relationships undergo significant and lasting change.',
+
+      3: 'Hidden communication, research writing and the courage to face sudden change are the channels. News or information that arrives through a short journey or communication can be transformative. Siblings may experience a significant event. The courage to navigate sudden change through communication and initiative is the key.',
+
+      4: 'Home and property undergo transformation. Sudden change of residence, loss of property or inherited real estate define this dimension of life. The domestic environment does not remain fixed — it changes significantly. Mother may face a significant health or life event.',
+
+      5: 'Children or creative work undergo sudden and unexpected transformation. Past life karma is powerfully operative here. Creative output may carry qualities of depth, research or the uncovering of hidden things. Intelligence and creative gifts are the channel through which transformation is experienced and expressed.',
+
+      6: (has(12)
+        ? 'The most significant health combination is present — surgery, hospitalisation and serious illness are all indicated. Medical care at a serious level is required. If recovery indicators are also present, the patient comes through. If not, the medical situation is genuinely critical and demands immediate professional attention. Mars in this combination is associated specifically with surgical instruments and intervention.'
+        : 'Severe or chronic illness and possible surgical intervention are indicated. The health challenge is significant — not routine. Medical attention, possible surgery and deep physical transformation are part of the story.'),
+
+      7: 'The partner brings transformation — or is the catalyst for the most significant change of your life. Legal battles, intense conflicts or deep crises connected to the relationship are possible. The union is powerful but not always comfortable.',
+
+      8: 'Transformation, research, longevity and hidden matters are directly and fully activated. All eighth house themes are at the forefront — the occult, investigation, research, inheritance and the deepest questions of existence. You are drawn to what is hidden and you work with transformation as a matter of course.',
+
+      9: 'Fortune through transformation, occult or philosophical journey brings unexpected luck. Inheritance from a distant relative is possible. Long journeys connected to transformative events occur. The deeper you go into hidden matters, the more fortune you find.',
+
+      10: 'Sudden and dramatic career changes, unexpected professional upheaval or a significant rise and fall in authority define the professional picture. The career itself undergoes transformation. Research, investigation or hidden professional work may be involved.',
+
+      11: 'Sudden unexpected gains, inheritance received or transformation that ultimately leads to fulfilment and recovery. Whatever the crisis or sudden event, the outcome resolves positively. Gains come through unexpected channels — the transformation produces something valuable.',
+
+      12: 'Deep spiritual transformation, serious medical procedures requiring hospitalisation and prolonged isolation for healing are the channels. The most significant transformation of your life may happen in a hospital, a foreign country or in a place of seclusion. Moksha and spiritual liberation are the deepest expressions of this combination.'
+    },
+
+    // ── HOUSE 9: Luck, Fortune, Father, Higher Learning, Long Journeys ────
+    9: {
+      1: 'Personal energy, physical vitality and your own initiative are the instruments of good fortune. Your luck is self-activated — it does not arrive passively, it arrives when you act. The father or a guiding figure reinforces your own personal strengths rather than doing things for you.',
+
+      2: 'Family wealth, ancestral blessings and saved resources grow through fortune. Family traditions and religious practices contribute to good outcomes. Wealth accumulated by the family grows under the influence of good karma. The fortune of your lineage works in your favour.',
+
+      3: 'Fortune comes through communication, courage and bold initiatives. Writing, publishing, negotiation and travel are fortunate channels. Siblings may bring luck. The willingness to speak up and take the first step attracts fortune into your life.',
+
+      4: 'Property, home and mother are blessed by fortune. Land and real estate dealings are favoured. The mother plays a spiritually significant role in your good fortune. Education received at home or in familiar surroundings is fortunate and formative.',
+
+      5: 'Children, intellect and past life merit amplify fortune. Intelligence and creative gifts are the vehicle for your luck. The combination of purva punya and the ninth house — both dharmic houses in KP — indicates particularly strong karmic support. Speculation and investment may also be fortunate.',
+
+      6: 'Luck overcomes obstacles, debts and enemies. Challenges are resolved through fortune and karma. Medical outcomes are favoured — fortune brings good results even in difficult health situations. The native defeats competition through a combination of effort and grace.',
+
+      7: 'Spouse or partner brings luck and fortune. Marriage is traditionally blessed and auspicious. Long-distance dealings and business partnerships are fortunate. The union opens doors to higher learning and expanded horizons.',
+
+      8: 'Fortune through transformation, research and hidden matters. Inheritance or sudden gains are fortunate. Occult knowledge and investigation bring luck. The deeper you go into the hidden dimensions of life, the more fortune you find.',
+
+      9: 'Luck, fortune, father and higher learning are directly and fully activated. Long-distance travel is blessed. The father is prominent and fortunate in your life. Higher education, philosophy and spiritual practice bring consistently good outcomes. This is the strongest and most direct fortune indicator.',
+
+      10: 'Career success, professional recognition and public achievement bring fortune. Work becomes the vehicle for good luck. The native\'s professional karma is strong — what they do publicly reflects their inner virtue and is rewarded accordingly.',
+
+      11: 'Gains and desires are fulfilled through luck and good karma. Social connections and friends are fortuitous. The fortune of the ninth house flows directly into the gains of the eleventh — this combination is one of the most auspicious possible. Ambitions are realised through a fortunate alignment of effort and karma.',
+
+      12: 'Foreign travel, spiritual journeys, pilgrimage and the search for moksha are the channels of fortune. Long journeys abroad are blessed. Spiritual retreat or renunciation brings inner fulfilment. Fortune is found in distant places, in foreign lands or in the silence of inner work.'
+    },
+
+    // ── HOUSE 10: Career, Profession, Authority, Status ───────────────────
+    10: {
+      1: 'Personal drive, ambition and the native\'s own identity are the primary career engine. The career is a direct expression of who you are. Independence and self-reliance define the professional path. You may be drawn to self-employment or a career that answers only to yourself.',
+
+      2: 'Family background, accumulated savings and family support fund career ambitions. Family business or an ancestral profession may be the career path. Financial skills and speech are career assets. The family name contributes to professional standing and reputation.',
+
+      3: 'Communication, writing, media, skills and short journeys are career domains. You earn through expressive abilities — writing, speaking, teaching, marketing or negotiating. Short ventures and business negotiations are professional channels. Siblings or neighbours may be part of the professional network.',
+
+      4: 'Home-based work, real estate, education or property management are possible professions. You may work from home or in fields connected to land, water, domestic services or agriculture. Mother\'s influence on career choice is significant.',
+
+      5: 'Creativity, education, speculation and intelligence-based work are career paths. Teaching, creative arts, investment advisory, education or child-related professions are indicated. Past life merit supports career growth. The career reflects intellectual gifts and creative expression.',
+
+      6: (has(2) && has(11)
+        ? 'Service, medicine, law, competition and health-related professions are the career domain. Employment through service is confirmed — the job comes and the career builds through consistent professional service. Competition from colleagues is present but can be overcome. This is the complete job formula — career through dedicated service.'
+        : 'Service, medicine, competition and health-related fields define the career. Employment and professional service are the channels of career growth. Competition is a feature of the professional environment. The career is earned through service and hard work.'),
+
+      7: 'Partnerships, public dealings and contracts drive career growth. Business for yourself with partners, or professions dealing with the public — law, diplomacy, sales or public relations. The career is deeply collaborative and publicly oriented.',
+
+      8: 'Research, investigation, surgery, insurance, occult or transformative work defines the career. You work with what is hidden — researchers, surgeons, detectives, forensic professionals or those who navigate the hidden dimensions of wealth and information.',
+
+      9: 'Law, philosophy, higher education, publishing, religion, foreign work or teaching as a profession. The career has a dharmic quality — you are drawn to work that carries meaning beyond money. Long-distance dealings and international connections are part of the professional landscape.',
+
+      10: 'Career, authority and public recognition are directly and fully activated. Professional achievement is clearly promised. Status, command and professional recognition are central to the life. This is the strongest career indicator — what you set out to achieve professionally, you achieve.',
+
+      11: 'Network, connections and social gains are key to career growth. Friends and social circle play a significant professional role. Income from career is multi-streamed and grows over time. Elder siblings or community contacts open professional doors.',
+
+      12: (has(2) || has(6) || has(11)
+        ? 'Foreign career, behind-the-scenes work or a vocation done in seclusion are the channels. The career may be located abroad or involve significant behind-the-scenes contribution. Despite the unconventional form, the career produces results and income.'
+        : 'Foreign career, behind-the-scenes work or work in seclusion defines your professional life. The career may not take a conventional public form. Working abroad, in private or in a spiritually oriented vocation are the channels. The career answers a different calling than most.')
+    },
+
+    // ── HOUSE 11: Gains, Income, Desires, Elder Siblings, Network ─────────
+    11: {
+      1: 'Personal ambition and your own physical drive bring gains and desired results. What you earn, you earn through your own effort. Income is self-generated and reflects your personal energy and initiative. The body is the instrument of your gains.',
+
+      2: 'Family wealth, savings and accumulated assets fulfil financial desires. Family business or ancestral capital contributes to gains. Speech and financial skills are income channels. The family unit as a whole is financially productive.',
+
+      3: 'Communication skills, short ventures and business negotiations bring gains. Writing, media, sales or skill-based work produces income and desired results. Siblings or local connections are financially productive. Short-term ventures pay off and build into something larger.',
+
+      4: 'Property, home-related assets and domestic stability generate gains. Real estate income, rental property or home-based enterprise. Educational qualifications lead to income. Domestic desires — a good home, a stable family life — are fulfilled.',
+
+      5: (has(2)
+        ? 'Creative, investment and speculative gains are confirmed. The desire for children is also fulfilled — family expansion and financial gains come together. Speculation tends to produce profit. Creative work generates income and recognition. Past life merit translates into present life gains.'
+        : 'Creative, investment and speculative gains are the channels. Speculation tends to produce profit. Creative work generates income. The desire for children and creative fulfilment tends to be met through these channels.'),
+
+      6: (has(2)
+        ? 'Service, overcoming competition and resolving financial obligations lead to confirmed gains. Income through employment is clear. Debts can be obtained and repaid. Legal battles tend to be won. Victory over obstacles produces income and fulfilment of desires.'
+        : 'Service, competition and overcoming obstacles are the channels for gains. Income through employment and professional service. Challenges are real but the victory at the end is also real — effort and service produce the gains you desire.'),
+
+      7: 'Partner, spouse and public dealings are sources of gains. Joint ventures are productive. Business partnerships generate income. Social and public engagement is financially rewarding. Marriage or partnership is a source of financial advancement.',
+
+      8: 'Sudden unexpected gains, inheritance or transformation-related income are the channels. Unearned income — insurance, legacy, occult or research fees. The gains are not from regular work but from unexpected and sometimes sudden sources. Fortunes can change dramatically.',
+
+      9: 'Luck, fortune and karma bring desired results. What the native has earned through previous good deeds comes back as gains in this life. Long-distance dealings and foreign income are profitable. Fortune actively delivers what you desire.',
+
+      10: 'Career success directly creates gains. Professional achievement, promotions and career-related income are the channels. Income grows with professional status. What you build professionally, you earn financially — steadily and sustainably.',
+
+      11: 'Gains, income and desires are directly and fully activated. All eleventh house themes — income, friends, elder siblings and fulfilment of desires — are fully expressed. Income from multiple sources, social recognition and the satisfaction of achieving what you set out to achieve. This is the strongest possible position.',
+
+      12: (has(9)
+        ? 'Foreign gains, income from abroad or spiritual fulfilment of desires are the channels. What the native desires may be fulfilled in foreign lands or through unconventional means. The journey to fulfilment may be distant but it arrives.'
+        : 'Foreign gains or spiritual fulfilment of desires are the channels. Income may come from abroad or through non-traditional means. Some desires are fulfilled in non-material ways — inner peace, spiritual attainment or liberation from material wanting.')
+    },
+
+    // ── HOUSE 12: Foreign Lands, Expenses, Spirituality, Isolation ────────
+    12: {
+      1: 'The native\'s own body and identity undergo isolation, loss or retreat. Health-related seclusion — hospitalisation or recovery in a private setting — directly involves the native. Foreign experience or spiritual journey shapes the self at the deepest level.',
+
+      2: 'Family expenses, financial losses or family-related foreign dealings are the channels. The family or ancestral wealth is depleted through expenditure, foreign dealings or sacrifice. Speech may be silenced or family bonds disrupted. Financial sacrifice is a recurring theme.',
+
+      3: 'Foreign communication, behind-the-scenes writing or work done away from siblings are the channels. Short journeys lead to foreign places. Communication is conducted in private or through unconventional channels. A period of distance from the immediate neighbourhood or siblings.',
+
+      4: 'Foreign residence, loss of home or spiritual retreat from domestic life are the channels. Property may be located in a distant land. The mother may be separated from the native. A significant relocation — physical and emotional — from the place of birth.',
+
+      5: (has(6)
+        ? 'Hospitalisation connected to pregnancy or delivery is indicated. Medical care involving a hospital setting is part of the childbirth story. Children may be born abroad or the delivery may require a significant medical facility. If recovery indicators are present, the outcome is positive — the child arrives safely despite the complexity.'
+        : 'Children may be born in foreign lands or live away from the native. Creative talents that operate behind the scenes — not publicly visible but deeply present. Spiritual creativity, hidden artistic gifts or creative work done in seclusion.'),
+
+      6: (has(11)
+        ? 'Hospitalisation is necessary but recovery follows. The illness requires a hospital stay or medical facility. The stay resolves the condition and the patient emerges recovered. Hospitalisation is not the end — it is the necessary passage through which healing happens.'
+        : (has(8)
+          ? 'Serious illness requiring surgery and extended hospitalisation is indicated. This is the most medically significant combination — disease, surgery and hospitalisation together. Immediate and sustained professional medical care is essential. Recovery requires time and dedicated treatment.'
+          : 'Hospitalisation and medical confinement are indicated. The illness reaches a level where institutional care becomes necessary. Financial depletion through medical expenses is also possible. The duration of treatment or confinement may be extended.')),
+
+      7: 'The partner may come from a foreign land or there will be periods of physical separation from the spouse. A foreign or distant quality in the partnership — either the person themselves or the circumstances of the union. Bed pleasures and physical intimacy are also associated with this channel.',
+
+      8: 'Deep spiritual transformation, serious medical procedures requiring hospitalisation and prolonged retreat or seclusion for healing are the channels. This is associated with moksha, the most profound inner transformation and the deepest forms of letting go.',
+
+      9: 'Foreign travel, pilgrimage, long spiritual journeys and settlement in distant lands are the channels. This is one of the most positive combinations for travel and residence abroad — the ninth and twelfth houses together in KP confirm foreign journey. Study, work or spiritual practice in a distant land is strongly indicated.',
+
+      10: 'Foreign career, work done in seclusion or a professional vocation not visible to the public are the channels. The career may be abroad or involve significant behind-the-scenes contribution. Working in isolation, in a foreign environment or in a spiritually oriented vocation.',
+
+      11: (has(9)
+        ? 'Foreign gains, income from abroad and the fulfilment of desires through distant or unconventional means are confirmed. The journey to fulfilment may be unconventional but the destination is real. Foreign income and the satisfaction of desires through distant channels.'
+        : 'Foreign gains or spiritual fulfilment of desires are the channels. Income from abroad or through non-traditional means is possible. Some desires are fulfilled in non-material ways — inner peace, spiritual attainment or liberation from material wanting.'),
+
+      12: 'Foreign lands, isolation, spirituality and expenses are directly and fully activated. All twelfth house themes are fully expressed — settlement abroad, spiritual renunciation, significant expenses and withdrawal from the material world. This is a strong indicator of a life shaped fundamentally by foreign experience or spiritual depth.'
+    }
+  };
+
+  // Get the story for this house and the NL's primary signified houses
+  // Use the strongest NL channel (first signified house in priority order)
+  // Priority: topic house itself > support houses > other houses > obstruct houses
+  var houseStories = STORIES[house];
+  if (!houseStories) return '';
+
+  // Find the best channel to use for the summary
+  // If NL is in own star (ownStar), use the SL itself as channel
+  // Channel priority order per topic house — picks most relevant NL channel
+  var CHANNEL_PRIORITY = {
+    1:  [1, 3, 10, 9, 2, 7, 11, 4, 8, 5, 12, 6],
+    2:  [2, 10, 6, 11, 9, 3, 7, 1, 4, 5, 8, 12],
+    3:  [3, 9, 10, 1, 2, 11, 7, 4, 5, 8, 12, 6],
+    4:  [4, 2, 11, 9, 10, 1, 7, 3, 5, 8, 12, 6],
+    5:  [5, 2, 11, 9, 7, 1, 3, 4, 10, 6, 8, 12],
+    6:  [6, 11, 5, 1, 10, 9, 2, 3, 7, 4, 8, 12],
+    7:  [7, 2, 11, 5, 9, 4, 3, 1, 8, 10, 12, 6],
+    8:  [8, 11, 9, 2, 3, 10, 7, 4, 1, 12, 6, 5],
+    9:  [9, 11, 5, 1, 10, 2, 7, 3, 4, 6, 8, 12],
+    10: [10, 6, 2, 11, 9, 7, 3, 1, 4, 5, 8, 12],
+    11: [11, 10, 6, 9, 2, 5, 7, 1, 3, 4, 8, 12],
+    12: [12, 9, 11, 3, 7, 10, 4, 2, 1, 6, 5, 8]
+  };
+  var priority = CHANNEL_PRIORITY[house] || [];
+
+  var channelHouse = null;
+
+  // Priority 1: NL signifies the topic house directly
+  if (has(house)) channelHouse = house;
+
+  // Priority 2: NL signifies a support house
+  if (!channelHouse) {
+    for (var i = 0; i < cluster.length; i++) {
+      if (has(cluster[i])) { channelHouse = cluster[i]; break; }
+    }
+  }
+
+  // Priority 3: Pick the most relevant NL channel using per-house priority order
+  if (!channelHouse) {
+    for (var p = 0; p < priority.length; p++) {
+      if (has(priority[p]) && obstruct.indexOf(priority[p]) === -1) {
+        channelHouse = priority[p]; break;
+      }
+    }
+  }
+
+  // Priority 4: Obstruct house from priority order (still more relevant than distant non-obstruct)
+  if (!channelHouse) {
+    for (var p2 = 0; p2 < priority.length; p2++) {
+      if (has(priority[p2])) { channelHouse = priority[p2]; break; }
+    }
+  }
+
+  // Priority 5: Any signified house as last resort
+  if (!channelHouse && nlSig.length > 0) channelHouse = nlSig[0];
+
+  if (!channelHouse) return '';
+
+  var story = houseStories[channelHouse];
+  if (!story) return '';
+
+  // Prefix with verdict context when story would contradict the verdict
+  var notPromised = (houseVerdict === 'Not Promised');
+  var isObstructive = (houseNature === 'Obstructive');
+
+  // Houses where "not promised" prefix matters most (avoid contradicting)
+  var contradictPhrases = [
+    'directly and strongly activated',
+    'clearly promised',
+    'desires are fulfilled',
+    'strongly promised',
+    'clearly confirmed',
+    'union will happen',
+    'this is the clearest confirmation',
+    'strongest possible position',
+    'most direct fortune indicator',
+    'directly activated',
+    'central to the marriage',
+    'supporting pillars of the marriage promise',
+    'love will happen',
+    'you achieve',
+    'clearly indicated',
+    'fully activated',
+    'victory over enemies',
+    'hospitalisation',
+    'surgery and hospitalisation',
+    'moksha'
+  ];
+  var wouldContradict = false;
+  var storyLower = story.toLowerCase();
+  contradictPhrases.forEach(function(p){ if(storyLower.indexOf(p.toLowerCase())>=0) wouldContradict=true; });
+
+  if ((notPromised || isObstructive) && wouldContradict) {
+    var notPromisedStories = {
+      1: 'The personality and sense of self develop gradually and quietly in this chart. There is no dramatic statement of identity — instead, character builds through lived experience over time.',
+      2: 'Consistent wealth accumulation is not the primary promise of this chart. Financial life tends to fluctuate rather than build steadily. Conscious effort and discipline around money are essential.',
+      3: 'Communication and bold initiative are not the primary focus of this chart. Expression develops slowly and works best in specific, focused contexts rather than broadly.',
+      4: 'A settled home and property ownership are not strongly indicated in this chart. Domestic life may be unconventional, delayed or subject to change. Roots may be found in unexpected places.',
+      5: 'Children and creative fulfilment are not the primary promise here. These matters may come later than expected, through unconventional means, or may take forms different from what is imagined.',
+      6: 'Health challenges and service are not dominant themes in this chart. The native tends to avoid major illness and conflict. When challenges do arise, they are manageable.',
+      7: 'Marriage and conventional partnership are not strongly promised in this chart. Relationships may arrive in unconventional forms, later than expected, or with significant conditions attached.',
+      8: 'Major transformation and sudden upheaval are not the defining pattern in this chart. Life tends to move more steadily. Deep change, when it comes, is gradual rather than dramatic.',
+      9: 'Fortune and luck are not the primary promise here. Good outcomes in life come through sustained effort and right action rather than grace or windfall. The native creates their own fortune.',
+      10: 'Career and conventional professional achievement are not the primary promise of this chart. Professional life may take an unconventional form or develop through a longer, less direct route.',
+      11: 'Significant gains and easy desire fulfilment are not the strongest promise here. What the native wants, they must work deliberately towards. Income comes through effort, not fortune.',
+      12: 'Foreign settlement and major spiritual renunciation are not the primary story in this chart. Life tends to stay anchored closer to home. Foreign and spiritual themes play a supporting role rather than a defining one.'
+    };
+    return notPromisedStories[house] || 'This area is not strongly promised in this chart. Results here depend on exceptional conditions and the right timing.';
+  }
+
+  return story;
+}
+
+
+
+function runHousePrediction(houseNum, chartData) {
+  const houseInfo = HOUSE_DATA[houseNum];
+  const cuspData  = chartData.cusps && chartData.cusps[houseNum];
+  const planetSig = chartData.planetSig || {};
+  const dba       = chartData.dba || {};
+  const rp        = chartData.rp  || {};
+
+  // Guard against missing data
+  if (!cuspData || !cuspData.sl || cuspData.sl === '') {
+    return {
+      house: houseNum, name: houseInfo.name, domain: houseInfo.domain,
+      error: 'Sub-lord not entered', subEvents: [],
+      houseNature:'Neutral', houseVerdict:'Not Promised',
+      totalSupport:0, totalObstruct:0, houseNetScore:0
+    };
+  }
+
+  const slPlanet = cuspData.sl;
+  const cuspSign = cuspData.sign;
+  const signData = SIGN_DATA[cuspSign] || null;
+
+  // Get true NL of SL (from planet position)
+  const trueNL   = getNLofSL(slPlanet, chartData, cuspData.nl);
+  const nlPlanet = trueNL || cuspData.nl;
+
+  const slSig  = planetSig[slPlanet] || [];
+  const nlSig  = planetSig[nlPlanet] || [];
+  const mdSig  = planetSig[dba.md]   || [];
+  const adSig  = planetSig[dba.ad]   || [];
+  const pdSig  = planetSig[dba.pd]   || [];
+  const dbaLords = [dba.md, dba.ad, dba.pd].filter(Boolean);
+
+  // House-level promise (using corrected scoring)
+  const mainPresent   = slSig.includes(houseNum);
+  const clusterHits   = houseInfo.cluster.filter(h => slSig.includes(h));
+  const obstructHits  = houseInfo.obstruct.filter(h => slSig.includes(h));
+  const houseNetScore = (mainPresent ? 3 : 0) + clusterHits.length - obstructHits.length;
+  const totalSupport  = mainPresent ? clusterHits.length + 1 : clusterHits.length;
+  const totalObstruct = obstructHits.length;
+
+  let houseNature = 'Mixed';
+  if (houseNetScore >= 2) houseNature = 'Supportive';
+  else if (houseNetScore <= -2) houseNature = 'Obstructive';
+
+  // AD gate check for house verdict
+  const adGateOpen = adSig.includes(houseNum) ||
+                     houseInfo.cluster.some(h => adSig.includes(h));
+
+  let houseVerdict = 'Not Promised';
+  if (mainPresent || clusterHits.length >= 1) {
+    if (adGateOpen && houseNetScore >= 0) houseVerdict = 'Active';
+    else if (adGateOpen)                   houseVerdict = 'Active with challenges';
+    else                                   houseVerdict = 'Promised — awaiting period';
+  }
+
+  // Occupying planets
+  const occupants = getOccupyingPlanets(houseNum, chartData);
+
+  // Sub-events
+  const subEventResults = houseInfo.subEvents.map(seKey => {
+    const fullKey = `H${houseNum}.${seKey}`;
+    const rule    = SUB_EVENT_RULES[fullKey];
+    if (!rule) return null;
+
+    const promise    = checkPromise(fullKey, slSig);
+    const dbaResult  = rule.type === 'Life'
+      ? { score:0, verdict:'life_reading', adGate:'na' }
+      : scoreDBA(fullKey, houseNum, mdSig, adSig, pdSig);
+    const rpResult   = rule.type === 'Life'
+      ? { rpScore:0, confidence:'na', matchedRPs:[] }
+      : scoreRP(fullKey, rp, planetSig, dbaLords);
+    const attrs      = deriveAttributes(fullKey, slSig, nlSig, slPlanet, nlPlanet,
+                                         cuspSign, chartData, houseNum);
+    const sign       = signData;
+    const comboKey   = nlPlanet && sign ? `${nlPlanet}_${sign.element}` : null;
+    const comboOut   = comboKey ? (COMBO_MAP[comboKey] || null) : null;
+
+    return {
+      key:         fullKey,
+      name:        seKey.replace(/_/g,' '),
+      type:        rule.type,
+      promise,
+      dba:         dbaResult,
+      rp:          rpResult,
+      attributes:  attrs,
+      combination: comboOut,
+      slPlanet, nlPlanet, cuspSign, signData,
+      slSig, nlSig
+    };
+  }).filter(Boolean);
+
+  return {
+    house: houseNum, name: houseInfo.name, domain: houseInfo.domain,
+    Sanskrit: houseInfo.Sanskrit,
+    slPlanet, nlPlanet, cuspSign, signData,
+    slSignif: slSig, nlSignif: nlSig,
+    mainPresent, totalSupport, totalObstruct,
+    houseNetScore, houseNature, houseVerdict,
+    adActive: adGateOpen, occupants,
+    subEvents: subEventResults
+  };
+}
+
+// ═══════════════════════════════════════════════════
+// FULL CHART RUNNER
+// ═══════════════════════════════════════════════════
+
+function runFullChart(chartData) {
+  const results = {};
+  for (let h = 1; h <= 12; h++) {
+    results[h] = runHousePrediction(h, chartData);
+  }
+  return results;
+}
+
+function getChartSummary(results) {
+  let supportive=0, mixed=0, obstructive=0, notPromised=0;
+  Object.values(results).forEach(r => {
+    if (r.error) { notPromised++; return; }
+    if (r.houseVerdict === 'Not Promised') notPromised++;
+    else if (r.houseNature === 'Supportive') supportive++;
+    else if (r.houseNature === 'Obstructive') obstructive++;
+    else mixed++;
+  });
+  return { supportive, mixed, obstructive, notPromised };
+}
+
+// ═══════════════════════════════════════════════════
+// SESSION STORAGE HELPERS
+// ═══════════════════════════════════════════════════
+
+function saveChartData(data)  { sessionStorage.setItem('kp_input',   JSON.stringify(data)); }
+function loadChartData()      { const r = sessionStorage.getItem('kp_input');   return r ? JSON.parse(r) : null; }
+function saveResults(results) { sessionStorage.setItem('kp_results', JSON.stringify(results)); }
+function loadResults()        { const r = sessionStorage.getItem('kp_results'); return r ? JSON.parse(r) : null; }
+function clearAll()           { sessionStorage.removeItem('kp_input'); sessionStorage.removeItem('kp_results'); }
+
+// ═══════════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════════
+
+function getOrdinal(n) {
+  const s=['th','st','nd','rd'], v=n%100;
+  return n+(s[(v-20)%10]||s[v]||s[0]);
+}
+
+function getNatureTilt(score) {
+  if (score >= 2) return 'Supportive';
+  if (score <= -2) return 'Obstructive';
+  return 'Mixed';
+}
+
 
 let activeHouse  = 1;
 let chartData    = null;
