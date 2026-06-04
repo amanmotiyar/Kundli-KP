@@ -1694,7 +1694,7 @@ function proceedToAnalysis() {
   }
   sessionStorage.setItem('kp_returning', '1'); // flag for Back navigation restore
   sessionStorage.setItem('kp_input', JSON.stringify(data));
-  window.location.href = 'kp_output.html';
+  window.location.href = 'kp_output.html?t=' + Date.now();
 }
 
 // ── Clear ─────────────────────────────────────────────
