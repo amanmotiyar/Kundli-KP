@@ -553,7 +553,7 @@ const HOUSE_DATA = {
         subEvents:['BODY','MIND','PERSONALITY','APPEARANCE','LIFE_PHASE','NATURE_BEHAVIOUR'] },
   2:  { name:'Wealth',         domain:'Money, Family, Speech & Savings',
         Sanskrit:'Dhana Bhava',   primary:2, cluster:[2,6,10,11],     obstruct:[5,8,12],
-        subEvents:['WEALTH','SAVINGS','FAMILY','SPEECH','FOOD'] },
+        subEvents:['WEALTH','SAVINGS','FAMILY','SPEECH'] },
   3:  { name:'Siblings',       domain:'Siblings, Courage, Communication & Short Travel',
         Sanskrit:'Sahaja Bhava',  primary:3, cluster:[3,9,11],        obstruct:[6,8,12],
         subEvents:['SIBLINGS','COURAGE','COMMUNICATION','SHORT_TRAVEL','SKILLS'] },
@@ -1955,9 +1955,9 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (disruption) obs.push('sudden disruptions or losses affecting family');
     if (distance) obs.push('physical or emotional distance from family members');
     let p1 = '';
-    if (p1parts.length && obs.length) p1 = p1parts.join('; ') + '. At the same time — ' + obs.join('; ') + '.';
-    else if (p1parts.length) p1 = p1parts.join('; ') + '.';
-    else if (obs.length) p1 = 'Family relationships carry ' + obs.join('; ') + '.';
+    if (p1parts.length && obs.length) p1 = 'Family life has strengths: ' + p1parts.join('; ') + '. At the same time — ' + obs.join('; ') + '.';
+    else if (p1parts.length) p1 = 'Family life has genuine strength: ' + p1parts.join('; ') + '.';
+    else if (obs.length) p1 = 'Family relationships carry a persistent undercurrent of ' + obs.join('; ') + '.';
     else p1 = 'Family dynamics are not strongly defined in this chart.';
     return [p1, '', 'Family dynamics are a permanent reading.'];
   }
@@ -1972,9 +1972,10 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (friction) obs.push('speech regularly creates friction — what you say lands harder than you intend');
     if (intense) obs.push('communication tends to be guarded or intense — what goes unsaid matters as much as what is said');
     if (withdrawn) obs.push('a tendency to hold back — people rarely get the full picture of what you actually think');
-    let p1 = p1parts.length ? 'Your speech is ' + p1parts.join(' and ') + '.' : '';
+    let p1 = p1parts.length ? 'Your speech is ' + p1parts.join(' and ') + '.' : 'Speech is not a defining strength in this chart.';
     let p2 = obs.length ? obs.join('. ') + '.' : '';
     if (friction) p2 += ' This is not about becoming less honest — it is about learning when and how much to say.';
+    else if (intense) p2 += ' What you choose not to say often carries more weight than what you do.';
     return [p1, p2, 'Speech is a permanent trait.'];
   }
 
