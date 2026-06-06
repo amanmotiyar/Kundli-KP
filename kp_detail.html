@@ -1799,7 +1799,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (signArea) parts.push(`The ${cs} Ascendant means your constitutional zone is the ${signArea.toLowerCase()}`);
     if (planetArea) parts.push(`${sl} adds sensitivity through the ${planetArea.toLowerCase()}`);
     if (nlArea && nl !== sl) parts.push(`${nl} further shapes this through the ${nlArea.toLowerCase()}`);
-    let p1 = parts.join('. ') + '.';
+    let p1 = parts.length ? parts.join('. ') + '.' : 'The physical constitution is not strongly defined by a single dominant pattern.';
     let p2 = '';
     const vitality = suppH.includes(1), digestion = suppH.includes(5), recovery = suppH.includes(9) || suppH.includes(11);
     const disease = obstH.includes(6), chronic = obstH.includes(8), hospital = obstH.includes(12);
@@ -1936,8 +1936,8 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (sudden) obs.push('sudden losses can disrupt savings');
     if (drain) obs.push('expenses and outflows consistently drain what is saved');
     let p1 = '';
-    if (p1parts.length && obs.length) p1 = p1parts.join('; ') + '. However ' + obs.join('; ') + '.';
-    else if (p1parts.length) p1 = p1parts.join('; ') + '.';
+    if (p1parts.length && obs.length) p1 = 'Savings strengths: ' + p1parts.join('; ') + '. However — ' + obs.join('; ') + '.';
+    else if (p1parts.length) p1 = 'Savings strengths: ' + p1parts.join('; ') + '.';
     else if (obs.length) p1 = 'Saving is genuinely difficult — ' + obs.join('; ') + '.';
     else p1 = 'The savings picture is neutral — no strong pull either way.';
     let p2 = (risky||drain) ? 'Automate savings before spending — that is the only reliable method here.' : '';
@@ -2115,6 +2115,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     else if (supported && overrun) { p1 = 'Renovation can proceed but expect cost overruns — whatever is planned will cost more than budgeted.'; p2 = 'Build in a buffer of at least 20-30% and get all agreements in writing.'; }
     else if (!supported && overrun) { p1 = 'Not a good window for renovation — cost overruns are almost certain. If it must happen, it is likely being done before a sale or relocation.'; p2 = 'Fund it from savings, not debt.'; }
     else { p1 = 'Renovation timing is neutral — proceed if needed, no strong signal either way.'; }
+    if (!p1) p1 = 'Renovation indicators are not strongly placed in this window.';
     return [p1, p2];
   }
 
