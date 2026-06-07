@@ -3285,12 +3285,13 @@ function generateSubEventSummary(se, houseNum, chartData) {
     return [..._sent_h6_litigation(suppH,obstH), periodSentence()].filter(p=>p).join('<br><br>');
   }
   if (se.key === 'H6.BODY_PART') {
-    const h6Sign=chartData&&chartData.cusps&&chartData.cusps[6]?chartData.cusps[6].cuspSign:'';
-    const h8Sign=chartData&&chartData.cusps&&chartData.cusps[8]?chartData.cusps[8].cuspSign:'';
-    const h12Sign=chartData&&chartData.cusps&&chartData.cusps[12]?chartData.cusps[12].cuspSign:'';
-    const h6CSL=chartData&&chartData.cusps&&chartData.cusps[6]?chartData.cusps[6].sl:'';
-    const h8CSL=chartData&&chartData.cusps&&chartData.cusps[8]?chartData.cusps[8].sl:'';
-    const h12CSL=chartData&&chartData.cusps&&chartData.cusps[12]?chartData.cusps[12].sl:'';
+
+    const h6Sign  = chartData&&chartData.cusps&&chartData.cusps[6]  ? chartData.cusps[6].sign  : '';
+    const h8Sign  = chartData&&chartData.cusps&&chartData.cusps[8]  ? chartData.cusps[8].sign  : '';
+    const h12Sign = chartData&&chartData.cusps&&chartData.cusps[12] ? chartData.cusps[12].sign : '';
+    const h6CSL   = chartData&&chartData.cusps&&chartData.cusps[6]  ? chartData.cusps[6].sl    : '';
+    const h8CSL   = chartData&&chartData.cusps&&chartData.cusps[8]  ? chartData.cusps[8].sl    : '';
+    const h12CSL  = chartData&&chartData.cusps&&chartData.cusps[12] ? chartData.cusps[12].sl   : '';
     return _sent_h6_bodypart(h6Sign,h8Sign,h12Sign,h6CSL,h8CSL,h12CSL).filter(p=>p).join('<br><br>');
   }
   if (se.key === 'H6.ENEMIES') {
