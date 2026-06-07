@@ -5000,15 +5000,8 @@ function loadHouseDetail(houseNum) {
       attrsHtml += '</div>';
     }
 
-    // Combination output
+    // Combination output removed — shown once at house level, not per sub-event
     let comboHtml = '';
-    if (se.combination) {
-      comboHtml = `
-        <div class="combo-output">
-          <div class="combo-label">Planet + Sign Combination (${se.nlPlanet} × ${se.cuspSign})</div>
-          <div class="combo-text">${se.combination}</div>
-        </div>`;
-    }
 
     // RP tags
     let rpHtml = '';
@@ -5079,8 +5072,6 @@ function loadHouseDetail(houseNum) {
 
           ${rpHtml}
           ${attrsHtml}
-          ${comboHtml}
-
           <div class="se-summary">
             ${generateSubEventSummary(se, houseNum, chartData)}
           </div>
