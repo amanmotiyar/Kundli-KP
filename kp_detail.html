@@ -1630,22 +1630,69 @@ function generateSubEventSummary(se, houseNum, chartData) {
   function periodSentence() {
     if (se.type === 'Life') return '';
     if (!dba) return '';
-    let s = '';
-    if (dba.adGate === 'wide_open') {
-      s = `The current period (${dba_ad} antardasha) is directly activating this — things can move now.`;
-    } else if (dba.adGate === 'partial') {
-      s = `The current period (${dba_ad} antardasha) gives partial support — some movement is possible but the timing is not at its peak.`;
-    } else {
-      s = `The current period (${dba_ad} antardasha) is not the main trigger for this — a better period will come.`;
-    }
-    if (dba.verdict === 'strongly_active' || dba.verdict === 'active') {
-      s += ` Overall the planetary periods are strongly aligned for this right now.`;
-    } else if (dba.verdict === 'possible') {
-      s += ` This can happen in this period but needs a stronger sub-period trigger.`;
-    } else if (dba.verdict === 'not_this_period') {
-      s += ` This is not the right window — wait for a period when the right planets become active.`;
-    }
-    return s;
+    const TIMING = {
+    'H2.WEALTH': ['income is flowing through this channel','some income possible, not at peak','income from this source is muted this period'],
+    'H2.SAVINGS': ['savings can build actively now','saving is possible with discipline','not the right window to build savings'],
+    'H2.FAMILY': ['family dynamics are active and in motion','family matters are moving','family matters are quiet this period'],
+    'H2.SPEECH': ['communication patterns are active','some communication movement possible','not a peak period for communication'],
+    'H3.SIBLINGS': ['sibling matters are active','some sibling interaction likely','sibling connections are quiet'],
+    'H3.COURAGE': ['boldness and initiative are favoured now','some action is possible','not the moment for bold moves — consolidate'],
+    'H3.COMMUNICATION': ['communication and networking are active','some communication progress is possible','communication matters are quiet'],
+    'H3.SHORT_TRAVEL': ['short travel is favoured','some travel is possible','not a peak travel period'],
+    'H3.SKILLS': ['skill development and application are active','some skill expression is possible','skills are underutilised this period'],
+    'H4.PROPERTY_BUY': ['property acquisition can proceed','some property movement is possible','not the right window to buy — wait'],
+    'H4.PROPERTY_SELL': ['a sale can close now','some progress on a sale is possible','not the right window to sell — hold'],
+    'H4.PROPERTY_RENOVATE': ['renovation work can begin','some renovation progress is possible','hold off on renovation — not the right timing'],
+    'H4.VEHICLE': ['vehicle acquisition is favoured','vehicle matters can move','not the right window for a vehicle purchase'],
+    'H4.DOMESTIC': ['home life is active and in motion','domestic matters are moving','home life is stable and quiet'],
+    'H5.ROMANCE': ['romantic opportunities are active now','some romantic movement is possible','romantic life is quiet this period'],
+    'H5.CONCEPTION': ['conception timing is supported','conception is possible with effort','not the peak window for conception'],
+    'H5.DELIVERY': ['delivery timing is supported','delivery is possible','delivery timing needs a stronger period'],
+    'H5.CREATIVITY': ['creative output is active and productive','some creative expression is possible','creative energy is suppressed this period'],
+    'H5.SPECULATION': ['speculative timing has some support — stay cautious','very limited speculative opportunity','avoid speculation entirely this period'],
+    'H6.EMPLOYMENT': ['employment opportunities are active','some employment movement is possible','employment matters are in a holding phase'],
+    'H6.DEBT': ['debt management and repayment are active','some debt movement is possible','debt matters are quiet this period'],
+    'H6.DISEASE': ['health matters require active attention now','some health concerns may surface','health is relatively stable this period'],
+    'H6.COMPETITION': ['competitive situations are active','some competitive engagement is possible','competition is not the focus now'],
+    'H6.LITIGATION': ['legal matters are active and can progress','some legal progress is possible','legal matters are quiet this period'],
+    'H6.ENEMIES': ['opposition is active — stay alert','some opposition may surface','opposition is quiet this period'],
+    'H7.UNION': ['marriage prospects are active and supported','some movement toward union is possible','not the peak window for union — wait for a stronger period'],
+    'H7.SEPARATION': ['separation dynamics are active this period','separation is possible in this window','separation is not triggered now'],
+    'H7.PARTNERSHIP': ['business partnerships can form or progress','some partnership movement is possible','partnership matters are in a holding phase'],
+    'H8.CRISIS': ['sudden change or crisis is possible — stay prepared','some disruption may occur','relatively stable — major crisis not triggered'],
+    'H8.TRANSFORMATION': ['transformation is actively in progress','some transformative movement is possible','transformation is in a quiet phase'],
+    'H8.INHERITANCE': ['inheritance matters can surface and progress','some inheritance movement is possible','inheritance matters are quiet'],
+    'H8.OCCULT': ['metaphysical and occult pursuits are actively supported','some occult or spiritual activity is possible','occult matters are quiet this period'],
+    'H9.FORTUNE': ['fortune is active — opportunities are appearing now','some fortunate events are possible','fortune is in a quieter phase'],
+    'H9.HIGHER_STUDY': ['study and learning are actively supported','some educational progress is possible','not the peak window for study'],
+    'H9.LONG_TRAVEL': ['long-distance travel is supported and timely','some travel is possible','not the right window for long travel'],
+    'H9.SPIRITUALITY': ['spiritual practice is active and productive','some spiritual development is possible','worldly demands dominate — spiritual matters are quiet'],
+    'H10.PROFESSION': ['career is active and in motion','some career movement is possible','career matters are in a holding phase'],
+    'H10.PROMOTION': ['promotion can happen now — push for it','some promotion movement is possible','not the peak window for promotion'],
+    'H10.JOB_CHANGE': ['job change is timely — move if the right opportunity arises','job change is possible with the right opportunity','not the right window to change — hold position'],
+    'H10.BUSINESS': ['business activity is supported','some business progress is possible','business matters are in a quiet phase'],
+    'H10.STATUS': ['public recognition is active and possible','some status movement is possible','status matters are quiet this period'],
+    'H11.INCOME': ['income is flowing — this is an active earning window','some income is possible','income is muted — building phase'],
+    'H11.DESIRES': ['desires can materialise now — act on them','some fulfilment of desires is possible','not the peak window for desires'],
+    'H11.NETWORK': ['network building and activation are supported','some network movement is possible','network matters are quiet'],
+    'H11.GAINS': ['gains are coming in — an active gains window','some gains are possible','building phase — gains come in a future window'],
+    'H12.FOREIGN': ['foreign movement or connection is active and timely','some foreign opportunity is possible','foreign matters are quiet this period'],
+    'H12.VISA': ['visa process can move forward now','some visa progress is possible','not the right window to push visa — wait'],
+    'H12.RESIDENCE': ['foreign residence can be established now','some movement toward foreign residence is possible','not the right window for relocation'],
+    'H12.HOSPITAL': ['health and hospital matters require monitoring now','some health vigilance is needed','health is stable this period'],
+    'H12.EXPENSES': ['expenses are running — manage and track actively','some expense pressure is present','expenses are relatively controlled this period'],
+    'H12.SECLUSION': ['periods of retreat are productive now','some withdrawal and rest is beneficial','outward engagement serves better than seclusion now'],
+    'H12.MOKSHA': ['spiritual pursuit is actively supported','some spiritual progress is possible','worldly demands dominate this period']
+    };
+    const verbs = TIMING[se.key] || ['active now','possible this period','not triggered now'];
+    const activeVerb   = verbs[0];
+    const partialVerb  = verbs[1];
+    const inactiveVerb = verbs[2];
+    let gate = '';
+    if (dba.adGate === 'wide_open') gate = activeVerb;
+    else if (dba.adGate === 'partial') gate = partialVerb;
+    else gate = inactiveVerb;
+    return `<strong>${dba_ad} antardasha</strong> — ${gate}.`;
   }
 
   // ── Core variables used by all sub-event handlers ──
@@ -1844,7 +1891,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (obstH.includes(6)) lines.push(_line('Inner conflict', 'stress and self-criticism colour how you come across to others'));
     if (obstH.includes(12)) lines.push(_line('Withdrawal', 'tendency to pull back when overwhelmed rather than asking for support'));
     if (!lines.length) lines.push(_line('Personality', 'shaped more by experience than a fixed natal pattern'));
-    return [lines.join('<br>'), 'This is a permanent reading — personality is set at birth.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h1_appearance(suppH, signArea, planetArea, nlArea) {
@@ -1921,7 +1968,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (obstH.includes(8)) lines.push(_line('Disruptions', 'sudden events affecting the family unit are possible'));
     if (obstH.includes(12)) lines.push(_line('Distance', 'physical or emotional separation from family members'));
     if (!lines.length) lines.push(_line('Family dynamics', 'not strongly defined in this chart'));
-    return [lines.join('<br>'), 'Family dynamics are a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h2_speech(suppH, obstH) {
@@ -1934,7 +1981,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (obstH.includes(12)) lines.push(_line('Holding back', 'tendency to stay silent — people rarely get the full picture'));
     if (!suppH.includes(2)&&!suppH.includes(3)&&!suppH.includes(1)) lines.push(_line('Speech', 'not a defining strength in this chart'));
     if (obstH.includes(6)) lines.push(_line('Key lesson', 'not about being less honest — about learning when and how much to say'));
-    return [lines.join('<br>'), 'Speech is a permanent trait.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h3_siblings(suppH, obstH) {
@@ -1945,7 +1992,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (obstH.includes(6)) lines.push(_line('Rivalry', 'conflict and competition are recurring themes'));
     if (obstH.includes(8)) lines.push(_line('Disruptions', 'sudden events involving siblings are possible'));
     if (obstH.includes(12)) lines.push(_line('Distance', 'physical or emotional separation from siblings'));
-    return [lines.join('<br>'), 'Sibling dynamics are permanent.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h3_courage(suppH, obstH) {
@@ -1956,7 +2003,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (obstH.includes(6)) lines.push(_line('Tested', 'courage is regularly challenged by obstacles and opposition'));
     if (obstH.includes(8)) lines.push(_line('Inner fear', 'undermines boldness at key moments — a real and recurring pattern'));
     if (obstH.includes(12)) lines.push(_line('Hesitation', 'self-doubt and overthinking are the default response before action'));
-    return [lines.join('<br>'), 'Courage is a permanent character trait.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h3_communication(suppH, obstH, nlH) {
@@ -1992,7 +2039,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (!suppH.includes(3)&&!suppH.includes(6)&&!suppH.includes(10)) lines.push(_line('Skills', 'present but not strongly channelled in any specific direction'));
     if (obstH.includes(8)) lines.push(_line('Suppressed', 'skills tend to be underused — the ability exists but stays below the surface'));
     if (obstH.includes(12)) lines.push(_line('Unrecognised', 'talent goes unseen — getting it visible is the real challenge'));
-    return [lines.join('<br>'), 'Skills capacity is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h4_propertybuy(suppH, obstH, nlH, sl) {
@@ -2063,7 +2110,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (both.includes(2)) lines.push(_line('Ownership', 'family-connected or jointly held'));
     if (both.includes(9)) lines.push(_line('Setting', 'fortunate location or larger than average plot'));
     if (!propType) lines.push(_line('Property type', 'not strongly defined by a single pattern'));
-    return [lines.join('<br>'), 'This is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h4_vehicle(suppH, obstH, nlH, sl) {
@@ -2097,7 +2144,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (nlH.includes(11)) lines.push(_line('Support', 'supportive of your ambitions'));
     if (conflict) lines.push(_line('Conflict', 'recurring friction and stress in the relationship'));
     if (loss) lines.push(_line('Hardship', 'sudden loss or difficulty involving the mother is possible'));
-    return [lines.join('<br>'), 'Mother relationship is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h4_domestic(suppH, obstH, nlH) {
@@ -2168,7 +2215,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (possible>0) lines.push(_line('Possible', `${possible} more — indicated but not guaranteed`));
     if (confirmed===0&&possible===0) lines.push(_line('Children', 'not strongly indicated in this chart'));
     if (obs.length) lines.push(_line('Timing', 'obstruction factors present — health and circumstances play a significant role'));
-    return [lines.join('<br>'), 'This is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h5_childgender() {
@@ -2192,7 +2239,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (obstH.includes(12)&&!nlH.includes(11)) lines.push(_line('Recognition', 'creativity tends to stay private or go unseen'));
     if (obstH.includes(12)&&nlH.includes(11)) lines.push(_line('Potential', 'wide reach is possible but work stays in isolation — getting it out is the challenge'));
     if (nlH.includes(2)) lines.push(_line('Financial value', 'creative output has real earning potential when applied'));
-    return [lines.join('<br>'), 'Creative capacity is permanent.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h5_speculation(suppH, obstH, nlH) {
@@ -2219,7 +2266,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (nlH.includes(11)) lines.push(_line('Drive', 'intelligence is channelled into ambition'));
     if (!suppH.includes(5)&&!suppH.includes(9)) lines.push(_line('Intelligence', 'present but not strongly channelled in a dominant direction'));
     if (obstH.includes(12)) lines.push(_line('Potential gap', 'works below full capacity — the ability stays internal. Getting it applied and visible is the work'));
-    return [lines.join('<br>'), 'Intelligence is a permanent chart trait.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h6_employment(suppH, obstH, nlH) {
@@ -2369,7 +2416,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (obstH.includes(6)) lines.push(_line('Carries', 'work stress or health challenges'));
     if (obstH.includes(8)) lines.push(_line('Inner nature', 'intense or secretive — there is more beneath the surface'));
     if (obstH.includes(12)) lines.push(_line('Tendency', 'emotionally distant at times'));
-    return [lines.join('<br>'), 'Spouse nature is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h7_partnership(suppH, obstH, nlH) {
@@ -2396,7 +2443,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     else lines.push(_line('Type', 'self-chosen — happens on personal terms without a dominant pattern'));
     if (delay) lines.push(_line('Timing', 'delayed — happens on your own timeline, not the conventional one'));
     if (work) lines.push(_line('Connection', 'workplace or career-related origin is possible'));
-    return [lines.join('<br>'), 'This is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h7_marriagenumber(both) {
@@ -2408,7 +2455,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     else if (h7&&end) lines.push(_line('Number', 'one marriage with serious challenges — separation is part of the picture. A second union is possible'));
     else if (h11&&end) lines.push(_line('Number', 'two unions likely — the first ends, a second follows'));
     else lines.push(_line('Marriage', 'not strongly promised — may happen through unconventional circumstances'));
-    return [lines.join('<br>'), 'This is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h8_longevity(suppH, obstH, nlH) {
@@ -2424,7 +2471,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (kidneys) lines.push(_line('Watch', 'kidneys and lower back are a specific area to monitor'));
     if (emotional) lines.push(_line('Emotional health', 'stress management directly affects longevity'));
     if (sleep||nlH.includes(12)) lines.push(_line('Sleep', 'and immunity are weak links'));
-    return [lines.join('<br>'), 'This is a permanent natal reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h8_inheritance(suppH, obstH, nlH) {
@@ -2495,7 +2542,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (nlH.includes(12)) lines.push(_line('Final chapter', 'spiritual or quietly isolated'));
     if (obstH.includes(8)) lines.push(_line('Nature', 'sudden or unexpected end is possible'));
     if (!lines.length) lines.push(_line('End of life', 'indicators not strongly placed in this chart'));
-    return [lines.join('<br>'), 'Long-range permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h9_fortune(suppH, obstH, nlH) {
@@ -2524,7 +2571,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (nlH.includes(11)) lines.push(_line('Support', 'supportive of your ambitions'));
     if (nlH.includes(4)) lines.push(_line('Bond', 'closely connected at the domestic level'));
     if (nlH.includes(12)||distance) lines.push(_line('Note', 'the relationship is strained — present but complicated'));
-    return [lines.join('<br>'), 'Father relationship is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h9_higherstudy(suppH, obstH, nlH) {
@@ -2566,7 +2613,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (nlH.includes(7)) lines.push(_line('Connection', 'a guru or spiritual partnership is part of the picture'));
     if (nlH.includes(12)) lines.push(_line('Practice', 'deep and solitary'));
     if (career) lines.push(_line('Obstruction', 'career demands suppress formal practice'));
-    return [lines.join('<br>'), 'Spiritual orientation is permanent.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h10_profession(suppH, obstH, sl, nl) {
@@ -2581,7 +2628,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (foreign&&!direct) lines.push(_line('Complication', 'foreign factors or remote work create complications in the career path'));
     if (jobSector) lines.push(_line('Primary domain', jobSector));
     if (nlSector) lines.push(_line('Secondary layer', nlSector));
-    return [lines.join('<br>'), 'This is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h10_promotion(suppH, obstH, nlH) {
@@ -2641,7 +2688,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     } else {
       lines.push(_line('Neither dominates', 'decide based on practical opportunity, not chart pressure'));
     }
-    return [lines.join('<br>'), 'This is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h10_govtprivate(sl, nl) {
@@ -2654,7 +2701,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
       lines.push(_line('Primary fit', slTilt));
       lines.push(_line('Secondary pull', nlTilt+' — accessible but '+slTilt+' is the stronger natural fit'));
     }
-    return [lines.join('<br>'), 'This is a permanent reading.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h10_sector(sl, nl) {
@@ -2664,7 +2711,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (bizSector) lines.push(_line('Business domain', bizSector));
     if (nlSector) lines.push(_line('Star lord layer', nlSector));
     if (!lines.length) lines.push(_line('Career sector', 'not strongly defined by a single domain'));
-    return [lines.join('<br>'), 'This is a permanent reading — career sector is written in the natal chart.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h10_status(suppH, obstH, nlH) {
@@ -2717,7 +2764,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (obstH.includes(6)||nlH.includes(6)) lines.push(_line('Their life', 'works hard but faces their own challenges'));
     if (nlH.includes(9)) lines.push(_line('Their nature', 'wise and fortunate in their own right'));
     if (distant) lines.push(_line('Location', 'living abroad or at a significant distance'));
-    return [lines.join('<br>'), 'Elder sibling dynamics are permanent.'];
+    return [lines.join('<br>')];
   }
 
   function _sent_h11_network(suppH, obstH, nlH) {
@@ -2846,7 +2893,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     if (nlH.includes(11)) lines.push(_line('Sequence', 'desires are fulfilled before liberation is reached — a path of completion, not deprivation'));
     if (material) lines.push(_line('Main friction', 'material attachments — the hardest thing to release'));
     if (worldly) lines.push(_line('Delay', 'worldly ambitions delay the deeper turn inward'));
-    return [lines.join('<br>'), 'Permanent reading — spiritual destiny is set in the natal chart.'];
+    return [lines.join('<br>')];
   }
 
 
