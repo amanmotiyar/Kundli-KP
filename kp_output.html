@@ -2366,11 +2366,55 @@ function generateSubEventSummary(se, houseNum, chartData) {
   }
 
   function _sent_h6_bodypart(h6Sign, h8Sign, h12Sign, h6CSL, h8CSL, h12CSL) {
-    let p1='Primary vulnerability areas across your lifetime:<br>';
-    if (h6Sign) p1+=`<strong>H6 (${h6Sign}):</strong> ${T_SIGN_BODY[h6Sign]||h6Sign}${h6CSL?' · '+T_PLANET_BODYPART[h6CSL]:''}<br>`;
-    if (h8Sign) p1+=`<strong>H8 (${h8Sign}):</strong> ${T_SIGN_BODY[h8Sign]||h8Sign}${h8CSL?' · '+T_PLANET_BODYPART[h8CSL]:''}<br>`;
-    if (h12Sign) p1+=`<strong>H12 (${h12Sign}):</strong> ${T_SIGN_BODY[h12Sign]||h12Sign}${h12CSL?' · '+T_PLANET_BODYPART[h12CSL]:''}`;
-    return [p1, 'These three zones carry the most constitutional risk. Regular monitoring and preventive care are advised.'];
+    // Simplified sign body descriptions — 2-3 words max
+    const SIGN_SHORT = {
+      Aries:'Head and brain', Taurus:'Throat and neck', Gemini:'Arms, lungs and nerves',
+      Cancer:'Chest and stomach', Leo:'Heart and spine', Virgo:'Abdomen and intestines',
+      Libra:'Kidneys and lower back', Scorpio:'Reproductive system',
+      Sagittarius:'Hips and thighs', Capricorn:'Knees, bones and joints',
+      Aquarius:'Legs and circulation', Pisces:'Feet and lymphatic system'
+    };
+    const HOUSE_BODY_SHORT = {
+      1:'Overall constitution', 2:'Throat and face', 3:'Arms and shoulders',
+      4:'Chest and emotional health', 5:'Stomach and digestion',
+      6:'Primary disease zone', 7:'Kidneys and lower back',
+      8:'Chronic and surgical zone', 9:'Hips and thighs',
+      10:'Knees and joints', 11:'Circulation and recovery', 12:'Sleep and immunity'
+    };
+    const PRIORITY_MAP = {6:1, 8:2, 12:3, 7:4, 4:5, 1:6};
+
+    // ── LIFE: top 2 permanent zones ──
+    const sevMap = {Saturn:3, Mars:3, Rahu:3, Sun:2, Moon:2, Jupiter:1, Mercury:1, Venus:1, Ketu:1};
+    const h8Sev = sevMap[h8CSL]||1, h12Sev = sevMap[h12CSL]||1;
+    const secondZone = h8Sev >= h12Sev
+      ? {area: SIGN_SHORT[h8Sign]||h8Sign, label:'chronic and surgical risk zone'}
+      : {area: SIGN_SHORT[h12Sign]||h12Sign, label:'long-term vulnerability zone'};
+
+    let lifeP = `<strong>${SIGN_SHORT[h6Sign]||h6Sign}</strong> — your primary constitutional vulnerability zone.`;
+    lifeP += `<br><strong>${secondZone.area}</strong> — ${secondZone.label}.`;
+
+    // ── TIME: top 1-2 zones active in current DBA ──
+    // Use slSig from the H6 cusp SL (already in scope as slSig)
+    const activeH = Object.keys(PRIORITY_MAP)
+      .map(Number)
+      .filter(h => slSig.includes(h))
+      .sort((a,b) => PRIORITY_MAP[a] - PRIORITY_MAP[b])
+      .slice(0, 2);
+
+    let timeZones = activeH.map(h => {
+      if (h===6)  return `<strong>${SIGN_SHORT[h6Sign]||h6Sign}</strong> — primary disease zone is activated in this period`;
+      if (h===8)  return `<strong>${SIGN_SHORT[h8Sign]||h8Sign}</strong> — chronic or surgical risk is heightened now`;
+      if (h===12) return `<strong>${SIGN_SHORT[h12Sign]||h12Sign}</strong> — sleep and immunity are under pressure`;
+      return `<strong>${HOUSE_BODY_SHORT[h]||('H'+h+' area')}</strong> — currently under stress in this period`;
+    });
+
+    let timeP = timeZones.length
+      ? timeZones.join('.<br>') + '.'
+      : 'No specific body zone is sharply activated in the current period — general health maintenance applies.';
+
+    let p1 = `<strong>Permanent vulnerability:</strong><br>${lifeP}`;
+    let p2 = `<strong>Current period focus:</strong><br>${timeP}`;
+    return [p1, p2];
   }
 
   function _sent_h6_enemies(suppH, obstH) {
