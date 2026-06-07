@@ -1794,1368 +1794,1059 @@ function generateSubEventSummary(se, houseNum, chartData) {
   // ── TEXT ASSEMBLY HELPERS ──
   // Converts house hits into flowing sentences per sub-event
 
-      function _sent_h1_body(suppH, obstH, signArea, planetArea, nlArea) {
-    let parts = [];
-    if (signArea) parts.push(`The ${cs} Ascendant means your constitutional zone is the ${signArea.toLowerCase()}`);
-    if (planetArea) parts.push(`${sl} adds sensitivity through the ${planetArea.toLowerCase()}`);
-    if (nlArea && nl !== sl) parts.push(`${nl} further shapes this through the ${nlArea.toLowerCase()}`);
-    let p1 = parts.length ? parts.join('. ') + '.' : 'The physical constitution is not strongly defined by a single dominant pattern.';
-    const vitality=suppH.includes(1), digestion=suppH.includes(5), recovery=suppH.includes(9)||suppH.includes(11);
+        // ── HELPER: build a formatted line ──
+  // _line('Bold label', 'clear statement') → '<strong>Bold label</strong> — clear statement.'
+  function _line(label, statement) {
+    return `<strong>${label}</strong> — ${statement}.`;
+  }
+
+  function _sent_h1_body(suppH, obstH, signArea, planetArea, nlArea) {
+    let lines = [];
+    if (signArea) lines.push(_line('Constitutional zone', `${signArea.toLowerCase()} — this is the physical area most expressed in your birth chart`));
+    if (planetArea) lines.push(_line('Sub-lord body area', `${sl} adds sensitivity through the ${planetArea.toLowerCase()}`));
+    if (nlArea && nl !== sl) lines.push(_line('Star lord body area', `${nl} further shapes this through the ${nlArea.toLowerCase()}`));
+    const vitality=suppH.includes(1), recovery=suppH.includes(9)||suppH.includes(11);
     const disease=obstH.includes(6), chronic=obstH.includes(8), hospital=obstH.includes(12);
-    const strengths=[vitality&&'Overall vitality is strong',digestion&&'Digestion and gut health are resilient',recovery&&'Recovery capacity is good'].filter(Boolean);
-    const vulns=[disease&&'Disease tendency is present — this area needs monitoring',chronic&&'Chronic or surgical conditions are a risk',hospital&&'Sleep and immunity are weak links'].filter(Boolean);
-    let p2 = strengths.length ? strengths.join('; ')+'.' : '';
-    if (vulns.length) p2 += (p2?'<br><br>':'') + vulns.join('; ')+'.';
-    if (!p2) p2 = 'The health picture is balanced — no strong pull toward either vitality or vulnerability.';
-    return [p1, p2, 'This is a permanent constitutional reading — use it as a preventive map, not a prediction of illness.'];
+    if (vitality) lines.push(_line('Vitality', 'overall life force is strong in this chart'));
+    if (recovery) lines.push(_line('Recovery', 'the body bounces back well from illness'));
+    if (disease) lines.push(_line('Disease tendency', 'vulnerability to illness is present — preventive care is non-optional'));
+    if (chronic) lines.push(_line('Chronic risk', 'long-term or surgical conditions are a real possibility'));
+    if (hospital) lines.push(_line('Immunity', 'sleep and immunity are weak links to watch'));
+    if (!vitality && !recovery && !disease && !chronic && !hospital) lines.push(_line('Health picture', 'balanced — no strong pull toward either vulnerability or resilience'));
+    return [lines.join('<br>'), 'This is a permanent constitutional reading — use it as a preventive map, not a prediction of illness.'];
   }
 
   function _sent_h1_mind(suppH, obstH, nlStr, nlChal) {
-    const conf=suppH.includes(1), courage=suppH.includes(3), emostab=suppH.includes(4), optimism=suppH.includes(5), faith=suppH.includes(9), ambition=suppH.includes(11);
-    const anxiety=obstH.includes(6), fear=obstH.includes(8), withdrawal=obstH.includes(12);
-    let traits=[];
-    if (conf||courage) traits.push('quick and decisive — you move to action with confidence');
-    if (emostab) traits.push('emotionally stable and grounded');
-    if (optimism||faith) traits.push('naturally optimistic with a long-range view');
-    if (ambition) traits.push('driven by ambition');
-    let p1 = traits.length ? 'Your mind is '+traits.join(', ')+'.' : 'The mind does not have strong natural support in this chart — clarity and focus require conscious effort.';
-    let p2parts=[];
-    if (anxiety) p2parts.push('Anxiety and self-criticism are recurring patterns');
-    if (fear) p2parts.push('Underlying fear and insecurity run beneath the surface');
-    if (withdrawal) p2parts.push('A tendency to withdraw and overthink when under pressure');
-    let p2 = p2parts.length ? p2parts.join('; ')+'.' : '';
-    if (anxiety&&fear) p2 += ' The combination means the mind can spiral under pressure — grounding practices and physical activity are particularly useful.';
-    else if (withdrawal) p2 += ' Recognising when you are genuinely processing versus simply avoiding is the key skill here.';
-    let p3='';
-    if (nlStr.length||nlChal.length) {
-      p3 = `${nl} as the star lord adds a secondary layer`;
-      if (nlStr.length) p3 += ` — supporting: ${nlStr.join(', ')}`;
-      if (nlChal.length) p3 += `${nlStr.length?'; ':' — '}challenging: ${nlChal.join(', ')}`;
-      p3 += '.';
-    }
-    return [p1, p2, p3];
+    let lines = [];
+    if (suppH.includes(1)||suppH.includes(3)) lines.push(_line('Decisiveness', 'quick and action-oriented — you move with confidence'));
+    if (suppH.includes(4)) lines.push(_line('Emotional stability', 'grounded and settled — not easily rattled'));
+    if (suppH.includes(5)||suppH.includes(9)) lines.push(_line('Optimism', 'naturally positive with a long-range view'));
+    if (suppH.includes(11)) lines.push(_line('Motivation', 'driven by ambition — goals are the engine'));
+    if (obstH.includes(6)) lines.push(_line('Anxiety', 'self-criticism and stress are recurring mental patterns'));
+    if (obstH.includes(8)) lines.push(_line('Fear', 'underlying insecurity runs beneath the surface — needs conscious work'));
+    if (obstH.includes(12)) lines.push(_line('Overthinking', 'tendency to withdraw and spiral rather than act'));
+    if (obstH.includes(6) && obstH.includes(8)) lines.push(_line('Pressure response', 'the mind can spiral under stress — grounding practices and physical activity are particularly useful'));
+    if (!lines.length) lines.push(_line('Mental picture', 'not strongly defined — clarity and focus require deliberate cultivation'));
+    if (nlStr.length) lines.push(_line(`${nl} adds`, nlStr.join(', ')));
+    if (nlChal.length) lines.push(_line(`${nl} challenge`, nlChal.join(', ')));
+    return [lines.join('<br>')];
   }
 
   function _sent_h1_personality(suppH, obstH) {
-    const selfaware=suppH.includes(1), values=suppH.includes(2), courageous=suppH.includes(3), emosec=suppH.includes(4), creative=suppH.includes(5), depth=suppH.includes(8), ethics=suppH.includes(9), disciplined=suppH.includes(10), ambitious=suppH.includes(11);
-    const conflict=obstH.includes(6), withdrawn=obstH.includes(12);
-    let traits=[];
-    if (selfaware||courageous) traits.push('self-driven, independent, and initiative-taking');
-    if (values||disciplined) traits.push('grounded in strong values with a clear sense of what matters');
-    if (emosec) traits.push('emotionally secure and settled in your own skin');
-    if (depth) traits.push('psychologically deep and resilient under pressure');
-    if (creative) traits.push('creative intelligence at the core');
-    if (ethics) traits.push('guided by ethics and philosophy as an identity anchor');
-    if (ambitious) traits.push('defined by your ambitions and long-term goals');
-    let p1 = traits.length ? 'At your core you are '+traits.join('; ')+'.' : 'The personality indicators are not strongly defined — character is shaped more by experience than a fixed natal pattern.';
-    let shadow=[];
-    if (conflict) shadow.push('Inner conflict and stress colour how you come across');
-    if (withdrawn) shadow.push('A private, withdrawn quality — you retreat when overwhelmed rather than asking for help');
-    let p2 = shadow.length ? shadow.join('; ')+'.' : '';
-    if (conflict&&withdrawn) p2 += ' Awareness allows for conscious adjustment.';
-    return [p1, p2, 'This is a permanent reading — personality is set at birth.'];
+    let lines = [];
+    if (suppH.includes(1)||suppH.includes(3)) lines.push(_line('Core drive', 'self-directed and initiative-taking — you do not wait for permission'));
+    if (suppH.includes(2)||suppH.includes(10)) lines.push(_line('Values', 'grounded in clear principles — strong sense of what matters'));
+    if (suppH.includes(4)) lines.push(_line('Emotional foundation', 'secure and settled in your own skin'));
+    if (suppH.includes(8)) lines.push(_line('Psychological depth', 'intense and resilient — processes things deeply rather than on the surface'));
+    if (suppH.includes(5)) lines.push(_line('Creative intelligence', 'imagination and original thinking are central to who you are'));
+    if (suppH.includes(9)) lines.push(_line('Philosophy', 'ethics and worldview are identity anchors — you need to believe in what you do'));
+    if (suppH.includes(11)) lines.push(_line('Ambition', 'defined by your long-term goals — always playing a longer game'));
+    if (obstH.includes(6)) lines.push(_line('Inner conflict', 'stress and self-criticism colour how you come across to others'));
+    if (obstH.includes(12)) lines.push(_line('Withdrawal', 'tendency to pull back when overwhelmed rather than asking for support'));
+    if (!lines.length) lines.push(_line('Personality', 'shaped more by experience than a fixed natal pattern'));
+    return [lines.join('<br>'), 'This is a permanent reading — personality is set at birth.'];
   }
 
   function _sent_h1_appearance(suppH, signArea, planetArea, nlArea) {
-    let p1parts=[];
-    if (signArea) p1parts.push(`The ${cs} Ascendant gives a constitutional emphasis on the ${signArea.toLowerCase()} — this area is most physically expressive`);
-    if (planetArea) p1parts.push(`${sl} adds a physical signature through the ${planetArea.toLowerCase()}`);
-    if (nlArea&&nl!==sl) p1parts.push(`${nl} further shapes the appearance through the ${nlArea.toLowerCase()}`);
-    let p1 = p1parts.join('. ')+(p1parts.length?'.':'Appearance is not strongly defined by a single pattern.');
-    return [p1, 'Appearance is a permanent natal reading.'];
+    let lines = [];
+    if (signArea) lines.push(_line('Ascendant influence', `${cs} rising — physical emphasis on the ${signArea.toLowerCase()}`));
+    if (planetArea) lines.push(_line(`${sl} signature`, `adds physical quality through the ${planetArea.toLowerCase()}`));
+    if (nlArea && nl !== sl) lines.push(_line(`${nl} modifier`, `shapes appearance through the ${nlArea.toLowerCase()}`));
+    if (!lines.length) lines.push(_line('Appearance', 'not strongly defined by a single dominant pattern'));
+    return [lines.join('<br>'), 'Appearance is a permanent natal reading.'];
   }
 
   function _sent_h1_lifephase(suppH, obstH, dba_md, dba_ad) {
-    const MD_DESC = {Sun:'stepping into authority — career, recognition, and public identity are central',Moon:'an emotionally significant chapter — inner world, family, and security take precedence',Mars:'a chapter of action and confrontation — you are being pushed to fight for something',Mercury:'a phase of thinking, communication, and building — the mind is your biggest asset now',Jupiter:'expansion — things open up in ways they may not have before',Venus:'relationships, comfort, and pleasure coming to the foreground',Saturn:'the long lesson — slow, sometimes heavy, but what you build now lasts',Rahu:'disruption and ambition — old structures shake, new paths open through unconventional routes',Ketu:'release and inward turning — things you have held tightly begin to loosen'};
-    const AD_DESC = {Sun:'authority and visibility are in the foreground right now',Moon:'emotional sensitivity is heightened — home and family pull at attention',Mars:'urgency and conflict — decisions need to be made and defended',Mercury:'the mind sharpens — deals, conversations, and planning move quickly',Jupiter:'doors are opening — good timing for growth-oriented decisions',Venus:'the pace softens — pleasure, relationships, and comfort are in focus',Saturn:'patience and steady work are what this window rewards',Rahu:'restlessness and new ambitions — expect the unexpected',Ketu:'the attention turns inward — less worldly activity, more inner clarity'};
-    let p1 = dba_md&&dba_ad ? `You are in <strong>${dba_md} Mahadasha / ${dba_ad} Antardasha</strong>. ${MD_DESC[dba_md]||'A significant personal period'}. Right now the ${dba_ad} sub-period means ${AD_DESC[dba_ad]||'its own distinct energy'}.` : 'The current planetary period shapes your entire experience of life right now.';
-    const HP={1:'Strong personal energy and self-focus',8:'Deep transformation and personal reinvention',9:'Fortune, learning and long-range expansion',10:'Career peak and public recognition',11:'Gains and fulfilment of desires',4:'Domestic and emotional themes dominating',6:'Service, health challenges and overcoming obstacles',12:'Losses, expenses and withdrawal from the world'};
-    const str=suppH.filter(h=>HP[h]).map(h=>HP[h]), chal=obstH.filter(h=>HP[h]).map(h=>HP[h]);
-    let p2 = str.length ? 'Active themes: '+str.join('; ')+'.' : '';
-    if (chal.length) p2 += (p2?'<br><br>':'')+'Background challenges: '+chal.join('; ')+'.';
-    if (!p2) p2 = 'This is a transitional phase — dominant themes will become clearer as the next cycle activates.';
-    return [p1, p2];
+    const MD_DESC={Sun:'authority and career are central',Moon:'inner world and family take precedence',Mars:'action and confrontation — being pushed to fight',Mercury:'communication and building — the mind is the biggest asset',Jupiter:'expansion — things open up',Venus:'relationships and pleasure come forward',Saturn:'the long lesson — slow but what is built lasts',Rahu:'disruption and ambition — old structures shake, new paths open',Ketu:'release and inward turning — things begin to loosen'};
+    const AD_DESC={Sun:'authority and visibility in the foreground',Moon:'emotional sensitivity heightened',Mars:'urgency — decisions need to be made and defended',Mercury:'mind sharpens — deals and planning move quickly',Jupiter:'doors opening — good timing for growth',Venus:'pace softens — pleasure and relationships in focus',Saturn:'patience and steady work rewarded',Rahu:'restlessness — expect the unexpected',Ketu:'attention turns inward — less worldly, more inner clarity'};
+    let lines = [];
+    if (dba_md) lines.push(_line(`${dba_md} Mahadasha`, MD_DESC[dba_md]||'a significant personal period is active'));
+    if (dba_ad) lines.push(_line(`${dba_ad} Antardasha`, AD_DESC[dba_ad]||'its own distinct sub-period energy'));
+    if (suppH.includes(1)) lines.push(_line('Personal energy', 'strong — what you initiate now carries real weight'));
+    if (suppH.includes(8)||suppH.includes(9)) lines.push(_line('Transformation', 'reinvention and deep change are the dominant undercurrent'));
+    if (suppH.includes(10)||suppH.includes(11)) lines.push(_line('Career and gains', 'actively in play in this phase'));
+    if (obstH.includes(4)) lines.push(_line('Domestic themes', 'pulling attention alongside everything else'));
+    if (obstH.includes(6)) lines.push(_line('Health and obstacles', 'part of this chapter — require active management'));
+    if (obstH.includes(12)) lines.push(_line('Losses and expenses', 'running in the background — things being shed as much as built'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h1_behaviour(suppH, obstH) {
-    const independent=suppH.includes(1), bold=suppH.includes(3), expressive=suppH.includes(5), ethical=suppH.includes(9), disciplined=suppH.includes(10);
-    const stress=obstH.includes(6), influenced=obstH.includes(7), intense=obstH.includes(8), avoidant=obstH.includes(12);
-    let traits=[];
-    if (independent) traits.push('Self-directed and independent — you do not wait for permission or consensus');
-    if (bold) traits.push('Communicative and bold when you have something to say');
-    if (expressive) traits.push('Expressive and creatively motivated');
-    if (ethical) traits.push('Guided by philosophy and ethics in how you act');
-    if (disciplined) traits.push('Responsible and disciplined in daily conduct');
-    let p1 = traits.length ? traits.join('. ')+'.' : 'Your behaviour is not strongly patterned by any single dominant theme — you adapt to context more than most.';
-    let challenges=[];
-    if (stress) challenges.push('Prone to stress reactions and inner conflict that others can see');
-    if (influenced) challenges.push('Your behaviour shifts significantly depending on who you are with — building a stronger internal anchor is the key work');
-    if (intense) challenges.push('Intensity that can come across as closed or secretive — people may not know what to expect from you');
-    if (avoidant) challenges.push('A pattern of withdrawal when things get difficult rather than engaging directly');
-    let p2 = challenges.length ? challenges.join('. ')+'.' : '';
-    if (intense&&avoidant) p2 += ' The combination makes you hard to read — which creates friction in close relationships.';
-    return [p1, p2, 'Behavioural patterns are set at birth, though awareness allows for conscious adjustment.'];
+    let lines = [];
+    if (suppH.includes(1)) lines.push(_line('Independence', 'self-directed — does not wait for consensus or permission'));
+    if (suppH.includes(3)) lines.push(_line('Boldness', 'communicative and direct when there is something to say'));
+    if (suppH.includes(5)) lines.push(_line('Expressiveness', 'creatively motivated — expression is a core need'));
+    if (suppH.includes(9)) lines.push(_line('Ethics', 'guided by philosophy in how you act — needs to believe in what it does'));
+    if (suppH.includes(10)) lines.push(_line('Discipline', 'responsible and structured in daily conduct'));
+    if (obstH.includes(6)) lines.push(_line('Stress reactions', 'inner conflict shows up in behaviour — others can see it'));
+    if (obstH.includes(7)) lines.push(_line('Others influence', 'behaviour shifts significantly depending on who is present — building a stronger internal anchor is key'));
+    if (obstH.includes(8)) lines.push(_line('Intensity', 'can come across as closed or secretive — people may not know what to expect'));
+    if (obstH.includes(12)) lines.push(_line('Withdrawal', 'pulls back when things get difficult rather than engaging directly'));
+    if (!lines.length) lines.push(_line('Behaviour', 'adapts to context more than most — no single dominant pattern'));
+    return [lines.join('<br>'), 'Behavioural patterns are set at birth, though awareness allows for conscious adjustment.'];
   }
 
   function _sent_h2_wealth(slSig, nlSig) {
     const both=[...new Set([...slSig,...nlSig])];
-    const salary=slSig.some(h=>[6,10].includes(h));
-    const bizSL=slSig.includes(7);
-    const biz=both.includes(7)&&both.includes(11);
-    const specObs=slSig.includes(5)&&!slSig.includes(11);
-    const sudden=slSig.includes(8), drain=slSig.includes(12);
-    let p1parts=[];
-    if (salary) p1parts.push('Your primary income comes through employment — salary and career earnings are where money flows most reliably');
-    if (bizSL||biz) p1parts.push('Business and partnership income is also available alongside this');
-    let p1 = p1parts.length ? p1parts.join('. ')+'.' : 'The income picture is not strongly defined — earnings come from multiple small sources rather than one clear channel.';
-    let obs=[];
-    if (specObs) obs.push('Speculative investments are a risk area — losses outweigh gains. Stick to what you earn');
-    if (sudden) obs.push('Sudden financial shocks are part of the pattern — maintain a buffer at all times');
-    if (drain) obs.push('Expenses consistently eat into earnings — tracking spend is non-negotiable');
-    let p2 = obs.join('. ')+(obs.length?'.':'');
-    return [p1, p2];
+    const salary=slSig.some(h=>[6,10].includes(h)), bizSL=slSig.includes(7);
+    const specObs=slSig.includes(5)&&!slSig.includes(11), sudden=slSig.includes(8), drain=slSig.includes(12);
+    let lines = [];
+    if (salary) lines.push(_line('Primary income', 'employment — salary and career earnings are where money flows most reliably'));
+    if (bizSL) lines.push(_line('Business income', 'available alongside employment — partnership and business dealings contribute'));
+    if (!salary && !bizSL) lines.push(_line('Income', 'not strongly defined through one channel — comes from multiple smaller sources'));
+    if (specObs) lines.push(_line('Speculation', 'risk area — losses consistently outweigh gains. Stick to what you earn'));
+    if (sudden) lines.push(_line('Financial shocks', 'sudden disruptions are part of the pattern — maintain a buffer at all times'));
+    if (drain) lines.push(_line('Expenses', 'consistently eat into earnings — tracking spend is non-negotiable'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h2_savings(suppH, obstH, nlSig) {
-    const accum=suppH.includes(2), property=suppH.includes(4), gains=suppH.includes(11);
-    const risky=obstH.includes(5), sudden=obstH.includes(8), drain=obstH.includes(12);
     const nlRisky=nlSig&&nlSig.includes(5);
-    let pos=[];
-    if (accum) pos.push('Savings accumulate steadily when protected');
-    if (property) pos.push('Property-linked savings are a strong route');
-    if (gains) pos.push('Gains periods directly fuel savings growth');
-    let obs=[];
-    if (risky||nlRisky) obs.push('Risky instruments erode what you put away');
-    if (sudden) obs.push('Sudden losses can disrupt savings');
-    if (drain) obs.push('Expenses and outflows consistently drain what is saved');
-    let p1='';
-    if (pos.length&&obs.length) p1='Savings strengths: '+pos.join('; ')+'. However — '+obs.join('; ')+'.';
-    else if (pos.length) p1='Savings strengths: '+pos.join('; ')+'.';
-    else if (obs.length) p1='Saving is genuinely difficult — '+obs.join('; ')+'.';
-    else p1='The savings picture is neutral — no strong pull either way.';
-    let p2=(risky||drain||nlRisky)?'Automate savings before spending — that is the only reliable method here.':'';
-    return [p1, p2];
+    let lines = [];
+    if (suppH.includes(4)) lines.push(_line('Property savings', 'strong route — property-linked investments preserve and grow wealth'));
+    if (suppH.includes(2)) lines.push(_line('Accumulation', 'savings build steadily when protected from risky instruments'));
+    if (suppH.includes(11)) lines.push(_line('Gains periods', 'directly fuel savings when they arrive — capture them'));
+    if (obstH.includes(5)||nlRisky) lines.push(_line('Risky instruments', 'erode what you put away — avoid speculative savings vehicles'));
+    if (obstH.includes(8)) lines.push(_line('Sudden losses', 'can disrupt savings at unpredictable points — keep a buffer'));
+    if (obstH.includes(12)) lines.push(_line('Outflows', 'consistently drain what is saved — automate savings before spending'));
+    if (!suppH.includes(4)&&!suppH.includes(2)&&!suppH.includes(11)) lines.push(_line('Savings picture', 'not strongly supported — requires deliberate and structured effort'));
+    return [lines.join('<br>'), (obstH.includes(5)||obstH.includes(12)||nlRisky)?'Automate savings before spending — that is the only reliable method here.':''];
   }
 
   function _sent_h2_family(suppH, obstH, nlH) {
-    const strong=suppH.includes(2), comfort=suppH.includes(4);
-    const conflict=obstH.includes(6), disruption=obstH.includes(8), distance=obstH.includes(12);
-    let pos=[];
-    if (strong) pos.push('Direct family bonds are strong and a genuine source of support');
-    if (comfort) pos.push('Home provides emotional security');
-    let obs=[];
-    if (conflict) obs.push('Conflict and friction are a recurring pattern — this is not a temporary phase');
-    if (disruption) obs.push('Sudden disruptions or losses affecting family');
-    if (distance) obs.push('Physical or emotional distance from family members');
-    let p1='';
-    if (pos.length&&obs.length) p1='Family life has strengths: '+pos.join('; ')+'. At the same time — '+obs.join('; ')+'.';
-    else if (pos.length) p1='Family life has genuine strength: '+pos.join('; ')+'.';
-    else if (obs.length) p1='Family relationships carry a persistent undercurrent of '+obs.join('; ')+'.';
-    else p1='Family dynamics are not strongly defined in this chart.';
-    return [p1, '', 'Family dynamics are a permanent reading.'];
+    let lines = [];
+    if (suppH.includes(2)) lines.push(_line('Family bonds', 'direct and strong — a genuine source of support'));
+    if (suppH.includes(4)) lines.push(_line('Home environment', 'provides real emotional security'));
+    if (obstH.includes(6)) lines.push(_line('Conflict', 'friction is a recurring pattern — not a temporary phase'));
+    if (obstH.includes(8)) lines.push(_line('Disruptions', 'sudden events affecting the family unit are possible'));
+    if (obstH.includes(12)) lines.push(_line('Distance', 'physical or emotional separation from family members'));
+    if (!lines.length) lines.push(_line('Family dynamics', 'not strongly defined in this chart'));
+    return [lines.join('<br>'), 'Family dynamics are a permanent reading.'];
   }
 
   function _sent_h2_speech(suppH, obstH) {
-    const direct=suppH.includes(2), expressive=suppH.includes(3), confident=suppH.includes(1);
-    const friction=obstH.includes(6), intense=obstH.includes(8), withdrawn=obstH.includes(12);
-    let pos=[];
-    if (direct) pos.push('direct and clear in expression');
-    if (expressive) pos.push('naturally communicative and expressive');
-    if (confident&&!direct&&!expressive) pos.push('confident and assertive in tone');
-    let obs=[];
-    if (friction) obs.push('Your words create friction more often than they should — what you say lands harder than you intend');
-    if (intense) obs.push('Communication tends to be guarded or intense — what goes unsaid matters as much as what is said');
-    if (withdrawn) obs.push('You hold back more than you should — people rarely get the full picture of what you think');
-    let p1 = pos.length ? 'Your speech is '+pos.join(' and ')+'.' : 'Speech is not a defining strength in this chart.';
-    let p2 = obs.join('. ')+(obs.length?'.':'');
-    if (friction) p2 += ' This is not about becoming less honest — it is about learning when and how much to say.';
-    else if (intense) p2 += ' What you choose not to say often carries more weight than what you do.';
-    return [p1, p2, 'Speech is a permanent trait.'];
+    let lines = [];
+    if (suppH.includes(2)) lines.push(_line('Expression', 'direct and clear — says what needs to be said'));
+    if (suppH.includes(3)) lines.push(_line('Communication style', 'naturally expressive and verbally active'));
+    if (suppH.includes(1)) lines.push(_line('Confidence in speech', 'assertive and self-assured in tone'));
+    if (obstH.includes(6)) lines.push(_line('Friction', 'words land harder than intended — creates conflict more often than necessary'));
+    if (obstH.includes(8)) lines.push(_line('Guardedness', 'communication is intense and filtered — what goes unsaid matters as much as what is said'));
+    if (obstH.includes(12)) lines.push(_line('Holding back', 'tendency to stay silent — people rarely get the full picture'));
+    if (!suppH.includes(2)&&!suppH.includes(3)&&!suppH.includes(1)) lines.push(_line('Speech', 'not a defining strength in this chart'));
+    if (obstH.includes(6)) lines.push(_line('Key lesson', 'not about being less honest — about learning when and how much to say'));
+    return [lines.join('<br>'), 'Speech is a permanent trait.'];
   }
 
   function _sent_h3_siblings(suppH, obstH) {
-    const present=suppH.includes(3), elder=suppH.includes(11);
-    const conflict=obstH.includes(6), loss=obstH.includes(8), distance=obstH.includes(12);
-    let p1='';
-    if (elder&&!distance) p1='An elder sibling is a real presence and source of support.';
-    else if (elder&&distance) p1='An elder sibling is supportive — but physical or emotional distance is the dominant pattern. The support is real but not proximate.';
-    else if (present) p1='Younger siblings are present and active in your life.';
-    else p1='Sibling connections are not strongly indicated — limited siblings or limited emotional closeness.';
-    let obs=[];
-    if (conflict) obs.push('Rivalry and conflict are recurring themes');
-    if (loss) obs.push('Sudden disruptions involving siblings');
-    if (distance&&!elder) obs.push('Distance or separation is the dominant pattern');
-    let p2=obs.length?obs.join('; ')+'.':'';
-    return [p1, p2, 'Sibling dynamics are permanent.'];
+    let lines = [];
+    if (suppH.includes(11)) lines.push(_line('Elder sibling', 'present and a source of support'));
+    if (suppH.includes(3)) lines.push(_line('Younger siblings', 'present and active in your life'));
+    if (!suppH.includes(3)&&!suppH.includes(11)) lines.push(_line('Siblings', 'not strongly indicated — limited siblings or limited emotional closeness'));
+    if (obstH.includes(6)) lines.push(_line('Rivalry', 'conflict and competition are recurring themes'));
+    if (obstH.includes(8)) lines.push(_line('Disruptions', 'sudden events involving siblings are possible'));
+    if (obstH.includes(12)) lines.push(_line('Distance', 'physical or emotional separation from siblings'));
+    return [lines.join('<br>'), 'Sibling dynamics are permanent.'];
   }
 
   function _sent_h3_courage(suppH, obstH) {
-    const personal=suppH.includes(1), natural=suppH.includes(3), wise=suppH.includes(9);
-    const tested=obstH.includes(6), fear=obstH.includes(8), hesitation=obstH.includes(12);
-    let p1='';
-    if (natural||personal) p1='You are naturally bold and initiative-taking — courage is a real strength in this chart.';
-    else if (wise) p1='Courage comes through wisdom and ethics — you act when it is right, not impulsively.';
-    else p1='Courage does not come naturally — it has to be developed deliberately.';
-    let obs=[];
-    if (tested) obs.push('Courage is regularly tested by obstacles and enemies');
-    if (fear) obs.push('Intense inner fear undermines boldness at key moments');
-    if (hesitation) obs.push('Hesitation and self-doubt are the default response before action — the inner resistance is real');
-    let p2=obs.length?obs.join('. ')+'.'+'': '';
-    if (hesitation) p2+=' Building deliberate habits of acting before overthinking sets in is the key work here.';
-    return [p1, p2, 'Courage is a permanent character trait.'];
+    let lines = [];
+    if (suppH.includes(1)||suppH.includes(3)) lines.push(_line('Natural boldness', 'initiative-taking and decisive — courage is a real natal strength'));
+    if (suppH.includes(9)) lines.push(_line('Wisdom-guided courage', 'acts when it is right, not impulsively'));
+    if (!suppH.includes(1)&&!suppH.includes(3)&&!suppH.includes(9)) lines.push(_line('Courage', 'does not come naturally — must be consciously developed'));
+    if (obstH.includes(6)) lines.push(_line('Tested', 'courage is regularly challenged by obstacles and opposition'));
+    if (obstH.includes(8)) lines.push(_line('Inner fear', 'undermines boldness at key moments — a real and recurring pattern'));
+    if (obstH.includes(12)) lines.push(_line('Hesitation', 'self-doubt and overthinking are the default response before action'));
+    return [lines.join('<br>'), 'Courage is a permanent character trait.'];
   }
 
   function _sent_h3_communication(suppH, obstH, nlH) {
-    const strong=suppH.includes(3), wise=suppH.includes(9), network=suppH.includes(11);
-    const conflict=obstH.includes(6), guarded=obstH.includes(8), withdrawn=obstH.includes(12);
-    let pos=[];
-    if (strong) pos.push('You communicate well — direct, expressive, and effective');
-    if (wise) pos.push('Your communication carries wisdom and range');
-    if (network) pos.push('Particularly strong at building connections and networks through conversation');
-    let obs=[];
-    if (conflict) obs.push('Speech creates conflict and opposition more often than it should');
-    if (guarded) obs.push('Communication is guarded and intense — what you do not say often matters more');
-    if (withdrawn) obs.push('You hold back more than you should — the gap between what you know and what you express is wider than it needs to be');
-    let p1=pos.length?pos.join('; ')+'.':'Communication is not a dominant strength in this chart.';
-    let p2=obs.length?obs.join('. ')+'.':'';
-    return [p1, p2];
+    let lines = [];
+    if (suppH.includes(3)) lines.push(_line('Communication strength', 'direct, expressive, and effective'));
+    if (suppH.includes(9)) lines.push(_line('Range', 'communication carries wisdom — able to discuss with depth'));
+    if (suppH.includes(11)) lines.push(_line('Network building', 'naturally builds connections and relationships through conversation'));
+    if (!suppH.includes(3)&&!suppH.includes(9)&&!suppH.includes(11)) lines.push(_line('Communication', 'not a dominant strength — requires deliberate development'));
+    if (obstH.includes(6)) lines.push(_line('Conflict', 'speech creates opposition more often than it should'));
+    if (obstH.includes(8)) lines.push(_line('Guardedness', 'communication is intense — what is not said often matters more'));
+    if (obstH.includes(12)) lines.push(_line('Holding back', 'the gap between what you know and what you express is wider than it needs to be'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h3_travel(suppH, obstH) {
-    const frequent=suppH.includes(3), opportunity=suppH.includes(9), foreign=suppH.includes(12);
-    const homebind=obstH.includes(4), disruption=obstH.includes(8), career=obstH.includes(10), health=obstH.includes(6);
-    let p1='';
-    if (frequent) p1='Frequent movement is a feature of life — you function well on the move.';
-    else if (foreign) p1='Short travel happens but tends to come with cost or isolation attached — journeys for work or necessity rather than pleasure.';
-    else if (opportunity) p1='Short journeys consistently connect to bigger opportunities — travel is worth doing.';
-    else p1='Short travel is not a dominant theme — you are more locally rooted.';
-    let obs=[];
-    if (homebind) obs.push('A strong pull toward staying home creates resistance to movement');
-    if (health) obs.push('Health issues can disrupt travel or necessitate health-related journeys');
-    if (disruption) obs.push('Travel brings unexpected disruptions or complications');
-    if (career) obs.push('Career obligations limit freedom of movement');
-    let p2=obs.length?obs.join('; ')+'.':'';
-    return [p1, p2];
+    let lines = [];
+    if (suppH.includes(3)) lines.push(_line('Frequency', 'frequent movement is a feature of life — functions well on the move'));
+    if (suppH.includes(9)) lines.push(_line('Opportunity', 'short journeys consistently connect to bigger openings — worth doing'));
+    if (suppH.includes(12)) lines.push(_line('Nature', 'travel tends to come with cost or isolation — for work or necessity rather than leisure'));
+    if (!suppH.includes(3)&&!suppH.includes(9)&&!suppH.includes(12)) lines.push(_line('Short travel', 'not a dominant theme — more locally rooted'));
+    if (obstH.includes(4)) lines.push(_line('Home pull', 'strong attachment to home creates resistance to movement'));
+    if (obstH.includes(6)) lines.push(_line('Health', 'illness can disrupt travel or necessitate health-related journeys'));
+    if (obstH.includes(8)) lines.push(_line('Disruptions', 'travel brings unexpected complications'));
+    if (obstH.includes(10)) lines.push(_line('Career obligations', 'limit freedom of movement'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h3_skills(suppH, obstH) {
-    const natural=suppH.includes(3), livelihood=suppH.includes(6), career=suppH.includes(10);
-    const suppressed=obstH.includes(8), wasted=obstH.includes(12);
-    let p1='';
-    if (livelihood&&career) p1='Real practical skills are present and they connect directly to your livelihood and career — these are not just hobbies.';
-    else if (livelihood) p1='Your skills are directly tied to how you earn — practical ability is a real asset.';
-    else if (natural) p1='Natural skill and practical ability are present.';
-    else p1='Skills are present but not strongly channelled in any specific direction.';
-    let obs=[];
-    if (suppressed) obs.push('Skills tend to be suppressed or underused');
-    if (wasted) obs.push('Ability consistently goes unrecognised — the talent exists but it stays hidden');
-    let p2=obs.length?obs.join('; ')+'.':'';
-    if (wasted) p2+=' Getting it out of isolation and into view is the challenge.';
-    return [p1, p2, 'Skills capacity is a permanent reading.'];
+    let lines = [];
+    if (suppH.includes(3)) lines.push(_line('Natural ability', 'practical skill and hands-on capability are genuine natal strengths'));
+    if (suppH.includes(6)) lines.push(_line('Livelihood connection', 'skills are directly tied to earning — not just hobbies'));
+    if (suppH.includes(10)) lines.push(_line('Career application', 'skills are channelled into professional work effectively'));
+    if (!suppH.includes(3)&&!suppH.includes(6)&&!suppH.includes(10)) lines.push(_line('Skills', 'present but not strongly channelled in any specific direction'));
+    if (obstH.includes(8)) lines.push(_line('Suppressed', 'skills tend to be underused — the ability exists but stays below the surface'));
+    if (obstH.includes(12)) lines.push(_line('Unrecognised', 'talent goes unseen — getting it visible is the real challenge'));
+    return [lines.join('<br>'), 'Skills capacity is a permanent reading.'];
   }
 
   function _sent_h4_propertybuy(suppH, obstH, nlH, sl) {
+    const propType=T_REF_PROPERTY[sl]||'';
     const direct=suppH.includes(4), gains=suppH.includes(11), family=suppH.includes(2), fortune=suppH.includes(9);
     const legal=obstH.includes(6), hidden=obstH.includes(8), overrun=obstH.includes(12);
-    const propType=T_REF_PROPERTY[sl]||'';
-    const nlFunded=nlH.includes(2), nlForeign=nlH.includes(12), nlProfit=nlH.includes(11), nlFortune=nlH.includes(9), nlCareer=nlH.includes(10), nlJoint=nlH.includes(7);
-    let p1='';
-    if (direct||(gains&&family)||(family&&fortune)||gains||fortune) {
-      let details=[];
-      if (direct||gains||nlProfit) details.push('it will be a profitable asset');
-      if (family||nlFunded) details.push('funded through personal savings or family money');
-      if (fortune||nlFortune) details.push('a fortunate opportunity makes it happen');
-      if (overrun||nlForeign) details.push('the location points toward a distant city or foreign location');
-      if (nlJoint) details.push('a joint purchase with a partner is possible');
-      if (nlCareer) details.push('career needs or location drive the decision');
-      p1 = 'Property can be acquired and '+details.join(', ')+'.';
+    const nlFunded=nlH.includes(2), nlForeign=nlH.includes(12), nlProfit=nlH.includes(11), nlFortune=nlH.includes(9), nlJoint=nlH.includes(7);
+    let lines = [];
+    if (direct||(gains&&family)||gains||fortune) {
+      lines.push(_line('Acquisition', 'property can be acquired in this chart'));
+      if (gains||nlProfit) lines.push(_line('Asset value', 'will be a profitable holding'));
+      if (family||nlFunded) lines.push(_line('Funding', 'through personal savings or family money'));
+      if (fortune||nlFortune) lines.push(_line('Timing', 'a fortunate opportunity presents itself'));
+      if (overrun||nlForeign) lines.push(_line('Location', 'points toward a distant city or foreign location rather than hometown'));
+      if (nlJoint) lines.push(_line('Ownership', 'joint purchase with a partner is likely'));
     } else {
-      p1 = 'Property acquisition is not strongly indicated in this window.';
+      lines.push(_line('Acquisition', 'not strongly indicated in this window'));
     }
-    let obs=[];
-    if (legal) obs.push('Legal or loan complications will need managing');
-    if (hidden) obs.push('Hidden defects or sudden price changes are a risk');
-    if (overrun) obs.push('Budget overruns are the main risk — costs go higher than planned');
-    let p2=obs.join('. ')+(obs.length?'.':'');
-    if (propType) p2+=(p2?'<br><br>':'')+`Property type indicated: <strong>${propType}</strong>.`;
-    return [p1, p2];
+    if (legal) lines.push(_line('Legal risk', 'loan or documentation complications will need managing'));
+    if (hidden) lines.push(_line('Hidden defects', 'sudden price changes or undisclosed issues are a risk'));
+    if (overrun) lines.push(_line('Budget overruns', 'costs consistently go higher than planned — build in a buffer'));
+    if (propType) lines.push(_line('Property type', propType));
+    return [lines.join('<br>')];
   }
 
   function _sent_h4_propertysell(suppH, obstH, nlH) {
-    const family=suppH.includes(2), direct=suppH.includes(4), sudden=suppH.includes(8), career=suppH.includes(10), profit=suppH.includes(11), relocate=suppH.includes(12);
-    const multiple=obstH.includes(3), legal=obstH.includes(6);
-    const nlFamily=nlH.includes(2), nlLegal=nlH.includes(6), nlPartner=nlH.includes(7), nlProfit=nlH.includes(11), nlReloc=nlH.includes(12);
-    let p1parts=[];
-    if (profit||nlProfit) p1parts.push('A sale can go through and at good profit');
-    if (family||nlFamily) p1parts.push('Family agreement is part of the process');
-    if (relocate||nlReloc) p1parts.push('The most likely reason for selling is relocation — moving city or going abroad');
-    if (career) p1parts.push('A career move is driving the decision');
-    if (nlPartner) p1parts.push('Partner must agree or is involved in the decision');
-    let p1=p1parts.length?p1parts.join('. ')+'.':'Property sale is not clearly supported in this window.';
-    let obs=[];
-    if (legal||nlLegal) obs.push('Legal complications or documentation delays will need managing');
-    if (multiple) obs.push('Multiple transactions or negotiations may be involved');
-    let p2=obs.length?obs.join('. ')+'.':'';
-    return [p1, p2];
+    const profit=suppH.includes(11)||nlH.includes(11), family=suppH.includes(2), relocate=suppH.includes(12)||nlH.includes(12), career=suppH.includes(10), legal=obstH.includes(6), multiple=obstH.includes(3), nlPartner=nlH.includes(7);
+    let lines = [];
+    if (profit) lines.push(_line('Sale outcome', 'can go through at good profit'));
+    else if (family) lines.push(_line('Sale', 'possible with family agreement'));
+    else lines.push(_line('Sale', 'not clearly supported in this window'));
+    if (relocate) lines.push(_line('Driver', 'most likely reason for selling is relocation — moving city or going abroad'));
+    if (career) lines.push(_line('Career move', 'driving the decision to sell'));
+    if (nlPartner) lines.push(_line('Partner', 'must agree or is involved in the decision'));
+    if (legal) lines.push(_line('Legal complications', 'documentation delays will need managing'));
+    if (multiple) lines.push(_line('Process', 'multiple negotiations or transactions may be involved'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h4_propertyreno(suppH, obstH) {
     const supported=suppH.includes(4), funded=suppH.includes(2), value=suppH.includes(11);
     const overrun=obstH.includes(6)||obstH.includes(12);
-    let p1='', p2='';
-    if (supported&&!overrun) { p1='Renovation is well-supported — work done now will yield lasting results and improve asset value.'; p2=funded?'Fund it from savings.':''; }
-    else if (supported&&overrun) { p1='Renovation can proceed but expect cost overruns — whatever is planned will cost more than budgeted.'; p2='Build in a buffer of at least 20-30% and get all agreements in writing.'; }
-    else if (!supported&&overrun) { p1='Not a good window for renovation — cost overruns are almost certain. If it must happen, it is likely being done before a sale or relocation.'; p2='Fund it from savings, not debt.'; }
-    else { p1='Renovation timing is neutral — proceed if needed, no strong signal either way.'; }
-    if (!p1) p1='Renovation indicators are not strongly placed in this window.';
-    return [p1, p2];
+    let lines = [];
+    if (supported&&!overrun) {
+      lines.push(_line('Timing', 'well-supported — work done now yields lasting results'));
+      if (funded) lines.push(_line('Funding', 'use savings rather than borrowing'));
+      if (value) lines.push(_line('Asset value', 'renovation adds financial value to the property'));
+    } else if (supported&&overrun) {
+      lines.push(_line('Timing', 'can proceed but expect cost overruns'));
+      lines.push(_line('Budget', 'build in a buffer of at least 20-30% — costs will exceed estimates'));
+      lines.push(_line('Process', 'get all agreements in writing before starting'));
+    } else if (!supported&&overrun) {
+      lines.push(_line('Timing', 'not a good window — cost overruns are almost certain'));
+      lines.push(_line('If unavoidable', 'fund from savings, not debt'));
+    } else {
+      lines.push(_line('Timing', 'neutral — proceed if needed, no strong push either way'));
+    }
+    return [lines.join('<br>')];
   }
 
   function _sent_h4_propertytype(both, sl, nl) {
     const propType=T_REF_PROPERTY[sl]||'';
-    const H10=both.includes(10), H11=both.includes(11), H12=both.includes(12), H2=both.includes(2), H9=both.includes(9), H4=both.includes(4);
-    let p1=propType?`The property type indicated: <strong>${propType}</strong>.`:'Property type not strongly defined.';
-    let details=[];
-    if (H12) details.push('Away from hometown or in a different city altogether');
-    if (H11) details.push('When bought it becomes a financially rewarding asset');
-    if (H10) details.push('Location is driven by career or work needs');
-    if (H2) details.push('Family-connected or jointly held');
-    if (H9) details.push('Fortunate location or large plot');
-    if (H4) details.push('For personal residential use');
-    let p2=details.length?details.join('; ')+'.':'';
-    return [p1, p2, 'This is a permanent reading.'];
+    let lines = [];
+    if (propType) lines.push(_line('Type indicated', propType));
+    if (both.includes(12)) lines.push(_line('Location', 'away from hometown — different city or abroad'));
+    if (both.includes(11)) lines.push(_line('Financial quality', 'becomes a rewarding asset when acquired'));
+    if (both.includes(10)) lines.push(_line('Purpose', 'career or work-driven location choice'));
+    if (both.includes(2)) lines.push(_line('Ownership', 'family-connected or jointly held'));
+    if (both.includes(9)) lines.push(_line('Setting', 'fortunate location or larger than average plot'));
+    if (!propType) lines.push(_line('Property type', 'not strongly defined by a single pattern'));
+    return [lines.join('<br>'), 'This is a permanent reading.'];
   }
 
   function _sent_h4_vehicle(suppH, obstH, nlH, sl) {
     const vehType=T_REF_VEHICLE[sl]||'';
-    const supported=suppH.includes(4), gains=suppH.includes(11), savings=suppH.includes(2);
+    const savings=suppH.includes(2)||suppH.includes(11);
     const maintenance=obstH.includes(6), accident=obstH.includes(8);
-    const nlLongDist=nlH.includes(12), nlDeal=nlH.includes(9), nlFamily=nlH.includes(4);
-    const nlWork=nlH.includes(6)&&!maintenance;
-    let p1=vehType?`Vehicle type indicated: <strong>${vehType}</strong> — practical over premium.`:'';
-    let details=[];
-    if (savings||gains) details.push('Bought from personal savings at a good time');
-    if (nlDeal) details.push('Acquired through a fortunate deal');
-    if (nlLongDist) details.push('Used for long distance movement as much as daily commute');
-    if (nlWork) details.push('Heavily used for work commute');
-    if (nlFamily) details.push('Primarily for family and local movement');
-    let p2=details.length?details.join('; ')+'.':'';
-    let obs=[];
-    if (maintenance) obs.push('Recurring maintenance issues are likely');
-    if (accident) obs.push('Risk of accident or sudden vehicle problem');
-    if (obs.length) p2+=(p2?'<br><br>':'')+'Watch for: '+obs.join('; ')+'.';
-    return [p1, p2];
+    const nlWork=nlH.includes(6)&&!maintenance, nlDeal=nlH.includes(9), nlLongDist=nlH.includes(12), nlFamily=nlH.includes(4);
+    let lines = [];
+    if (vehType) lines.push(_line('Vehicle type', vehType));
+    if (savings) lines.push(_line('Purchase', 'from personal savings at a good time'));
+    if (nlDeal) lines.push(_line('Acquisition', 'through a fortunate deal or timing'));
+    if (nlWork) lines.push(_line('Primary use', 'heavily used for work commute'));
+    if (nlLongDist) lines.push(_line('Use pattern', 'long distance travel as much as daily commute'));
+    if (nlFamily) lines.push(_line('Use pattern', 'primarily for family and local movement'));
+    if (maintenance) lines.push(_line('Maintenance', 'recurring issues are likely — factor this into the running cost'));
+    if (accident) lines.push(_line('Risk', 'accident or sudden vehicle problem — drive carefully'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h4_mother(suppH, obstH, nlH) {
     const strong=suppH.includes(4), financial=suppH.includes(2), supportive=suppH.includes(11);
     const conflict=obstH.includes(6), loss=obstH.includes(8), distance=obstH.includes(12);
-    const nlWise=nlH.includes(9), nlGuide=nlH.includes(11), nlAway=nlH.includes(12);
-    let p1='';
-    if (strong&&!distance) p1='The mother is a strong and present influence.';
-    else if (supportive&&distance) p1='The mother is supportive but physical or emotional distance is the dominant pattern.';
-    else if (financial&&!distance) p1='The mother is a family anchor — financially grounded and reliably present.';
-    else if (financial&&distance) p1='The mother is a financial and family anchor but distance — physical or emotional — runs through the relationship.';
-    else if (distance&&!strong&&!supportive&&!financial) p1='The mother relationship carries distance — physical, emotional, or both.';
-    else p1='The mother relationship is not strongly defined in this chart.';
-    let obs=[];
-    if (conflict) obs.push('Recurring conflict and stress in the relationship');
-    if (loss) obs.push('Sudden loss or hardship involving the mother');
-    let p2=obs.length?obs.join('; ')+'.':'';
-    if (financial&&distance) p2+=(p2?' ':'')+'She is present in support, not necessarily in proximity.';
-    return [p1, p2, 'Mother relationship is a permanent reading.'];
+    let lines = [];
+    if (strong&&!distance) lines.push(_line('Presence', 'the mother is a strong and present influence'));
+    else if (supportive&&distance) lines.push(_line('Presence', 'supportive but physical or emotional distance is the dominant pattern'));
+    else if (financial&&!distance) lines.push(_line('Role', 'a family anchor — financially grounded and reliably present'));
+    else if (financial&&distance) lines.push(_line('Role', 'financial and family anchor but distance runs through the relationship'));
+    else if (distance) lines.push(_line('Distance', 'physical or emotional — both are possible'));
+    else lines.push(_line('Mother relationship', 'not strongly defined in this chart'));
+    if (nlH.includes(9)) lines.push(_line('Nature', 'wise and fortunate in her own right'));
+    if (nlH.includes(11)) lines.push(_line('Support', 'supportive of your ambitions'));
+    if (conflict) lines.push(_line('Conflict', 'recurring friction and stress in the relationship'));
+    if (loss) lines.push(_line('Hardship', 'sudden loss or difficulty involving the mother is possible'));
+    return [lines.join('<br>'), 'Mother relationship is a permanent reading.'];
   }
 
   function _sent_h4_domestic(suppH, obstH, nlH) {
-    const family=suppH.includes(2), comfort=suppH.includes(4), partner=suppH.includes(7), fulfilling=suppH.includes(11);
-    const conflict=obstH.includes(6), disruption=obstH.includes(8), reloc=obstH.includes(12);
-    const nlReloc=nlH.includes(12), nlFulfil=nlH.includes(11), nlPeace=nlH.includes(9);
-    let pos=[];
-    if (family||fulfilling) pos.push('Home life has genuine family support and is ultimately fulfilling');
-    if (comfort) pos.push('The home itself is a source of real comfort');
-    if (partner) pos.push('Your partner strongly shapes the domestic environment');
-    if (nlPeace) pos.push('The home has a peaceful and settled quality');
-    let obs=[];
-    if (conflict) obs.push('Recurring domestic friction and conflict');
-    if (disruption) obs.push('Sudden disruptions to home stability');
-    if (reloc||nlReloc) obs.push('Frequent relocation — this is not someone who stays in one home for decades');
-    let p1='';
-    if (pos.length&&obs.length) p1=pos.join('; ')+'. The disruption: '+obs.join('; ')+'.';
-    else if (pos.length) p1=pos.join('; ')+'.';
-    else if (obs.length) p1='Domestic life carries: '+obs.join('; ')+'.';
-    else p1='Domestic life is shaped more by circumstance than a fixed natal pattern.';
-    return [p1];
+    let lines = [];
+    if (suppH.includes(2)||suppH.includes(11)) lines.push(_line('Family support', 'genuine and ultimately fulfilling'));
+    if (suppH.includes(4)) lines.push(_line('Home', 'a real source of comfort and stability'));
+    if (suppH.includes(7)) lines.push(_line('Partner influence', 'strongly shapes the domestic environment'));
+    if (nlH.includes(9)) lines.push(_line('Quality', 'peaceful and settled — the home has a grounded quality'));
+    if (obstH.includes(6)) lines.push(_line('Friction', 'recurring domestic conflict — not a temporary phase'));
+    if (obstH.includes(8)) lines.push(_line('Disruptions', 'sudden events disrupt home stability'));
+    if (obstH.includes(12)) lines.push(_line('Relocation', 'frequent moves — not someone who stays in one home for decades'));
+    if (!lines.length) lines.push(_line('Domestic life', 'shaped more by circumstance than a fixed pattern'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h5_romance(suppH, obstH, nlH) {
     const promised=suppH.includes(5), committed=suppH.includes(7), fulfilling=suppH.includes(11);
     const ego=obstH.includes(1), obstacles=obstH.includes(6), career=obstH.includes(10), distance=obstH.includes(12);
-    const nlChem=nlH.includes(5), nlFulfil=nlH.includes(11), nlFriction=nlH.includes(6), nlDist=nlH.includes(12);
-    let p1='';
-    if (promised&&fulfilling&&committed) p1='Romance brings genuine fulfilment — this is not casual. The relationship has depth and moves toward commitment.';
-    else if (promised&&fulfilling) p1='Romance is a real and significant chapter — love relationships bring growth and satisfaction.';
-    else if (promised&&distance) p1='Romance is real but carries distance or an element of secrecy — the relationship exists but is not straightforward.';
-    else if (promised&&obstacles) p1='Romance is promised but comes with real obstacles before things settle.';
-    else if (promised) p1='Romance is indicated in this chart — love relationships are part of the life story.';
-    else if (obstacles&&!promised) p1='Romantic love faces significant obstacles in this chart.';
-    else p1='Romantic love is not the dominant theme — partnerships are shaped more by compatibility and practicality than passion.';
-    let obs=[];
-    if (ego) obs.push('Personal independence and ego create friction in relationships');
-    if (obstacles) obs.push('Conflict and obstacles come before things settle');
-    if (career) obs.push('Career consistently takes priority over romantic life');
-    if (distance||nlDist) obs.push('Distance or an element of secrecy runs through the relationship');
-    if (nlFriction) obs.push('Health-related friction surfaces in the relationship');
-    let p2=obs.length?obs.join('. ')+'.':'';
-    return [p1, p2];
+    let lines = [];
+    if (promised&&fulfilling) lines.push(_line('Romance', 'real, significant, and brings genuine growth and satisfaction'));
+    else if (promised&&obstacles) lines.push(_line('Romance', 'promised but comes with real obstacles before things settle'));
+    else if (promised) lines.push(_line('Romance', 'indicated — love relationships are part of this life story'));
+    else lines.push(_line('Romance', 'not the dominant theme — partnerships are shaped more by compatibility than passion'));
+    if (committed) lines.push(_line('Direction', 'moves toward commitment — not casual'));
+    if (ego) lines.push(_line('Friction', 'personal independence and ego create tension in relationships'));
+    if (obstacles) lines.push(_line('Obstacles', 'conflict comes before things settle'));
+    if (career) lines.push(_line('Priority clash', 'career consistently pulls focus away from romantic life'));
+    if (distance||nlH.includes(12)) lines.push(_line('Distance', 'physical distance or an element of secrecy runs through the relationship'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h5_conception(suppH, obstH) {
-    const family=suppH.includes(2), direct=suppH.includes(5), fulfil=suppH.includes(11);
-    const health=obstH.includes(1), domestic=obstH.includes(4), medical=obstH.includes(6), complication=obstH.includes(8), career=obstH.includes(10), away=obstH.includes(12);
-    let p1='';
-    if (direct||fulfil) p1='Conception is supported and leads to a healthy child.';
-    else if (family) p1='Family support backs the process but the chart indication is indirect.';
-    else p1='Conception indicators are not strongly placed — timing and medical support are both important.';
-    let obs=[];
-    if (medical||complication) obs.push(medical?'Medical support or intervention may be part of the process':'Complications are possible');
-    if (health) obs.push('Personal health factors are a key variable');
-    if (domestic) obs.push('Domestic circumstances affect timing');
-    if (career) obs.push('Career stress impacts conception timing');
-    if (away) obs.push('Conception may happen while living away from home');
-    let p2=obs.length?obs.join('. ')+'.':'';
-    return [p1, p2];
+    let lines = [];
+    if (suppH.includes(5)||suppH.includes(11)) lines.push(_line('Conception', 'supported — leads to a healthy child'));
+    else lines.push(_line('Conception', 'not strongly placed — timing and medical support both matter'));
+    if (obstH.includes(6)||obstH.includes(8)) lines.push(_line('Medical support', 'intervention or assistance may be part of the process'));
+    if (obstH.includes(1)) lines.push(_line('Health factor', 'personal health is a key variable'));
+    if (obstH.includes(10)) lines.push(_line('Career stress', 'impacts conception timing'));
+    if (obstH.includes(12)) lines.push(_line('Location', 'may happen while living away from home'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h5_delivery(suppH, obstH, nlH) {
-    const supported=suppH.includes(5), fulfil=suppH.includes(11);
+    const supported=suppH.includes(5)||suppH.includes(11);
     const medical=obstH.includes(6), surgical=obstH.includes(8), hospital=obstH.includes(12);
-    const nlPartner=nlH.includes(7), nlRecovery=nlH.includes(9)||nlH.includes(11);
-    let p1='';
-    if (supported&&!medical&&!surgical) p1='Delivery is supported — normal delivery is indicated.';
-    else if ((supported||fulfil)&&(medical||surgical)) p1='Delivery is successful but medical involvement is part of the process.';
-    else p1='Delivery needs careful medical management — close monitoring through pregnancy is advised.';
-    let obs=[];
-    if (medical) obs.push('Medical complications are possible');
-    if (surgical) obs.push('Surgical delivery or emergency intervention risk is higher than average');
-    if (hospital) obs.push('Delivery may happen away from home or require a hospital stay');
-    if (nlPartner) obs.push('Partner is present and involved');
-    if (nlRecovery) obs.push('Recovery is fortunate and leads to renewed health');
-    let p2=obs.length?obs.join('. ')+'.':'';
-    return [p1, p2];
+    let lines = [];
+    if (supported&&!medical&&!surgical) lines.push(_line('Delivery', 'well-supported — normal delivery is indicated'));
+    else if (supported&&(medical||surgical)) lines.push(_line('Delivery', 'successful but medical involvement is part of the process'));
+    else lines.push(_line('Delivery', 'needs careful medical management throughout pregnancy'));
+    if (medical) lines.push(_line('Medical risk', 'complications are possible — close monitoring advised'));
+    if (surgical) lines.push(_line('Surgical risk', 'higher than average — plan for this possibility'));
+    if (hospital) lines.push(_line('Location', 'may happen away from home or require a hospital stay'));
+    if (nlH.includes(7)) lines.push(_line('Partner', 'present and involved'));
+    if (nlH.includes(9)||nlH.includes(11)) lines.push(_line('Recovery', 'fortunate — leads to renewed health'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h5_childnumber(both) {
     const h5=both.includes(5), h11=both.includes(11), h9=both.includes(9);
     const obs=both.filter(h=>[1,4,10].includes(h));
     let confirmed=0, possible=0;
-    if (h5&&obs.length===0) { confirmed=1; if(h11) possible=1; }
-    else if (h5&&obs.length>0) { possible=1; if(h11) possible=2; }
-    else if (!h5&&h11) { possible=1; }
+    if (h5&&obs.length===0){confirmed=1; if(h11)possible=1;}
+    else if (h5&&obs.length>0){possible=1; if(h11)possible=2;}
+    else if (!h5&&h11){possible=1;}
     if (h9&&possible>=1) possible+=1;
-    let p1='';
-    if (confirmed>0&&possible>0) p1=`<strong>${confirmed} child confirmed, ${possible} more possible</strong> — total up to ${confirmed+possible} children.`;
-    else if (confirmed>0) p1=`<strong>${confirmed} child confirmed.</strong> No strong indication of additional children.`;
-    else if (possible>0) p1=`<strong>${possible} child possible</strong> — not strongly confirmed but indicated by the chart.`;
-    else p1='Children are not strongly indicated in this chart.';
-    if (obs.length) p1+=' Obstruction factors are present — timing and health play a significant role in the actual number.';
-    return [p1, 'This is a permanent reading.'];
+    let lines = [];
+    if (confirmed>0) lines.push(_line('Confirmed', `${confirmed} child — strongly indicated`));
+    if (possible>0) lines.push(_line('Possible', `${possible} more — indicated but not guaranteed`));
+    if (confirmed===0&&possible===0) lines.push(_line('Children', 'not strongly indicated in this chart'));
+    if (obs.length) lines.push(_line('Timing', 'obstruction factors present — health and circumstances play a significant role'));
+    return [lines.join('<br>'), 'This is a permanent reading.'];
   }
 
   function _sent_h5_childgender() {
     const g1=_ckv_gender(5), g2=_ckv_gender(7), g3=_ckv_gender(9);
     const both=[...new Set([...slSig,...nlSig])];
     const h9=both.includes(9);
-    let p1=`<strong>Child 1 — ${g1}</strong><br><strong>Child 2 — ${g2}</strong>`;
-    if (h9) p1+=`<br><strong>Child 3 — ${g3}</strong> (if it occurs)`;
-    return [p1, 'Gender is derived using the CKV rule based on each child cusp.'];
+    let lines = [];
+    lines.push(_line('Child 1', g1+' — derived from H5 cusp using CKV rule'));
+    lines.push(_line('Child 2', g2+' — derived from H7 cusp using CKV rule'));
+    if (h9) lines.push(_line('Child 3', g3+' — derived from H9 cusp (if it occurs)'));
+    return [lines.join('<br>'), 'Gender is determined using the C.Kadirvelu (CKV) rule based on each child cusp.'];
   }
 
   function _sent_h5_creativity(suppH, obstH, nlH) {
-    const strong=suppH.includes(5), comm=suppH.includes(3), income=suppH.includes(11);
-    const blocked=obstH.includes(6), intense=obstH.includes(8), unrecognised=obstH.includes(12);
-    const nlFinancial=nlH.includes(2), nlWide=nlH.includes(11), nlPrivate=nlH.includes(12);
-    let p1='';
-    if (strong&&income) p1='Creative ability is real and can become a source of income — not just self-expression.';
-    else if (strong&&comm) p1='You are genuinely creative and express it through communication.';
-    else if (strong) p1='Real creative ability is present in this chart.';
-    else p1='Creativity is not a dominant theme here.';
-    let obs=[];
-    if (blocked) obs.push('Creative work is blocked by practical obligations');
-    if (unrecognised&&!nlWide) obs.push('Creativity tends to stay private or go unrecognised');
-    if (unrecognised&&nlWide) obs.push('Creative work has potential to reach a wide audience but tends to stay in isolation — getting it out is the challenge');
-    if (nlPrivate&&!unrecognised) obs.push('Creative work happens privately or has a spiritual quality');
-    if (nlFinancial) obs.push('Creative output has real financial value when applied');
-    let p2=obs.length?obs.join('. ')+'.':'';
-    return [p1, p2, 'Creative capacity is permanent.'];
+    let lines = [];
+    if (suppH.includes(5)&&suppH.includes(11)) lines.push(_line('Creative ability', 'real and can become a source of income — not just self-expression'));
+    else if (suppH.includes(5)) lines.push(_line('Creative ability', 'genuinely present in this chart'));
+    else lines.push(_line('Creativity', 'not a dominant theme here'));
+    if (suppH.includes(3)) lines.push(_line('Expression', 'comes through communication and writing'));
+    if (obstH.includes(6)) lines.push(_line('Blocked by', 'practical obligations consistently take precedence'));
+    if (obstH.includes(12)&&!nlH.includes(11)) lines.push(_line('Recognition', 'creativity tends to stay private or go unseen'));
+    if (obstH.includes(12)&&nlH.includes(11)) lines.push(_line('Potential', 'wide reach is possible but work stays in isolation — getting it out is the challenge'));
+    if (nlH.includes(2)) lines.push(_line('Financial value', 'creative output has real earning potential when applied'));
+    return [lines.join('<br>'), 'Creative capacity is permanent.'];
   }
 
   function _sent_h5_speculation(suppH, obstH, nlH) {
-    const capital=suppH.includes(2), instinct=suppH.includes(5), gains=suppH.includes(11);
-    const debt=obstH.includes(6), reversal=obstH.includes(8), netloss=obstH.includes(12);
-    const nlLoss=nlH.includes(6)||nlH.includes(12), nlLucky=nlH.includes(9), nlPays=nlH.includes(11);
-    let p1='';
-    if (instinct&&gains&&!netloss) p1='Speculative instinct is present and gains are possible in the right period.';
-    else if (instinct&&(netloss||debt)) p1='Speculative instinct is present but the chart consistently shows losses outweighing gains — the drive to speculate exists but it costs more than it earns.';
-    else if ((netloss||debt)&&!instinct) p1='Speculation is not favoured in this chart — consistent earned income is far more reliable.';
-    else p1='Speculation carries real risk — both gains and losses are possible.';
-    let obs=[];
-    if (debt) obs.push('Speculation creates debt or loss when uncontrolled');
-    if (reversal) obs.push('Sudden reversals are part of the speculative pattern');
-    if (netloss||nlLoss) obs.push('Net picture leans toward loss when positions are not tightly managed');
-    let p2=obs.length?obs.join('. ')+'. If engaging, keep positions small and defined.':(nlLucky?'Lucky timing in speculation is possible — but only in the right planetary period.':'');
-    return [p1, p2];
+    const instinct=suppH.includes(5), gains=suppH.includes(11), debt=obstH.includes(6), netloss=obstH.includes(12);
+    let lines = [];
+    if (instinct&&gains&&!netloss) lines.push(_line('Speculation', 'instinct is present and gains are possible in the right period'));
+    else if (instinct&&(netloss||debt)) lines.push(_line('Speculation', 'instinct is present but losses consistently outweigh gains — the drive exists but it costs more than it earns'));
+    else lines.push(_line('Speculation', 'not favoured — consistent earned income is far more reliable'));
+    if (debt) lines.push(_line('Debt risk', 'speculation creates debt when uncontrolled'));
+    if (obstH.includes(8)) lines.push(_line('Reversals', 'sudden reversals are part of the speculative pattern'));
+    if (netloss) lines.push(_line('Net picture', 'leans toward loss when positions are not tightly managed'));
+    if (netloss||debt) lines.push(_line('If engaging', 'keep positions small and defined — never bet what you cannot afford to lose'));
+    if (!instinct&&!debt&&!netloss&&nlH.includes(9)) lines.push(_line('Lucky timing', 'possible in speculation — but only in the right planetary period'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h5_intelligence(suppH, obstH, nlH) {
-    const strong=suppH.includes(5), philosophical=suppH.includes(9);
-    const pressure=obstH.includes(6), investigative=obstH.includes(8), underused=obstH.includes(12);
-    const nlAnalytical=nlH.includes(6), nlWisdom=nlH.includes(9), nlAmbitious=nlH.includes(11), nlReflective=nlH.includes(12);
-    let types=[];
-    if (strong) types.push('Strong analytical ability');
-    if (philosophical) types.push('Philosophical and wide-ranging intellect — can synthesise, not just analyse');
-    if (investigative) types.push('Deep investigative thinking that goes below the surface');
-    if (pressure) types.push('Works well under pressure and in detail-oriented work');
-    if (nlAnalytical) types.push('Sharp and detail-oriented');
-    if (nlWisdom) types.push('Wisdom and long-range thinking');
-    if (nlAmbitious) types.push('Intelligence that drives ambition');
-    let p1=types.length?types.join('; ')+'.':'Intelligence is present but not strongly channelled.';
-    let p2=underused?'The mind works well below its potential — not because ability is lacking but because it tends to stay inward. The work is getting it visible and applied.':'';
-    return [p1, p2, 'Intelligence is a permanent chart trait.'];
+    let lines = [];
+    if (suppH.includes(5)) lines.push(_line('Analytical ability', 'strong — processes information accurately and quickly'));
+    if (suppH.includes(9)) lines.push(_line('Philosophical range', 'wide-ranging intellect — synthesises, not just analyses'));
+    if (obstH.includes(8)) lines.push(_line('Investigative depth', 'goes below the surface — natural researcher'));
+    if (obstH.includes(6)) lines.push(_line('Pressure performance', 'works well under pressure and in detail-oriented environments'));
+    if (nlH.includes(9)) lines.push(_line('Wisdom', 'long-range thinking is a natural quality'));
+    if (nlH.includes(11)) lines.push(_line('Drive', 'intelligence is channelled into ambition'));
+    if (!suppH.includes(5)&&!suppH.includes(9)) lines.push(_line('Intelligence', 'present but not strongly channelled in a dominant direction'));
+    if (obstH.includes(12)) lines.push(_line('Potential gap', 'works below full capacity — the ability stays internal. Getting it applied and visible is the work'));
+    return [lines.join('<br>'), 'Intelligence is a permanent chart trait.'];
   }
 
   function _sent_h6_employment(suppH, obstH, nlH) {
-    const income=suppH.includes(2), direct=suppH.includes(6), career=suppH.includes(10);
-    const creative=obstH.includes(5), advisory=obstH.includes(9), remote=obstH.includes(12);
-    const nlStable=nlH.includes(2), nlSenior=nlH.includes(10), nlFulfil=nlH.includes(11), nlForeign=nlH.includes(12), nlClient=nlH.includes(7);
-    let p1='';
-    if (direct&&career) p1='Employment is directly promised and at career level — a meaningful role, not just a job.';
-    else if (direct) p1='Employment is directly promised — you will work and earn through service.';
-    else if (income) p1='Income through employment is indicated.';
-    else p1='Regular employment is not the natural path — freelancing or self-employment may suit better.';
-    let details=[];
-    if (nlClient) details.push('Client-facing or partnership-based');
-    if (nlSenior) details.push('Senior or authoritative position');
-    if (nlFulfil) details.push('Fulfils ambitions rather than just paying bills');
-    if (nlForeign||remote) details.push('Remote or foreign-connected work is part of the picture');
-    if (nlStable) details.push('Financially stable and reliable');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const direct=suppH.includes(6), career=suppH.includes(10), income=suppH.includes(2);
+    let lines = [];
+    if (direct&&career) lines.push(_line('Employment', 'directly promised and at career level — a meaningful role, not just a job'));
+    else if (direct) lines.push(_line('Employment', 'directly promised — earning through service is clear'));
+    else if (income) lines.push(_line('Employment', 'income through employment is indicated'));
+    else lines.push(_line('Employment', 'regular employment is not the natural path — freelancing or self-employment may suit better'));
+    if (nlH.includes(10)) lines.push(_line('Level', 'senior or authoritative position'));
+    if (nlH.includes(7)) lines.push(_line('Nature', 'client-facing or partnership-based work'));
+    if (nlH.includes(11)) lines.push(_line('Fulfilment', 'fulfils ambitions rather than just paying bills'));
+    if (nlH.includes(12)) lines.push(_line('Setup', 'remote or foreign-connected work is part of the picture'));
+    if (nlH.includes(2)) lines.push(_line('Stability', 'financially stable and reliable'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h6_debt(suppH, obstH, nlH) {
-    const direct=suppH.includes(6), savings=suppH.includes(2), repaid=suppH.includes(11);
-    const speculation=obstH.includes(5), crisis=obstH.includes(8), burden=obstH.includes(12);
-    const nlProperty=nlH.includes(4), nlPartner=nlH.includes(7), nlFortune=nlH.includes(9), nlCleared=nlH.includes(11);
-    const slProperty=suppH.includes(4)||obstH.includes(4);
-    let p1='';
-    if (direct&&repaid) p1='Debt is part of the financial picture but it gets cleared — gains eventually bring it under control.';
-    else if (direct&&burden) p1='Debt is indicated and becomes a long-term burden — active management is essential.';
-    else if (!direct) p1='Debt is not a dominant theme — finances are managed conservatively.';
-    else p1='Debt is part of the financial picture.';
-    let details=[];
-    if (nlProperty||slProperty) details.push('Tied to property obligations');
-    if (nlPartner) details.push('Shared with a partner');
-    if (crisis) details.push('Sudden debt crises are a risk');
-    if (speculation) details.push('Avoid speculative borrowing — it adds unmanageable complexity');
-    if (nlFortune||nlCleared) details.push('Fortune or gains eventually clear it');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const direct=suppH.includes(6), repaid=suppH.includes(11), burden=obstH.includes(12);
+    const slProperty=suppH.includes(4)||obstH.includes(4), nlProperty=nlH.includes(4);
+    let lines = [];
+    if (direct&&repaid) lines.push(_line('Debt', 'part of the financial picture but gets cleared — gains eventually bring it under control'));
+    else if (direct&&burden) lines.push(_line('Debt', 'indicated and becomes a long-term burden — active management is essential'));
+    else if (!direct) lines.push(_line('Debt', 'not a dominant theme — finances are managed conservatively'));
+    else lines.push(_line('Debt', 'part of the financial picture'));
+    if (slProperty||nlProperty) lines.push(_line('Source', 'tied to property obligations'));
+    if (nlH.includes(7)) lines.push(_line('Structure', 'shared with a partner'));
+    if (obstH.includes(8)) lines.push(_line('Crisis risk', 'sudden debt crises are possible'));
+    if (obstH.includes(5)) lines.push(_line('Warning', 'avoid speculative borrowing — adds unmanageable complexity'));
+    if (nlH.includes(9)||nlH.includes(11)) lines.push(_line('Resolution', 'fortune or gains eventually clear it'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h6_disease(suppH, obstH, signArea, planetArea) {
-    const vitality=suppH.includes(1), digestion=suppH.includes(5), recovery=suppH.includes(11);
+    const vitality=suppH.includes(1), recovery=suppH.includes(11);
     const disease=obstH.includes(6), chronic=obstH.includes(8), hospital=obstH.includes(12);
-    let p1='';
-    if (disease&&chronic&&vitality) p1='Disease is indicated and chronic or surgical conditions are part of the picture — but vitality is also present, giving good recovery capacity.';
-    else if (disease&&chronic) p1='Disease is indicated and chronic or surgical conditions are part of the picture. Preventive care is non-optional.';
-    else if (disease&&vitality) p1='Disease tendency is present but vitality is strong — the body has real vulnerabilities but also genuine capacity to recover.';
-    else if (disease) p1='Disease tendency is present in this chart — the body has real vulnerabilities.';
-    else if (vitality&&recovery) p1='Good vitality and strong recovery — the body handles challenges well.';
-    else p1='Disease is not prominently indicated — reasonable constitutional resilience.';
-    let areas=[];
-    if (signArea) areas.push(`Primary vulnerability area: ${signArea.toLowerCase()}`);
-    if (planetArea) areas.push(`Sub-lord body area: ${planetArea.toLowerCase()}`);
-    let p2=areas.length?areas.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    let lines = [];
+    if (disease&&chronic&&vitality) lines.push(_line('Disease tendency', 'present and chronic conditions are a factor — but vitality is also strong, giving good recovery capacity'));
+    else if (disease&&chronic) lines.push(_line('Disease tendency', 'present and chronic or surgical conditions are a real pattern — preventive care is non-optional'));
+    else if (disease&&vitality) lines.push(_line('Disease tendency', 'present but vitality is strong — vulnerable but capable of recovery'));
+    else if (disease) lines.push(_line('Disease tendency', 'present in this chart — the body has real vulnerabilities'));
+    else if (vitality&&recovery) lines.push(_line('Health', 'strong vitality and recovery — the body handles challenges well'));
+    else lines.push(_line('Health', 'reasonable constitutional resilience — disease not prominently indicated'));
+    if (signArea) lines.push(_line('Primary zone', signArea.toLowerCase()));
+    if (planetArea) lines.push(_line('Sub-lord area', planetArea.toLowerCase()));
+    if (hospital) lines.push(_line('Immunity', 'sleep and immunity are weak links to monitor'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h6_competition(suppH, obstH, nlH) {
-    const instinct=suppH.includes(3), direct=suppH.includes(6), wins=suppH.includes(11);
-    const creative=obstH.includes(5), hidden=obstH.includes(8), loss=obstH.includes(12);
-    const nlProperty=nlH.includes(4), nlCreative=nlH.includes(5), nlFortune=nlH.includes(9);
-    let p1='';
-    if (direct&&wins) p1='You are genuinely competitive and tend to win when you engage. Exams, tenders, and contests favour this chart.';
-    else if (direct&&loss) p1='Competition is a real part of life but results are mixed — selective engagement is wiser than competing for everything.';
-    else if (direct&&hidden) p1='Direct competition is indicated but opponents often work from behind the scenes — stay alert.';
-    else p1='Competition is not a dominant theme in this chart.';
-    let details=[];
-    if (nlProperty) details.push('Property-related competition is a specific theme');
-    if (nlCreative) details.push('Competition in creative work');
-    if (nlFortune) details.push('Fortune consistently favours you in competitive situations');
-    let p2=details.length?details.join('; ')+'.':'';
-    return [p1, p2];
+    const direct=suppH.includes(6), wins=suppH.includes(11), loss=obstH.includes(12), hidden=obstH.includes(8);
+    let lines = [];
+    if (direct&&wins) lines.push(_line('Competition', 'genuinely competitive — tends to win when fully engaged'));
+    else if (direct&&loss) lines.push(_line('Competition', 'real part of life but results are mixed — selective engagement is wiser'));
+    else if (direct&&hidden) lines.push(_line('Competition', 'indicated but opponents often work from behind the scenes'));
+    else lines.push(_line('Competition', 'not a dominant theme in this chart'));
+    if (nlH.includes(9)) lines.push(_line('Fortune', 'consistently favoured in competitive situations'));
+    if (nlH.includes(4)) lines.push(_line('Domain', 'property-related competition is a specific theme'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h6_litigation(suppH, obstH) {
-    const direct=suppH.includes(6), personal=suppH.includes(1), wins=suppH.includes(11);
-    const financial=obstH.includes(2), partner=obstH.includes(7), hidden=obstH.includes(8), loss=obstH.includes(12);
-    let p1='';
-    if (direct&&wins&&personal) p1='Legal disputes are indicated and the chart is on your side — you have the capacity to prevail.';
-    else if (direct&&(partner||financial)) p1='Legal disputes arise specifically through partner relationships or financial matters. Manage agreements carefully and get everything in writing.';
-    else if (direct&&loss) p1='Legal matters arise but outcomes are mixed — some resolve in your favour, others require settlement at cost.';
-    else p1='Litigation is not a prominent pattern in this chart.';
-    let obs=[];
-    if (hidden) obs.push('Hidden issues complicate legal matters');
-    if (financial) obs.push('Financial disputes are the most likely trigger');
-    if (partner) obs.push('Disputes arise from partnership arrangements specifically');
-    let p2=obs.length?obs.join('. ')+'.':'';
-    return [p1, p2];
+    const direct=suppH.includes(6), wins=suppH.includes(11), partner=obstH.includes(7), financial=obstH.includes(2), hidden=obstH.includes(8);
+    let lines = [];
+    if (direct&&wins) lines.push(_line('Litigation', 'disputes are indicated and the chart is on your side — capacity to prevail'));
+    else if (partner||financial) lines.push(_line('Litigation', 'disputes arise through partner relationships or financial matters specifically'));
+    else if (!direct) lines.push(_line('Litigation', 'not a prominent pattern in this chart'));
+    else lines.push(_line('Litigation', 'legal matters are indicated'));
+    if (financial) lines.push(_line('Trigger', 'financial disputes are the most likely cause'));
+    if (partner) lines.push(_line('Source', 'partnership arrangements are where disputes originate'));
+    if (hidden) lines.push(_line('Complication', 'hidden issues emerge during legal proceedings'));
+    if (partner||financial) lines.push(_line('Protection', 'get everything in writing — verbal agreements are not enough here'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h6_bodypart(h6Sign, h8Sign, h12Sign, h6CSL, h8CSL, h12CSL) {
-    // Simplified sign body descriptions — 2-3 words max
-    const SIGN_SHORT = {
-      Aries:'Head and brain', Taurus:'Throat and neck', Gemini:'Arms, lungs and nerves',
-      Cancer:'Chest and stomach', Leo:'Heart and spine', Virgo:'Abdomen and intestines',
-      Libra:'Kidneys and lower back', Scorpio:'Reproductive system',
-      Sagittarius:'Hips and thighs', Capricorn:'Knees, bones and joints',
-      Aquarius:'Legs and circulation', Pisces:'Feet and lymphatic system'
-    };
-    const HOUSE_BODY_SHORT = {
-      1:'Overall constitution', 2:'Throat and face', 3:'Arms and shoulders',
-      4:'Chest and emotional health', 5:'Stomach and digestion',
-      6:'Primary disease zone', 7:'Kidneys and lower back',
-      8:'Chronic and surgical zone', 9:'Hips and thighs',
-      10:'Knees and joints', 11:'Circulation and recovery', 12:'Sleep and immunity'
-    };
-    const PRIORITY_MAP = {6:1, 8:2, 12:3, 7:4, 4:5, 1:6};
-
-    // ── LIFE: top 2 permanent zones ──
-    const sevMap = {Saturn:3, Mars:3, Rahu:3, Sun:2, Moon:2, Jupiter:1, Mercury:1, Venus:1, Ketu:1};
-    const h8Sev = sevMap[h8CSL]||1, h12Sev = sevMap[h12CSL]||1;
-    const secondZone = h8Sev >= h12Sev
-      ? {area: SIGN_SHORT[h8Sign]||h8Sign, label:'chronic and surgical risk zone'}
-      : {area: SIGN_SHORT[h12Sign]||h12Sign, label:'long-term vulnerability zone'};
-
-    let lifeP = `<strong>${SIGN_SHORT[h6Sign]||h6Sign}</strong> — your primary constitutional vulnerability zone.`;
-    lifeP += `<br><strong>${secondZone.area}</strong> — ${secondZone.label}.`;
-
-    // ── TIME: top 1-2 zones active in current DBA ──
-    // Use slSig from the H6 cusp SL (already in scope as slSig)
-    const activeH = Object.keys(PRIORITY_MAP)
-      .map(Number)
-      .filter(h => slSig.includes(h))
-      .sort((a,b) => PRIORITY_MAP[a] - PRIORITY_MAP[b])
-      .slice(0, 2);
-
-    let timeZones = activeH.map(h => {
-      if (h===6)  return `<strong>${SIGN_SHORT[h6Sign]||h6Sign}</strong> — primary disease zone is activated in this period`;
-      if (h===8)  return `<strong>${SIGN_SHORT[h8Sign]||h8Sign}</strong> — chronic or surgical risk is heightened now`;
-      if (h===12) return `<strong>${SIGN_SHORT[h12Sign]||h12Sign}</strong> — sleep and immunity are under pressure`;
-      return `<strong>${HOUSE_BODY_SHORT[h]||('H'+h+' area')}</strong> — currently under stress in this period`;
+    const SIGN_SHORT={Aries:'Head and brain',Taurus:'Throat and neck',Gemini:'Arms, lungs and nerves',Cancer:'Chest and stomach',Leo:'Heart and spine',Virgo:'Abdomen and intestines',Libra:'Kidneys and lower back',Scorpio:'Reproductive system',Sagittarius:'Hips and thighs',Capricorn:'Knees, bones and joints',Aquarius:'Legs and circulation',Pisces:'Feet and lymphatic system'};
+    const HOUSE_BODY_SHORT={1:'Overall constitution',2:'Throat and face',3:'Arms and shoulders',4:'Chest and emotional health',5:'Stomach and digestion',6:'Primary disease zone',7:'Kidneys and lower back',8:'Chronic and surgical zone',9:'Hips and thighs',10:'Knees and joints',11:'Circulation and recovery',12:'Sleep and immunity'};
+    const PRIORITY_MAP={6:1,8:2,12:3,7:4,4:5,1:6};
+    const sevMap={Saturn:3,Mars:3,Rahu:3,Sun:2,Moon:2,Jupiter:1,Mercury:1,Venus:1,Ketu:1};
+    const h8Sev=sevMap[h8CSL]||1, h12Sev=sevMap[h12CSL]||1;
+    const secondZone=h8Sev>=h12Sev?{area:SIGN_SHORT[h8Sign]||h8Sign,label:'chronic and surgical risk zone'}:{area:SIGN_SHORT[h12Sign]||h12Sign,label:'long-term vulnerability zone'};
+    const activeH=Object.keys(PRIORITY_MAP).map(Number).filter(h=>slSig.includes(h)).sort((a,b)=>PRIORITY_MAP[a]-PRIORITY_MAP[b]).slice(0,2);
+    let timeZones=activeH.map(h=>{
+      if(h===6) return `<strong>${SIGN_SHORT[h6Sign]||h6Sign}</strong> — primary disease zone activated in this period`;
+      if(h===8) return `<strong>${SIGN_SHORT[h8Sign]||h8Sign}</strong> — chronic or surgical risk heightened now`;
+      if(h===12) return `<strong>${SIGN_SHORT[h12Sign]||h12Sign}</strong> — sleep and immunity under pressure`;
+      return `<strong>${HOUSE_BODY_SHORT[h]||('H'+h+' area')}</strong> — under stress in this period`;
     });
-
-    let timeP = timeZones.length
-      ? timeZones.join('.<br>') + '.'
-      : 'No specific body zone is sharply activated in the current period — general health maintenance applies.';
-
-    let p1 = `<strong>Permanent vulnerability:</strong><br>${lifeP}`;
-    let p2 = `<strong>Current period focus:</strong><br>${timeP}`;
+    let p1=`<strong>Permanent vulnerability</strong><br>${_line(SIGN_SHORT[h6Sign]||h6Sign,'your primary constitutional vulnerability zone')}<br>${_line(secondZone.area,secondZone.label)}`;
+    let p2=`<strong>Current period focus</strong><br>`+(timeZones.length?timeZones.join('<br>'):'No specific zone sharply activated — general health maintenance applies');
     return [p1, p2];
   }
 
   function _sent_h6_enemies(suppH, obstH) {
-    const direct=suppH.includes(6), personal=suppH.includes(1), overcome=suppH.includes(11);
-    const domestic=obstH.includes(4), hidden=obstH.includes(8), covert=obstH.includes(12);
-    let p1='';
-    if (direct&&overcome) p1='Enemies are present and active but you have the capacity to overcome them.';
-    else if (direct&&(hidden||covert)) p1='Enemies exist but are not visible — opposition comes from behind the scenes rather than in open confrontation.';
-    else if (domestic) p1='Enemies tend to operate within the domestic or personal sphere — people close to home rather than professional rivals.';
-    else p1='Enemies are not a major theme — occasional opposition but no persistent adversaries.';
-    return [p1];
+    const direct=suppH.includes(6), overcome=suppH.includes(11), hidden=obstH.includes(8), covert=obstH.includes(12), domestic=obstH.includes(4);
+    let lines = [];
+    if (direct&&overcome) lines.push(_line('Enemies', 'present and active but the chart gives you the capacity to overcome them'));
+    else if (hidden||covert) lines.push(_line('Enemies', 'exist but are not visible — opposition comes from behind the scenes'));
+    else if (domestic) lines.push(_line('Enemies', 'operate within the personal or domestic sphere rather than as professional rivals'));
+    else lines.push(_line('Enemies', 'not a major theme — occasional opposition but no persistent adversaries'));
+    if (hidden) lines.push(_line('Nature', 'covert and difficult to identify directly'));
+    if (overcome) lines.push(_line('Outcome', 'the chart is on your side — you have the capacity to prevail'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h7_union(suppH, obstH, nlH) {
     const financial=suppH.includes(2), direct=suppH.includes(7), fulfil=suppH.includes(11);
-    const delay=obstH.includes(1), conflict=obstH.includes(6), career=obstH.includes(10), distant=obstH.includes(12);
-    const nlDiff=nlH.includes(9), nlFulfil=nlH.includes(11), nlAway=nlH.includes(12);
-    let p1='';
-    if (direct&&fulfil&&!delay) p1='Marriage is clearly promised and brings fulfilment.';
-    else if (direct&&delay) p1='Marriage is indicated but delayed — personal independence creates the resistance. It does happen eventually.';
-    else if (fulfil&&distant) p1='Marriage brings fulfilment but happens away from home or abroad, or after a period of loss.';
-    else if (financial&&!delay) p1='Marriage is indicated — it brings financial stability and family grounding.';
-    else p1='Marriage is not strongly indicated in this window.';
-    let details=[];
-    if (nlDiff) details.push('Partner is from a different background or city');
-    if (nlFulfil) details.push('Ultimately fulfilling');
-    if (nlAway||distant) details.push('Timing points toward it happening away from home or after delay');
-    if (financial) details.push('Brings financial stability');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const delay=obstH.includes(1), conflict=obstH.includes(6), distant=obstH.includes(12);
+    let lines = [];
+    if (direct&&fulfil&&!delay) lines.push(_line('Marriage', 'clearly promised and brings genuine fulfilment'));
+    else if (direct&&delay) lines.push(_line('Marriage', 'indicated but delayed — personal independence creates resistance. It happens eventually'));
+    else if (fulfil&&distant) lines.push(_line('Marriage', 'brings fulfilment but happens away from home or after a period of loss'));
+    else if (financial) lines.push(_line('Marriage', 'indicated — brings financial stability and family grounding'));
+    else lines.push(_line('Marriage', 'not strongly indicated in this window'));
+    if (nlH.includes(9)) lines.push(_line('Partner background', 'from a different city, culture, or belief system'));
+    if (nlH.includes(11)) lines.push(_line('Outcome', 'ultimately fulfilling'));
+    if (financial) lines.push(_line('Financial', 'brings stability and security'));
+    if (conflict) lines.push(_line('Challenge', 'conflict comes before things settle'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h7_separation(suppH, obstH, nlH) {
-    const ego=suppH.includes(1), breakdown=suppH.includes(3), conflict=suppH.includes(6), shock=suppH.includes(8), career=suppH.includes(10), distance=suppH.includes(12);
-    const financial=obstH.includes(2), bond=obstH.includes(7), gains=obstH.includes(11);
-    const nlIndep=nlH.includes(1), nlBetter=nlH.includes(11), nlReloc=nlH.includes(12);
-    let causes=[];
-    if (ego) causes.push('Ego and personal independence — the inability to consistently put the relationship first');
-    if (breakdown) causes.push('Communication breakdown');
-    if (conflict) causes.push('Sustained conflict and disputes');
-    if (shock) causes.push('A sudden shock or crisis');
-    if (career||distance) causes.push('Career priorities or physical distance pulling apart');
-    let p1=causes.length?'Separation is indicated. The driver is '+causes.join('; ')+'.':'Separation is not prominently indicated.';
-    let after=[];
-    if (nlReloc) after.push('Involves relocation');
-    if (nlBetter||gains) after.push('Ultimately leads to something better rather than a dead end');
-    let p2=after.length?'When separation happens it '+after.join(' and ')+'.':'';
-    return [p1, p2];
+    const ego=suppH.includes(1), conflict=suppH.includes(6), shock=suppH.includes(8), distance=suppH.includes(12);
+    let lines = [];
+    if (ego||conflict||shock||distance) {
+      lines.push(_line('Separation', 'indicated in this chart'));
+      if (ego) lines.push(_line('Driver', 'ego and personal independence — inability to consistently put the relationship first'));
+      if (conflict) lines.push(_line('Driver', 'sustained conflict and disputes'));
+      if (shock) lines.push(_line('Driver', 'a sudden shock or unexpected crisis'));
+      if (distance) lines.push(_line('Driver', 'physical distance or foreign factor pulling apart'));
+    } else {
+      lines.push(_line('Separation', 'not prominently indicated in this chart'));
+    }
+    if (nlH.includes(12)) lines.push(_line('When it happens', 'involves relocation'));
+    if (nlH.includes(11)||obstH.includes(11)) lines.push(_line('After', 'leads to something better — not a dead end'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h7_spousenature(suppH, obstH, nl) {
     const spouseNature=T_SPOUSE_NATURE[nl]||'';
-    const financial=suppH.includes(2), equal=suppH.includes(7), ambitious=suppH.includes(11);
-    const health=obstH.includes(6), intense=obstH.includes(8), distant=obstH.includes(12);
-    let p1=spouseNature?`The spouse is <strong>${spouseNature.toLowerCase()}</strong>.`:'';
-    let pos=[];
-    if (equal) pos.push('A strong and equal partner');
-    if (financial) pos.push('Family-oriented and financially grounded');
-    if (ambitious) pos.push('Ambitious and goal-oriented');
-    let obs=[];
-    if (health) obs.push('Carries work stress or health issues');
-    if (intense) obs.push('Has an intense or secretive inner nature');
-    if (distant) obs.push('Can be emotionally distant or spiritually detached');
-    let p2='';
-    if (pos.length) p2=pos.join('; ')+'.';
-    if (obs.length) p2+=(p2?' ':'')+obs.join('; ')+'. The relationship is real but not easy.';
-    return [p1, p2, 'Spouse nature is a permanent reading.'];
+    let lines = [];
+    if (spouseNature) lines.push(_line('Nature', spouseNature.toLowerCase()));
+    if (suppH.includes(7)) lines.push(_line('Partnership quality', 'strong and equal — a real partner, not just a companion'));
+    if (suppH.includes(2)) lines.push(_line('Orientation', 'family-oriented and financially grounded'));
+    if (suppH.includes(11)) lines.push(_line('Drive', 'ambitious and goal-oriented'));
+    if (obstH.includes(6)) lines.push(_line('Carries', 'work stress or health challenges'));
+    if (obstH.includes(8)) lines.push(_line('Inner nature', 'intense or secretive — there is more beneath the surface'));
+    if (obstH.includes(12)) lines.push(_line('Tendency', 'emotionally distant at times'));
+    return [lines.join('<br>'), 'Spouse nature is a permanent reading.'];
   }
 
   function _sent_h7_partnership(suppH, obstH, nlH) {
-    const direct=suppH.includes(7), career=suppH.includes(10), gains=suppH.includes(11);
-    const disputes=obstH.includes(6), hidden=obstH.includes(8), dissolves=obstH.includes(12);
-    const nlReliable=nlH.includes(7), nlOpport=nlH.includes(9), nlProfit=nlH.includes(11), nlExit=nlH.includes(12);
-    let p1='';
-    if (direct&&gains&&!hidden&&!dissolves) p1='Business partnerships are indicated and profitable.';
-    else if (direct&&(hidden||dissolves)) p1='Business partnerships carry hidden risks and tend to dissolve — one partner relocates or the arrangement ends before it reaches its potential.';
-    else if (direct&&disputes) p1='Business partnerships happen but come with disputes — clear written agreements and exit plans are essential.';
-    else p1='Business partnerships are not prominently indicated.';
-    let details=[];
-    if (nlProfit&&!(hidden||dissolves)) details.push('Profits are possible');
-    if (nlOpport) details.push('Partner brings wisdom and opportunity');
-    if (nlExit||dissolves) details.push('Approach with clear written agreements and an exit plan');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const direct=suppH.includes(7), gains=suppH.includes(11), hidden=obstH.includes(8), dissolves=obstH.includes(12), disputes=obstH.includes(6);
+    let lines = [];
+    if (direct&&gains&&!hidden&&!dissolves) lines.push(_line('Business partnership', 'indicated and profitable'));
+    else if (hidden||dissolves) lines.push(_line('Business partnership', 'carries hidden risks — tends to dissolve before reaching full potential'));
+    else if (disputes) lines.push(_line('Business partnership', 'happens but comes with disputes'));
+    else lines.push(_line('Business partnership', 'not prominently indicated'));
+    if (hidden||dissolves) lines.push(_line('Protection', 'written agreements and a clear exit plan are essential before committing'));
+    if (nlH.includes(9)) lines.push(_line('Partner quality', 'brings wisdom and opportunity'));
+    if (nlH.includes(11)) lines.push(_line('Profit', 'possible when risks are managed'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h7_type(both) {
-    const love=both.includes(5), arranged=both.some(h=>[2,4].includes(h))&&!both.includes(5), cross=both.includes(9), delay=both.includes(1), work=both.includes(6)||both.includes(10);
-    let p1='';
-    if (love&&cross) p1='Love marriage, likely with someone from a different background, city, caste or religion.';
-    else if (love) p1='Love marriage — the relationship develops through personal choice.';
-    else if (arranged) p1='Conventional family-backed marriage — arranged or with full family support and involvement.';
-    else if (cross) p1='Marriage with someone from a different background, city or belief system.';
-    else p1='Marriage type is not strongly defined — happens on personal terms without a dominant pattern.';
-    if (delay) p1+=' The marriage is delayed — it happens on your own timeline, not the conventional one.';
-    if (work) p1+=' A workplace or career-connected origin to the relationship is possible.';
-    return [p1, 'This is a permanent reading.'];
+    const love=both.includes(5), cross=both.includes(9), delay=both.includes(1), work=both.includes(6)||both.includes(10);
+    const arranged=both.some(h=>[2,4].includes(h))&&!love;
+    let lines = [];
+    if (love&&cross) lines.push(_line('Type', 'love marriage — likely with someone from a different background, city, caste or religion'));
+    else if (love) lines.push(_line('Type', 'love marriage — develops through personal choice'));
+    else if (arranged) lines.push(_line('Type', 'family-backed marriage — arranged or with full family involvement'));
+    else if (cross) lines.push(_line('Type', 'marriage with someone from a different background or belief system'));
+    else lines.push(_line('Type', 'self-chosen — happens on personal terms without a dominant pattern'));
+    if (delay) lines.push(_line('Timing', 'delayed — happens on your own timeline, not the conventional one'));
+    if (work) lines.push(_line('Connection', 'workplace or career-related origin is possible'));
+    return [lines.join('<br>'), 'This is a permanent reading.'];
   }
 
   function _sent_h7_marriagenumber(both) {
     const h7=both.includes(7), h11=both.includes(11), h9=both.includes(9);
     const end=[6,8,12].some(h=>both.includes(h));
-    let p1='';
-    if (h7&&!end) p1='One marriage is clearly indicated — strong and stable.';
-    else if (h7&&end&&h9) p1='Two marriages are indicated. The first faces serious challenges. A second union follows after separation.';
-    else if (h7&&end) p1='One marriage with serious challenges — separation or loss is part of the picture. A second union is possible.';
-    else if (h11&&end) p1='Two unions are likely — the first ends, a second follows driven by a strong desire for companionship.';
-    else p1='Marriage is not strongly promised — union may happen through unconventional or delayed circumstances.';
-    return [p1, 'This is a permanent reading.'];
+    let lines = [];
+    if (h7&&!end) lines.push(_line('Number', 'one marriage — strongly indicated and stable'));
+    else if (h7&&end&&h9) lines.push(_line('Number', 'two marriages indicated — the first faces serious challenges, a second follows'));
+    else if (h7&&end) lines.push(_line('Number', 'one marriage with serious challenges — separation is part of the picture. A second union is possible'));
+    else if (h11&&end) lines.push(_line('Number', 'two unions likely — the first ends, a second follows'));
+    else lines.push(_line('Marriage', 'not strongly promised — may happen through unconventional circumstances'));
+    return [lines.join('<br>'), 'This is a permanent reading.'];
   }
 
   function _sent_h8_longevity(suppH, obstH, nlH) {
-    const strong=suppH.includes(1), digestion=suppH.includes(5), direct=suppH.includes(8);
-    const disease=obstH.includes(6), sleep=obstH.includes(12);
-    const emotionalH=suppH.includes(4), kidneys=suppH.includes(7);
-    const nlResilient=nlH.includes(1), nlRecovery=nlH.includes(9)||nlH.includes(11), nlSleep=nlH.includes(12);
-    let p1='';
-    if (strong&&!disease) p1='Vitality is genuinely strong — good life force and solid physical resilience.';
-    else if (strong&&disease) p1='Vitality is strong but disease and chronic conditions are a factor that needs ongoing management.';
-    else if (disease&&sleep) p1='Chronic health conditions and sleep/immunity weakness are the persistent factors to watch.';
-    else p1='Longevity indicators are not strongly placed — lifestyle choices carry significant weight.';
-    let details=[];
-    if (nlResilient) details.push('Physical constitution is resilient');
-    if (nlRecovery) details.push('Recovery capacity is good');
-    if (kidneys) details.push('Kidneys and lower back are a specific area to watch');
-    if (emotionalH) details.push('Emotional health and stress management directly affect longevity');
-    if (nlSleep||sleep) details.push('Sleep and immunity are weak links to monitor');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2, 'This is a permanent natal reading.'];
+    const strong=suppH.includes(1), disease=obstH.includes(6), sleep=obstH.includes(12);
+    const kidneys=suppH.includes(7), emotional=suppH.includes(4);
+    let lines = [];
+    if (strong&&!disease) lines.push(_line('Vitality', 'genuinely strong — good life force and physical resilience'));
+    else if (strong&&disease) lines.push(_line('Vitality', 'strong but disease and chronic conditions need ongoing management'));
+    else if (disease&&sleep) lines.push(_line('Health pattern', 'chronic conditions and sleep or immunity weakness are persistent factors'));
+    else lines.push(_line('Longevity', 'lifestyle choices carry significant weight — chart does not strongly tip either way'));
+    if (nlH.includes(1)) lines.push(_line('Constitution', 'resilient — bounces back'));
+    if (nlH.includes(9)||nlH.includes(11)) lines.push(_line('Recovery', 'recovery capacity is good'));
+    if (kidneys) lines.push(_line('Watch', 'kidneys and lower back are a specific area to monitor'));
+    if (emotional) lines.push(_line('Emotional health', 'stress management directly affects longevity'));
+    if (sleep||nlH.includes(12)) lines.push(_line('Sleep', 'and immunity are weak links'));
+    return [lines.join('<br>'), 'This is a permanent natal reading.'];
   }
 
   function _sent_h8_inheritance(suppH, obstH, nlH) {
     const family=suppH.includes(2), direct=suppH.includes(8), substantial=suppH.includes(11);
     const legal=obstH.includes(6), delayed=obstH.includes(12);
-    const nlFar=nlH.includes(9)||nlH.includes(12), nlProperty=nlH.includes(10);
-    let p1='';
-    if (direct&&substantial) p1='Inheritance is indicated and it is substantial.';
-    else if (family&&substantial) p1='Family wealth is part of the inheritance picture and it leads to significant gains.';
-    else if (!direct&&!family&&!substantial) p1='Inheritance is not prominently indicated — primarily self-made.';
-    else p1='Inheritance is indicated.';
-    let details=[];
-    if (legal&&(direct||family||substantial)) details.push('Legal complications around getting what is rightfully yours — formal processes may be needed');
-    if ((delayed||nlFar)&&(direct||family)) details.push('Comes after a long wait or from a distant source');
-    if (nlProperty) details.push('Tied to property or career assets');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    let lines = [];
+    if (direct&&substantial) lines.push(_line('Inheritance', 'indicated and substantial'));
+    else if (family&&substantial) lines.push(_line('Inheritance', 'family wealth contributes to significant gains'));
+    else lines.push(_line('Inheritance', 'not prominently indicated — primarily self-made'));
+    if ((direct||family||substantial)&&legal) lines.push(_line('Legal', 'complications in accessing what is rightfully yours — formal processes needed'));
+    if ((direct||family)&&delayed) lines.push(_line('Timing', 'comes after a long wait or from a distant source'));
+    if (nlH.includes(10)) lines.push(_line('Source', 'tied to property or career assets'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h8_occult(suppH, obstH, nlH) {
     const direct=suppH.includes(8), philosophical=suppH.includes(9), hidden=suppH.includes(12);
-    const material=obstH.includes(2), service=obstH.includes(6), career=obstH.includes(10);
-    let p1='';
-    if (direct||philosophical||hidden) p1='Occult interest and ability is present — there is real aptitude in metaphysical domains.';
-    else p1='Occult is not a dominant theme in this chart.';
-    let details=[];
-    if (service) details.push('Ability applied to healing or service rather than performance');
-    if (career) details.push('Career demands and worldly ambitions suppress deeper occult development');
-    if (material) details.push('Connected to material or financial concerns');
-    if (nlH.includes(12)) details.push('Deep, private spiritual practice');
-    if (nlH.includes(9)) details.push('Wisdom-based approach');
-    if (!direct&&!philosophical&&!hidden&&(service||career)) details[details.length-1] = details[details.length-1];
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2, 'Occult capacity is permanent.'];
+    const service=obstH.includes(6), career=obstH.includes(10), material=obstH.includes(2);
+    let lines = [];
+    if (direct||philosophical||hidden) lines.push(_line('Occult ability', 'real aptitude in metaphysical domains — this is not superficial interest'));
+    else lines.push(_line('Occult', 'not a dominant theme in this chart'));
+    if (service) lines.push(_line('Application', 'ability channelled into healing or service'));
+    if (career) lines.push(_line('Obstruction', 'career demands suppress deeper occult development'));
+    if (material) lines.push(_line('Pull', 'material concerns compete with spiritual development'));
+    if (nlH.includes(12)) lines.push(_line('Practice', 'deep and private — not for public performance'));
+    if (nlH.includes(9)) lines.push(_line('Approach', 'wisdom-based — philosophical rather than ritualistic'));
+    return [lines.join('<br>'), 'Occult capacity is permanent.'];
   }
 
   function _sent_h8_crisis(suppH, obstH, nlH) {
     const health=suppH.includes(6), direct=suppH.includes(8), hospital=suppH.includes(12);
     const personal=obstH.includes(1), domestic=obstH.includes(4), career=obstH.includes(10);
-    const nlGrowth=nlH.includes(9), nlGains=nlH.includes(11), nlReloc=nlH.includes(12);
-    let p1='';
-    if (health&&direct) p1='Health-related crises are the primary pattern — body-based disruptions that force a stop are part of this life\'s story.';
-    else if (health) p1='Health-related crises are indicated — illness and body-based disruptions create unexpected stops.';
-    else if (direct) p1='Sudden crisis events are indicated — financial shocks, dramatic reversals, or unexpected disruptions.';
-    else if (domestic||career) p1='Crisis tends to hit the '+(domestic?'domestic':'career')+' sphere rather than appearing as sudden external shocks.';
-    else p1='Major crisis events are not a dominant theme in this chart.';
-    let context=[];
-    if (personal) context.push('Personal strength and resilience are present to navigate them');
-    if (career&&!domestic) context.push('Career disruptions accompany the main crisis pattern');
-    if (domestic&&!career) context.push('Domestic disruptions accompany the main crisis pattern');
-    if (nlGrowth) context.push('Crises lead to transformation and ultimately to growth');
-    if (nlGains) context.push('Difficult but productive — they eventually lead to gains');
-    if (nlReloc) context.push('Crisis involves relocation or significant loss');
-    let p2=context.length?context.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    let lines = [];
+    if (health&&direct) lines.push(_line('Crisis pattern', 'health-related crises are the primary pattern — body-based disruptions that force a stop'));
+    else if (health) lines.push(_line('Crisis pattern', 'health-related crises are indicated — illness creates unexpected stops'));
+    else if (direct) lines.push(_line('Crisis pattern', 'sudden shocks — financial, dramatic reversals, or unexpected disruptions'));
+    else if (domestic||career) lines.push(_line('Crisis pattern', `hits the ${domestic?'domestic':'career'} sphere rather than as sudden external shocks`));
+    else lines.push(_line('Crisis', 'not a dominant theme in this chart'));
+    if (personal) lines.push(_line('Resource', 'personal strength and resilience are present to navigate them'));
+    if (nlH.includes(9)||nlH.includes(11)) lines.push(_line('Outcome', 'crises lead to transformation and ultimately to growth'));
+    if (nlH.includes(12)) lines.push(_line('Impact', 'involves relocation or significant loss'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h8_transformation(suppH, obstH, nlH) {
     const identity=suppH.includes(1), direct=suppH.includes(8), wisdom=suppH.includes(9);
     const financial=obstH.includes(2), domestic=obstH.includes(4), career=obstH.includes(10);
-    const nlPhilos=nlH.includes(9), nlFulfil=nlH.includes(11), nlLoss=nlH.includes(12);
-    let p1='';
-    if (identity&&direct) p1='Transformation is real and deep — it reshapes personal identity at the core. This person goes through a genuine metamorphosis.';
-    else if (wisdom) p1='Transformation comes through wisdom, travel, and a fundamental shift in how you see the world.';
+    let lines = [];
+    if (identity&&direct) lines.push(_line('Transformation', 'real and deep — reshapes personal identity at the core'));
+    else if (wisdom) lines.push(_line('Transformation', 'comes through wisdom and a fundamental shift in worldview'));
     else {
-      let spheres=[];
-      if (career) spheres.push('career');
-      if (domestic) spheres.push('domestic life');
-      if (financial) spheres.push('finances');
-      p1=spheres.length?'Transformation hits the '+spheres.join(' and ')+' sphere specifically.':'Deep transformation is not a dominant theme in this window.';
+      let spheres=[career&&'career',domestic&&'domestic life',financial&&'finances'].filter(Boolean);
+      lines.push(_line('Transformation', spheres.length?'hits the '+spheres.join(' and ')+' sphere specifically':'not a dominant theme in this window'));
     }
-    let details=[];
-    if (nlPhilos) details.push('The process is philosophical and expansive — not just external change but a genuine shift in worldview');
-    if (nlFulfil) details.push('Leads to fulfilment');
-    if (nlLoss) details.push('Involves real loss along the way');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    if (nlH.includes(9)) lines.push(_line('Process', 'philosophical and expansive — a genuine shift in worldview, not just external change'));
+    if (nlH.includes(11)) lines.push(_line('Outcome', 'leads to fulfilment'));
+    if (nlH.includes(12)) lines.push(_line('Cost', 'involves real loss along the way'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h8_eol(suppH, obstH, nlH) {
-    const family=suppH.includes(2), partner=suppH.includes(7);
-    const vital=obstH.includes(1), sudden=obstH.includes(8);
-    const nlActive=nlH.includes(1)||nlH.includes(10), nlFamily=nlH.includes(2), nlPeace=nlH.includes(9), nlFulfil=nlH.includes(11), nlSpiritual=nlH.includes(12);
-    let parts=[];
-    if (family) parts.push('Surrounded by family');
-    if (partner) parts.push('Partner present');
-    if (nlActive) parts.push('Active and working until late in life');
-    if (nlFulfil) parts.push('Desires fulfilled before the end');
-    if (nlPeace) parts.push('Peaceful and fortunate transition');
-    if (nlSpiritual) parts.push('Spiritual or quietly isolated final chapter');
-    if (sudden) parts.push('Sudden or unexpected end is possible');
-    let p1=parts.length?parts.join('; ')+'.':'End of life indicators are not strongly placed.';
-    p1=p1[0].toUpperCase()+p1.slice(1);
-    return [p1, 'Long-range permanent reading.'];
+    let lines = [];
+    if (suppH.includes(2)) lines.push(_line('Surrounded by', 'family'));
+    if (suppH.includes(7)) lines.push(_line('Partner', 'present'));
+    if (nlH.includes(1)||nlH.includes(10)) lines.push(_line('Activity', 'active and working until late in life'));
+    if (nlH.includes(11)) lines.push(_line('Completion', 'desires fulfilled before the end'));
+    if (nlH.includes(9)) lines.push(_line('Transition', 'peaceful and fortunate'));
+    if (nlH.includes(12)) lines.push(_line('Final chapter', 'spiritual or quietly isolated'));
+    if (obstH.includes(8)) lines.push(_line('Nature', 'sudden or unexpected end is possible'));
+    if (!lines.length) lines.push(_line('End of life', 'indicators not strongly placed in this chart'));
+    return [lines.join('<br>'), 'Long-range permanent reading.'];
   }
 
   function _sent_h9_fortune(suppH, obstH, nlH) {
-    const direct=suppH.includes(9), spec=suppH.includes(5), gains=suppH.includes(11);
-    const domestic=obstH.includes(4), struggle=obstH.includes(6), loss=obstH.includes(12);
-    const nlProperty=nlH.includes(4), nlPartner=nlH.includes(7), nlConsistent=nlH.includes(11), nlAbroad=nlH.includes(12);
-    let p1='';
-    if (direct&&gains) p1='Fortune is directly promised and consistently materialises — this person has a genuine tail-wind.';
-    else if (struggle&&loss) p1='Fortune is real but it never comes easily — it arrives through struggle, service, and persisting through loss.';
-    else if (gains&&!struggle) p1='Fortune is present and gains materialise, but not effortlessly — effort and right timing are both needed.';
-    else if (!direct&&!gains) p1='Luck is not the primary mode — outcomes are shaped more by effort than fortune.';
-    else p1='Fortune is present but inconsistent — great phases alternate with hard ones.';
-    let details=[];
-    if (nlProperty||nlPartner) details.push((nlProperty?'Property':'Partnerships')+' are the channels through which fortune flows most reliably');
-    if (nlConsistent) details.push('Gains when they come are significant');
-    if (nlAbroad||loss) details.push('Fortune sometimes comes after loss or from abroad');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const direct=suppH.includes(9), gains=suppH.includes(11), struggle=obstH.includes(6), loss=obstH.includes(12);
+    let lines = [];
+    if (direct&&gains) lines.push(_line('Fortune', 'directly promised and consistently materialises — a genuine tail-wind'));
+    else if (struggle&&loss) lines.push(_line('Fortune', 'real but never easy — arrives through struggle, service, and persisting through loss'));
+    else if (gains&&!struggle) lines.push(_line('Fortune', 'present and gains materialise — effort and right timing are both needed'));
+    else lines.push(_line('Fortune', 'luck is not the primary mode — outcomes are shaped more by effort'));
+    if (nlH.includes(4)||nlH.includes(7)) lines.push(_line('Channel', (nlH.includes(4)?'property':'partnerships')+' are where fortune flows most reliably'));
+    if (nlH.includes(11)) lines.push(_line('Gains', 'when they come, they are significant'));
+    if (nlH.includes(12)||loss) lines.push(_line('Pattern', 'fortune sometimes comes after loss or from abroad'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h9_father(suppH, obstH, nlH) {
-    const anchor=suppH.includes(4), guiding=suppH.includes(9), ambitious=suppH.includes(10);
-    const stress=obstH.includes(6), loss=obstH.includes(8), distant=obstH.includes(12);
-    const nlBond=nlH.includes(4), nlWise=nlH.includes(9), nlSupport=nlH.includes(11), nlAbsent=nlH.includes(12);
+    const guiding=suppH.includes(9), ambitious=suppH.includes(10), anchor=suppH.includes(4);
+    const stress=obstH.includes(6), loss=obstH.includes(8), distance=obstH.includes(12);
     const h9Active=suppH.includes(9);
-    let p1='';
-    if (!h9Active&&!anchor&&!ambitious) {
-      p1='The father house (H9) is not directly activated in the chart — the father relationship is not a dominant theme.';
-    } else if (guiding&&ambitious&&!distant) {
-      p1='The father is a strong guiding influence — wise, ambitious, and actively shaping career and worldview.';
-    } else if (guiding&&distant) {
-      p1='The father is a guiding presence but physical distance or emotional unavailability is a recurring pattern.';
-    } else if (stress&&distant) {
-      p1='The father carries health stress and work pressure. Distance — physical or emotional — runs through the relationship.';
-    } else {
-      p1='The father relationship is present but not strongly defined in one direction.';
-    }
-    let details=[];
-    if (nlBond) details.push('Closely bonded at the domestic level');
-    if (nlWise) details.push('Wise and fortunate in their own life');
-    if (nlSupport) details.push('Supportive of your ambitions');
-    if (nlAbsent||distant) details.push('The relationship is complicated — present but strained');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2, 'Father relationship is a permanent reading.'];
+    let lines = [];
+    if (!h9Active&&!anchor&&!ambitious) lines.push(_line('Father relationship', 'not strongly activated in the chart — not a dominant life theme'));
+    else if (guiding&&ambitious&&!distance) lines.push(_line('Father', 'strong guiding influence — ambitious and actively shaping career and worldview'));
+    else if (guiding&&distance) lines.push(_line('Father', 'guiding presence but physical or emotional distance is a recurring pattern'));
+    else if (stress&&distance) lines.push(_line('Father', 'carries health stress and work pressure — distance runs through the relationship'));
+    else lines.push(_line('Father relationship', 'present but not strongly defined in one direction'));
+    if (nlH.includes(11)) lines.push(_line('Support', 'supportive of your ambitions'));
+    if (nlH.includes(4)) lines.push(_line('Bond', 'closely connected at the domestic level'));
+    if (nlH.includes(12)||distance) lines.push(_line('Note', 'the relationship is strained — present but complicated'));
+    return [lines.join('<br>'), 'Father relationship is a permanent reading.'];
   }
 
   function _sent_h9_higherstudy(suppH, obstH, nlH) {
-    const formal=suppH.includes(4), direct=suppH.includes(9), gains=suppH.includes(11);
-    const interrupted=obstH.includes(3), delayed=obstH.includes(6), abroad=obstH.includes(12);
-    const nlHome=nlH.includes(4), nlService=nlH.includes(6), nlAbroad=nlH.includes(12), nlOpens=nlH.includes(11);
-    let p1='';
-    if (direct&&gains) p1='Higher education is strongly supported and leads to real gains and opened doors.';
-    else if (delayed&&abroad) p1='Higher education happens but the route is unconventional — delays and obstacles come first, and it often ends up being through foreign university, distance learning, or a non-traditional programme.';
-    else if (!direct&&!gains) p1='Formal higher education is not the primary indicated path — professional experience may count for more.';
-    else p1='Higher education happens but not in a linear way.';
-    let details=[];
-    if (nlHome&&!abroad) details.push('Education close to home');
-    if (nlService) details.push('In a service or health-related field');
-    if (nlAbroad||abroad) details.push('Foreign education is a strong possibility');
-    if (nlOpens) details.push('Once completed, opens doors to ambitions');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const direct=suppH.includes(9), gains=suppH.includes(11), delayed=obstH.includes(6), abroad=obstH.includes(12);
+    let lines = [];
+    if (direct&&gains) lines.push(_line('Higher education', 'strongly supported and leads to real gains — doors open'));
+    else if (delayed&&abroad) lines.push(_line('Higher education', 'happens but through an unconventional route — delays first, often via foreign university or distance learning'));
+    else lines.push(_line('Higher education', 'not the primary indicated path — professional experience may count for more'));
+    if (abroad||nlH.includes(12)) lines.push(_line('Location', 'foreign education is a strong possibility'));
+    if (nlH.includes(6)) lines.push(_line('Field', 'service or health-related area'));
+    if (nlH.includes(11)||gains) lines.push(_line('Outcome', 'opens doors to long-held ambitions'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h9_longtravel(suppH, obstH, nlH, cs, nl) {
-    const frequent=suppH.includes(3), direct=suppH.includes(9), foreign=suppH.includes(12);
-    const homebind=obstH.includes(4), careerblock=obstH.includes(10), health=obstH.includes(6);
-    const nlFamily=nlH.includes(4), nlWork=nlH.includes(6), nlPartner=nlH.includes(7), nlGains=nlH.includes(11), nlSettle=nlH.includes(12);
-    let p1='';
-    if (direct||foreign) p1='Long travel is indicated and it involves foreign lands.';
-    else if (frequent) p1='Travel is a recurring feature of life.';
-    else p1='Long travel is not a dominant theme — primarily rooted in home country.';
-    let details=[];
-    if (nlWork||health) details.push('Travel tends to happen for work or health reasons rather than pure leisure');
-    if (nlPartner) details.push('Often involves a partner');
-    if (nlFamily) details.push('Connected to family or property interests');
-    if (nlGains) details.push('Leads to gains');
-    if (nlSettle||foreign) details.push('Can turn into a longer stay than planned');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    const dir=T_SIGN_DIRECTION[cs]||'';
-    const countryKey=dir+'|'+nl;
-    const countries=T_FOREIGN_COUNTRY[countryKey]||[];
-    if (dir&&countries.length) p2+=(p2?'<br><br>':'')+`Direction indicated: <strong>${dir}</strong> — countries: <strong>${countries.join(', ')}</strong>.`;
-    return [p1, p2];
+    const direct=suppH.includes(9), foreign=suppH.includes(12), health=obstH.includes(6);
+    let lines = [];
+    if (direct||foreign) lines.push(_line('Long travel', 'indicated and involves foreign lands'));
+    else lines.push(_line('Long travel', 'not a dominant theme — primarily rooted in home country'));
+    if (nlH.includes(6)||health) lines.push(_line('Purpose', 'tends to happen for work or health rather than pure leisure'));
+    if (nlH.includes(7)) lines.push(_line('Company', 'often involves a partner'));
+    if (nlH.includes(11)) lines.push(_line('Outcome', 'leads to gains'));
+    if (nlH.includes(12)||foreign) lines.push(_line('Duration', 'can turn into a longer stay than planned'));
+    const dir=T_SIGN_DIRECTION[cs]||'', countryKey=dir+'|'+nl, countries=T_FOREIGN_COUNTRY[countryKey]||[];
+    if (dir&&countries.length) {
+      lines.push(_line('Direction', dir));
+      lines.push(_line('Countries indicated', countries.join(', ')));
+    }
+    return [lines.join('<br>')];
   }
 
   function _sent_h9_spirituality(suppH, obstH, nlH) {
-    const devotional=suppH.includes(4), transformative=suppH.includes(8), direct=suppH.includes(9), retreat=suppH.includes(12);
-    const material=obstH.includes(2), service=obstH.includes(6), career=obstH.includes(10);
-    const nlDevot=nlH.includes(4), nlService2=nlH.includes(6), nlGuru=nlH.includes(7), nlCalling=nlH.includes(9), nlSolitary=nlH.includes(12);
-    let p1='';
-    if (direct||transformative) p1='Spiritual pursuit is a genuine thread in this life — not a casual interest.';
-    else if (devotional&&retreat) p1='The spiritual path is quiet and private — retreat and isolation rather than community or performance.';
-    else if (service) p1='Spirituality is expressed through service and healing rather than formal practice.';
-    else p1='Spirituality is lived through integrity and daily conduct rather than formal practice.';
-    let details=[];
-    if (nlDevot) details.push('Devotional and home-based');
-    if (nlService2||service) details.push('Applied through service and healing');
-    if (nlGuru) details.push('A guru or spiritual partnership connection is part of the picture');
-    if (nlSolitary) details.push('Deep and solitary');
-    if (career) details.push('Career demands suppress formal spiritual practice');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2, 'Spiritual orientation is permanent.'];
+    const direct=suppH.includes(9), transformative=suppH.includes(8), devotional=suppH.includes(4), retreat=suppH.includes(12), service=obstH.includes(6), career=obstH.includes(10);
+    let lines = [];
+    if (direct||transformative) lines.push(_line('Spiritual path', 'a genuine thread in this life — not a casual interest'));
+    else if (devotional&&retreat) lines.push(_line('Spiritual path', 'quiet and private — retreat and isolation rather than community or performance'));
+    else lines.push(_line('Spiritual path', 'lived through integrity and daily conduct rather than formal practice'));
+    if (nlH.includes(6)||service) lines.push(_line('Expression', 'through service and healing'));
+    if (nlH.includes(7)) lines.push(_line('Connection', 'a guru or spiritual partnership is part of the picture'));
+    if (nlH.includes(12)) lines.push(_line('Practice', 'deep and solitary'));
+    if (career) lines.push(_line('Obstruction', 'career demands suppress formal practice'));
+    return [lines.join('<br>'), 'Spiritual orientation is permanent.'];
   }
 
   function _sent_h10_profession(suppH, obstH, sl, nl) {
-    const income=suppH.includes(2), service=suppH.includes(6), direct=suppH.includes(10), gains=suppH.includes(11);
-    const domestic=obstH.includes(4), spec=obstH.includes(5), foreign=obstH.includes(12);
+    const service=suppH.includes(6), direct=suppH.includes(10), gains=suppH.includes(11), foreign=obstH.includes(12);
     const jobSector=T_JOB_SECTOR[sl]||'', nlSector=T_JOB_SECTOR[nl]||'';
-    let p1='';
-    if (direct&&gains) p1='Career is strongly promised and financially rewarding — income, gains, and a clear professional trajectory are all indicated.';
-    else if (direct&&foreign) p1='Career is promised but involves working away from the home environment — foreign clients, remote setups, or isolation from a conventional workplace.';
-    else if (service&&gains) p1='Career in the service sector is indicated and financially rewarding.';
-    else if (service) p1='Career in the service sector is indicated.';
-    else p1='Career direction is not strongly defined — multiple paths are equally available.';
-    if (foreign&&!direct) p1+=' Foreign factors or remote work create complications in the career path.';
-    let p2='';
-    if (jobSector) p2=`Primary domain: <strong>${jobSector}</strong>.`;
-    if (nlSector) p2+=(p2?'<br>':'')+`Secondary layer: <strong>${nlSector}</strong>.`;
-    return [p1, p2, 'This is a permanent reading.'];
+    let lines = [];
+    if (direct&&gains) lines.push(_line('Career', 'strongly promised and financially rewarding'));
+    else if (direct&&foreign) lines.push(_line('Career', 'promised — involves working away from home, foreign clients, or remote setup'));
+    else if (service&&gains) lines.push(_line('Career', 'in the service sector and financially rewarding'));
+    else if (service) lines.push(_line('Career', 'in the service sector — employment and structured roles are the natural path'));
+    else lines.push(_line('Career', 'not strongly defined — multiple paths are equally available'));
+    if (foreign&&!direct) lines.push(_line('Complication', 'foreign factors or remote work create complications in the career path'));
+    if (jobSector) lines.push(_line('Primary domain', jobSector));
+    if (nlSector) lines.push(_line('Secondary layer', nlSector));
+    return [lines.join('<br>'), 'This is a permanent reading.'];
   }
 
   function _sent_h10_promotion(suppH, obstH, nlH) {
-    const financial=suppH.includes(2), service=suppH.includes(6), direct=suppH.includes(10), fulfil=suppH.includes(11);
-    const creative=obstH.includes(5), reloc=obstH.includes(12);
-    const nlSalary=nlH.includes(2), nlFortune=nlH.includes(9), nlFulfil=nlH.includes(11), nlMove=nlH.includes(12);
-    let p1='';
-    if (direct&&fulfil) p1='Promotion is directly indicated and fulfils ambitions.';
-    else if (direct&&service) p1='Promotion is coming — earned through hard work and service rather than politics or luck.';
-    else if ((service||financial)&&fulfil) p1='Promotion is supported — consistent service and effort drive it forward, and it fulfils long-held ambitions.';
-    else if (service||financial) p1='Promotion is possible through consistent service and effort — not guaranteed but supported.';
-    else p1='Promotion is not indicated in this window — a consolidation phase.';
-    let details=[];
-    if (nlSalary||financial) details.push('Comes with a salary increase');
-    if (nlFortune) details.push('Through fortune or senior support rather than just performance');
-    if (nlMove||reloc) details.push('Involves relocation — a foreign posting or move to a different city');
-    if (nlFulfil||fulfil) details.push('Fulfils long-held ambitions');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const service=suppH.includes(6), direct=suppH.includes(10), fulfil=suppH.includes(11), financial=suppH.includes(2), reloc=obstH.includes(12);
+    let lines = [];
+    if (direct&&fulfil) lines.push(_line('Promotion', 'directly indicated and fulfils ambitions'));
+    else if (direct&&service) lines.push(_line('Promotion', 'coming — earned through hard work and service, not politics'));
+    else if ((service||financial)&&fulfil) lines.push(_line('Promotion', 'supported through consistent effort — fulfils long-held ambitions'));
+    else if (service||financial) lines.push(_line('Promotion', 'possible through consistent service and effort'));
+    else lines.push(_line('Promotion', 'not indicated in this window — a consolidation phase'));
+    if (financial||nlH.includes(2)) lines.push(_line('Salary', 'comes with an increase'));
+    if (nlH.includes(9)) lines.push(_line('Route', 'through fortune or senior support rather than just performance'));
+    if (reloc||nlH.includes(12)) lines.push(_line('Relocation', 'involves moving — foreign posting or different city'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h10_jobchange(suppH, obstH, nlH) {
-    const comm=suppH.includes(3), direct=suppH.includes(10);
-    const homebind=obstH.includes(4), reloc=obstH.includes(12);
-    const nlFinancial=nlH.includes(2), nlOpens=nlH.includes(9), nlGains=nlH.includes(11), nlAbroad=nlH.includes(12);
-    let p1='';
-    if (direct&&(nlAbroad||reloc)) p1='A job change is clearly indicated and it almost certainly involves relocation — going abroad or to a different city is the most likely route.';
-    else if (direct) p1='A job change is clearly indicated.';
-    else if (reloc&&!direct) p1='A job change involving relocation is possible, but the primary chart signal does not strongly push for it in this window. Proceed with caution.';
-    else if (homebind) p1='The urge to change is there but home factors are creating resistance — timing needs to be right.';
-    else p1='Job change is not clearly indicated — staying put is the wiser move in this window.';
-    let details=[];
-    if (nlFinancial) details.push('Brings financial improvement');
-    if (nlOpens) details.push('Opens better opportunities');
-    if (nlGains) details.push('Leads to gains');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const direct=suppH.includes(10), reloc=obstH.includes(12), homebind=obstH.includes(4);
+    let lines = [];
+    if (direct&&reloc) lines.push(_line('Job change', 'clearly indicated — almost certainly involves relocation'));
+    else if (direct) lines.push(_line('Job change', 'clearly indicated'));
+    else if (reloc&&!direct) lines.push(_line('Job change', 'involving relocation is possible — but the primary chart signal does not strongly push for it. Proceed with caution'));
+    else if (homebind) lines.push(_line('Job change', 'the urge is there but home factors create resistance — timing needs to be right'));
+    else lines.push(_line('Job change', 'not clearly indicated — staying put is the wiser move in this window'));
+    if (nlH.includes(2)) lines.push(_line('Financial impact', 'brings improvement'));
+    if (nlH.includes(9)) lines.push(_line('Opportunity', 'opens better prospects'));
+    if (nlH.includes(11)) lines.push(_line('Gains', 'follow the change'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h10_business(suppH, obstH, nlH, sl) {
-    const financial=suppH.includes(2), partner=suppH.includes(7), direct=suppH.includes(10), gains=suppH.includes(11);
-    const competition=obstH.includes(6), dissolves=obstH.includes(12);
-    const nlGrounded=nlH.includes(2), nlFortune=nlH.includes(9), nlProfit=nlH.includes(11), nlExit=nlH.includes(12);
+    const gains=suppH.includes(11), direct=suppH.includes(10), dissolves=obstH.includes(12), competition=obstH.includes(6);
     const bizSector=T_BIZ_SECTOR[sl]||'';
-    let p1='';
-    if (direct&&gains&&!dissolves) p1='Business is directly supported and leads to gains — entrepreneurship is a natural path.';
-    else if (direct&&dissolves) p1='Business is possible but the instability is real — a partner relocating or exiting, or foreign client dependency creating vulnerability.';
-    else if (financial&&partner) p1='Business is financially backed and works through partnerships.';
-    else if (gains&&dissolves) p1='Business can generate gains but the structure tends to be unstable — exits and dissolutions are part of the pattern.';
-    else p1='Business is not the primary indicated path — structured employment is more suited.';
-    let details=[];
-    if (competition) details.push('Competition and disputes are part of the business environment');
-    if (nlGrounded) details.push('Financially grounded');
-    if (nlFortune) details.push('Fortune or advisory work plays a role');
-    let p2='';
-    if (bizSector) p2=`Business domain: <strong>${bizSector}</strong>.`;
-    if (details.length) p2+=(p2?'<br><br>':'')+details.join('. ')+'.';
-    return [p1, p2];
+    let lines = [];
+    if (direct&&gains&&!dissolves) lines.push(_line('Business', 'directly supported and leads to gains — entrepreneurship is a natural path'));
+    else if (dissolves) lines.push(_line('Business', 'possible but unstable — partners exit or foreign dependency creates vulnerability'));
+    else if (gains&&dissolves) lines.push(_line('Business', 'generates gains but structure tends to be unstable — exits are part of the pattern'));
+    else lines.push(_line('Business', 'not the primary indicated path — structured employment is more suited'));
+    if (competition) lines.push(_line('Environment', 'competition and disputes are part of the business landscape'));
+    if (bizSector) lines.push(_line('Domain', bizSector));
+    if (dissolves) lines.push(_line('Protection', 'clear written agreements and a defined exit plan before committing'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h10_jobvsbiz(both) {
     const h6=both.includes(6), h7=both.includes(7);
-    let p1='';
-    if (h6&&!h7) p1='Employment and service is the stronger path. This person performs best within an organisation — structure, clear roles, and institutional backing bring out the best work.';
-    else if (h7&&!h6) p1='Business and independent work is the stronger path. More effective as an independent operator or business owner — chafes under others\' authority.';
-    else if (h6&&h7) p1='Both paths are equally available. The choice depends on current opportunity and personal preference — the chart does not push strongly in either direction.';
-    else p1='Neither employment nor business dominates — decide based on practical opportunity, not chart pressure.';
-    return [p1, 'This is a permanent reading.'];
+    let lines = [];
+    if (h6&&!h7) {
+      lines.push(_line('Stronger path', 'employment and service'));
+      lines.push(_line('Why', 'structure, clear roles, and institutional backing bring out the best work'));
+    } else if (h7&&!h6) {
+      lines.push(_line('Stronger path', 'business and independent work'));
+      lines.push(_line('Why', 'more effective as an independent operator — chafes under others authority'));
+    } else if (h6&&h7) {
+      lines.push(_line('Both paths', 'equally available — the chart does not push strongly either way'));
+      lines.push(_line('Decision', 'based on current opportunity and personal preference'));
+    } else {
+      lines.push(_line('Neither dominates', 'decide based on practical opportunity, not chart pressure'));
+    }
+    return [lines.join('<br>'), 'This is a permanent reading.'];
   }
 
   function _sent_h10_govtprivate(sl, nl) {
     const slTilt=T_GOVT_PRIVATE[sl]||'', nlTilt=T_GOVT_PRIVATE[nl]||'';
-    let p1='';
-    if (slTilt===nlTilt) p1=`Both sub-lord and star lord point toward <strong>${slTilt}</strong> sector — this is a clear and consistent signal.`;
-    else p1=`Primary fit is <strong>${slTilt}</strong> sector. The star lord adds a secondary pull toward <strong>${nlTilt}</strong> — with ${slTilt} as the stronger natural fit.`;
-    return [p1, 'This is a permanent reading.'];
+    let lines = [];
+    if (slTilt===nlTilt) {
+      lines.push(_line('Sector fit', slTilt));
+      lines.push(_line('Signal strength', 'both sub-lord and star lord agree — clear and consistent'));
+    } else {
+      lines.push(_line('Primary fit', slTilt));
+      lines.push(_line('Secondary pull', nlTilt+' — accessible but '+slTilt+' is the stronger natural fit'));
+    }
+    return [lines.join('<br>'), 'This is a permanent reading.'];
   }
 
   function _sent_h10_sector(sl, nl) {
     const jobSector=T_JOB_SECTOR[sl]||'', bizSector=T_BIZ_SECTOR[sl]||'', nlSector=T_JOB_SECTOR[nl]||'';
-    let lines=[jobSector?`Employment domain: <strong>${jobSector}</strong>`.trim():'', bizSector?`Business domain: <strong>${bizSector}</strong>`.trim():'', nlSector?`Star lord secondary layer: <strong>${nlSector}</strong>`.trim():''];
-    let p1=lines.filter(Boolean).join('<br>')||'Career sector is not strongly defined by a single domain.';
-    return [p1, 'This is a permanent reading — career sector is written in the natal chart.'];
+    let lines = [];
+    if (jobSector) lines.push(_line('Employment domain', jobSector));
+    if (bizSector) lines.push(_line('Business domain', bizSector));
+    if (nlSector) lines.push(_line('Star lord layer', nlSector));
+    if (!lines.length) lines.push(_line('Career sector', 'not strongly defined by a single domain'));
+    return [lines.join('<br>'), 'This is a permanent reading — career sector is written in the natal chart.'];
   }
 
   function _sent_h10_status(suppH, obstH, nlH) {
-    const personal=suppH.includes(1), direct=suppH.includes(10), gains=suppH.includes(11);
-    const struggle=obstH.includes(6), disruption=obstH.includes(8), abroad=obstH.includes(12);
-    const nlFinancial=nlH.includes(2), nlFortune=nlH.includes(9), nlHigh=nlH.includes(11), nlForeign=nlH.includes(12);
-    let p1='';
-    if (direct&&gains&&personal) p1='Public recognition and status are clearly indicated and tied to personal drive — this is earned, not inherited.';
-    else if (direct&&disruption) p1='Status is achieved but reputation may be damaged and rebuilt at some point — the person fights for recognition and earns it.';
-    else if (abroad||nlForeign) p1='Status and recognition come primarily through foreign or distant contexts rather than the home environment.';
-    else p1='Public status is not a primary theme in this chart.';
-    let details=[];
-    if (nlFinancial) details.push('Brings financial elevation');
-    if (nlFortune) details.push('Through wisdom or fortune');
-    if (nlHigh) details.push('Leads to high public recognition');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const personal=suppH.includes(1), direct=suppH.includes(10), gains=suppH.includes(11), abroad=obstH.includes(12);
+    let lines = [];
+    if (direct&&gains&&personal) lines.push(_line('Status', 'public recognition is clearly indicated — earned through personal drive, not inherited'));
+    else if (direct&&obstH.includes(8)) lines.push(_line('Status', 'achieved but may be damaged and rebuilt — the person fights for recognition'));
+    else if (abroad||nlH.includes(12)) lines.push(_line('Status', 'comes through foreign or distant contexts rather than the home environment'));
+    else lines.push(_line('Status', 'not a primary theme in this chart'));
+    if (nlH.includes(2)) lines.push(_line('Impact', 'brings financial elevation'));
+    if (nlH.includes(9)) lines.push(_line('Route', 'through wisdom or fortune'));
+    if (nlH.includes(11)) lines.push(_line('Level', 'leads to high public recognition'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h11_income(suppH, obstH, nlH) {
-    const savings=suppH.includes(2), service=suppH.includes(6), career=suppH.includes(10), direct=suppH.includes(11);
-    const spec=obstH.includes(5), shock=obstH.includes(8), foreign=obstH.includes(12);
-    const nlStable=nlH.includes(2), nlEffort=nlH.includes(6), nlGrows=nlH.includes(10), nlSubstantial=nlH.includes(11), nlForeign=nlH.includes(12);
-    let p1='';
-    if (direct&&(career||service)) p1='Income is directly promised and substantial — salary and career earnings are the reliable route.';
-    else if (direct&&(foreign||nlForeign)) p1='Income is indicated but comes from foreign or remote sources — good months and lean months.';
-    else if ((service||savings)&&!direct) p1='Income flows through service and savings — requires consistent effort but is real and buildable.';
-    else p1='Income indicators are not strongly placed — earnings require active cultivation.';
-    let obs=[];
-    if (spec) obs.push('Stay away from speculative income — it is unreliable');
-    if (shock) obs.push('Sudden disruptions to income are part of the pattern');
-    if ((foreign||nlForeign)&&!direct) obs.push('Foreign or remote-sourced income creates inconsistency — good months and lean months');
-    let p2=obs.length?obs.join('. ')+'.':'';
-    if (nlSubstantial) p2+=(p2?' ':'')+'When income flows, it flows well.';
-    return [p1, p2];
+    const savings=suppH.includes(2), service=suppH.includes(6), career=suppH.includes(10), direct=suppH.includes(11), foreign=obstH.includes(12);
+    let lines = [];
+    if (direct&&(career||service)) lines.push(_line('Income', 'directly promised and substantial — salary and career earnings are the reliable route'));
+    else if (direct&&foreign) lines.push(_line('Income', 'indicated but from foreign or remote sources — good months and lean months'));
+    else if (service||savings) lines.push(_line('Income', 'flows through service and savings — requires consistent effort but is real and buildable'));
+    else lines.push(_line('Income', 'not strongly placed — earnings require active cultivation'));
+    if (obstH.includes(5)) lines.push(_line('Warning', 'stay away from speculative income — consistently unreliable'));
+    if (obstH.includes(8)) lines.push(_line('Risk', 'sudden disruptions to income are part of the pattern'));
+    if (nlH.includes(11)) lines.push(_line('When it flows', 'it flows well — significant when active'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h11_desires(suppH, obstH, nlH) {
-    const financial=suppH.includes(2), creative=suppH.includes(5), fortune=suppH.includes(9), career=suppH.includes(10), direct=suppH.includes(11);
-    const obstacles=obstH.includes(6), shock=obstH.includes(8), unfulfil=obstH.includes(12);
-    const nlHard=nlH.includes(6), nlFortune=nlH.includes(9), nlStrong=nlH.includes(11), nlOutOfReach=nlH.includes(12);
-    let p1='';
-    if (direct&&(fortune||nlFortune)) p1='Desires are fulfilled — and through fortune rather than just effort. What you truly want has a way of materialising.';
-    else if (direct&&obstacles) p1='Desires are fulfilled but through hard work, not luck. You get there — it just takes more than it should.';
-    else if ((fortune||nlFortune)&&!direct) p1='Fortune is active in the fulfilment of desires — what you genuinely want has a way of finding its path, even without H11 being directly promised.';
-    else if ((financial||career)&&!direct) p1='Material and career desires are reliably fulfilled through consistent effort.';
-    else if (unfulfil||nlOutOfReach) p1='Some desires fulfil and some remain just out of reach — a recurring tension between what you want and what arrives.';
-    else p1='Desire fulfilment requires the right period — not automatic.';
-    let details=[];
-    if (financial) details.push('Financial desires are the most reliably fulfilled');
-    if (career) details.push('Career ambitions materialise');
-    if (nlStrong) details.push('When the desire is strong enough, it happens');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const financial=suppH.includes(2), fortune=suppH.includes(9), career=suppH.includes(10), direct=suppH.includes(11), obstacles=obstH.includes(6), unfulfil=obstH.includes(12);
+    let lines = [];
+    if (direct&&fortune) lines.push(_line('Desires', 'fulfilled — and through fortune rather than just effort. What you truly want materialises'));
+    else if (direct&&obstacles) lines.push(_line('Desires', 'fulfilled but through hard work, not luck — you get there, it just takes more than it should'));
+    else if (fortune&&!direct) lines.push(_line('Desires', 'fortune is active — what you genuinely want has a way of finding its path'));
+    else if (financial||career) lines.push(_line('Desires', 'material and career goals are reliably fulfilled through consistent effort'));
+    else if (unfulfil) lines.push(_line('Desires', 'some fulfil and some remain just out of reach — a recurring tension'));
+    else lines.push(_line('Desires', 'fulfilment requires the right period — not automatic'));
+    if (financial) lines.push(_line('Most reliable', 'financial desires fulfil most consistently'));
+    if (career) lines.push(_line('Career ambitions', 'materialise'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h11_eldersibling(suppH, obstH, nlH) {
-    const active=suppH.includes(3), present=suppH.includes(11);
-    const health=obstH.includes(6), loss=obstH.includes(8), distant=obstH.includes(12);
-    const nlStruggle=nlH.includes(6), nlWise=nlH.includes(9), nlSuccess=nlH.includes(11), nlAbroad=nlH.includes(12);
-    let p1='';
-    if (present&&nlSuccess&&!distant) p1='An elder sibling is a real presence and source of support — successful and supportive.';
-    else if (present&&(distant||nlAbroad)) p1='An elder sibling is present and supportive but lives abroad or is physically far away. The support is real but not proximate.';
-    else if (!present&&(nlAbroad||nlStruggle)) p1='An elder sibling is in the background — not strongly present but their life circumstances carry their own weight.';
-    else if (!present) p1='Elder sibling influence is not strongly indicated.';
-    else p1='An elder sibling is present in your life.';
-    let details=[];
-    if (health||nlStruggle) details.push('They work hard but face their own challenges');
-    if (nlWise) details.push('Wise and fortunate in their own life');
-    let p2=details.length?details.join('; ')+'.':'';
-    return [p1, p2, 'Elder sibling dynamics are permanent.'];
+    const present=suppH.includes(11), success=nlH.includes(11), distant=obstH.includes(12)||nlH.includes(12);
+    let lines = [];
+    if (present&&success&&!distant) lines.push(_line('Elder sibling', 'present, successful, and a source of support'));
+    else if (present&&distant) lines.push(_line('Elder sibling', 'present and supportive — but lives abroad or far away. Support is real, not proximate'));
+    else if (!present&&(distant||nlH.includes(6))) lines.push(_line('Elder sibling', 'in the background — not strongly present, their life carries its own weight'));
+    else lines.push(_line('Elder sibling', 'not strongly indicated'));
+    if (obstH.includes(6)||nlH.includes(6)) lines.push(_line('Their life', 'works hard but faces their own challenges'));
+    if (nlH.includes(9)) lines.push(_line('Their nature', 'wise and fortunate in their own right'));
+    if (distant) lines.push(_line('Location', 'living abroad or at a significant distance'));
+    return [lines.join('<br>'), 'Elder sibling dynamics are permanent.'];
   }
 
   function _sent_h11_network(suppH, obstH, nlH) {
-    const comm=suppH.includes(3), partner=suppH.includes(7), direct=suppH.includes(11);
-    const friction=obstH.includes(6), hidden=obstH.includes(8), thin=obstH.includes(12);
-    const nlFinancial=nlH.includes(2), nlService=nlH.includes(6), nlWise=nlH.includes(9), nlDrives=nlH.includes(11), nlForeign=nlH.includes(12);
-    let p1='';
-    if (direct&&(comm||partner)) p1='The network is strong and genuinely useful — who you know opens doors that skill alone cannot.';
-    else if (direct&&(thin||nlForeign)) p1='A strong network exists but it is heavily foreign-connected — your most useful connections tend to be people you met elsewhere, not locally.';
-    else if (friction||hidden) p1='The network exists but requires active maintenance — relationships can cool or turn unreliable under pressure.';
-    else p1='Network is not a primary asset — relationships need deliberate cultivation.';
-    let details=[];
-    if (nlFinancial) details.push('The network has direct financial value');
-    if (nlService) details.push('Built primarily through the service or health sector');
-    if (nlWise) details.push('Includes wise and fortunate connections');
-    if (nlDrives) details.push('Drives ambitions forward');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const direct=suppH.includes(11), comm=suppH.includes(3), partner=suppH.includes(7), foreign=obstH.includes(12)||nlH.includes(12);
+    let lines = [];
+    if (direct&&(comm||partner)&&!foreign) lines.push(_line('Network', 'strong and genuinely useful — who you know opens doors that skill alone cannot'));
+    else if (direct&&foreign) lines.push(_line('Network', 'strong but heavily foreign-connected — most useful contacts are people met elsewhere, not locally'));
+    else if (obstH.includes(6)||obstH.includes(8)) lines.push(_line('Network', 'exists but requires active maintenance — relationships cool under pressure'));
+    else lines.push(_line('Network', 'not a primary asset — needs deliberate cultivation'));
+    if (nlH.includes(2)) lines.push(_line('Value', 'direct financial value — the network pays'));
+    if (nlH.includes(9)) lines.push(_line('Quality', 'wise and fortunate connections'));
+    if (nlH.includes(11)) lines.push(_line('Function', 'drives ambitions forward'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h11_gains(suppH, obstH, nlH) {
-    const spec=suppH.includes(5), fortune=suppH.includes(9), direct=suppH.includes(11);
-    const shock=obstH.includes(8), erodes=obstH.includes(12);
-    const nlSavings=nlH.includes(2), nlEffort=nlH.includes(6), nlFortune=nlH.includes(9), nlSubstantial=nlH.includes(11), nlSpent=nlH.includes(12);
-    let p1='';
-    if (direct&&!erodes&&!shock) p1='Gains are directly indicated and they are substantial — effort invested returns with interest.';
-    else if (direct&&(erodes||nlSpent)) p1='Gains are real and substantial — but they get spent or go abroad. The pattern is earning well and not holding on to it.';
-    else if (!direct&&!fortune) p1='This is a phase of building rather than reaping — gains come in a future window.';
-    else p1='Gains are indicated but not at full strength in this window.';
-    let details=[];
-    if (nlEffort) details.push('Come through service and consistent effort');
-    if (nlFortune||fortune) details.push('Fortune plays a role');
-    if (nlSavings) details.push('Build into savings when managed correctly');
-    if (erodes||nlSpent) details.push('Building a structure that retains what comes in is the essential work');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const fortune=suppH.includes(9), direct=suppH.includes(11), erodes=obstH.includes(12), shock=obstH.includes(8);
+    let lines = [];
+    if (direct&&!erodes) lines.push(_line('Gains', 'directly indicated and substantial — effort invested returns with interest'));
+    else if (direct&&erodes) lines.push(_line('Gains', 'real and substantial — but they get spent or go abroad. Earning well and not holding on to it is the pattern'));
+    else lines.push(_line('Gains', 'this is a building phase — substantial gains come in a future window'));
+    if (nlH.includes(6)) lines.push(_line('Route', 'through service and consistent effort'));
+    if (nlH.includes(9)||fortune) lines.push(_line('Fortune', 'plays a role — not only earned'));
+    if (nlH.includes(2)) lines.push(_line('Retention', 'build into savings when managed correctly'));
+    if (erodes) lines.push(_line('Key task', 'building a structure that retains what comes in — earning is not the problem, holding on is'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h12_foreign(suppH, obstH, nlH, cs, nl) {
-    const comm=suppH.includes(3), fortune=suppH.includes(9), direct=suppH.includes(12);
-    const family=obstH.includes(2), domestic=obstH.includes(4), career=obstH.includes(10);
-    const nlHome=nlH.includes(4), nlChildren=nlH.includes(5), nlPartner=nlH.includes(7), nlFortune=nlH.includes(9), nlGains=nlH.includes(11);
-    let p1='';
-    if (direct&&!domestic&&!family) p1='Foreign connection is clearly indicated — international experience is a significant life theme.';
-    else if (direct&&(domestic||family)) p1='Foreign living is clearly indicated — and it eventually gets established even with domestic or family pull working against it.';
-    else if ((domestic||family)&&(nlHome||nlPartner)) p1='A foreign home eventually gets established — driven by a partner or family rather than personal ambition. It happens, but it takes relational pull to get there.';
-    else if (domestic||family) p1='A strong domestic pull works against going abroad — the foreign chapter is delayed or limited.';
-    else p1='Foreign connection is not strongly indicated — primarily rooted at home.';
-    let details=[];
-    if (nlFortune||fortune) details.push('Fortune favours the move when it happens');
-    if (nlGains) details.push('Leads to substantial gains');
-    if (nlPartner) details.push('Moves with or for a partner');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    const dir=T_SIGN_DIRECTION[cs]||'';
-    const countryKey=dir+'|'+nl;
-    const countries=T_FOREIGN_COUNTRY[countryKey]||[];
-    if (dir&&countries.length) p2+=(p2?'<br><br>':'')+`Direction: <strong>${dir}</strong> — countries: <strong>${countries.join(', ')}</strong>.`;
-    return [p1, p2];
+    const direct=suppH.includes(12), fortune=suppH.includes(9), family=obstH.includes(2), domestic=obstH.includes(4);
+    let lines = [];
+    if (direct&&!domestic&&!family) lines.push(_line('Foreign living', 'clearly indicated — international experience is a significant life theme'));
+    else if (direct&&(domestic||family)) lines.push(_line('Foreign living', 'clearly indicated — eventually gets established even with domestic pull working against it'));
+    else if (domestic||family) lines.push(_line('Foreign living', 'eventually established — driven by a partner or family rather than personal ambition'));
+    else lines.push(_line('Foreign connection', 'not strongly indicated — primarily rooted at home'));
+    if (fortune||nlH.includes(9)) lines.push(_line('Fortune', 'favours the move when it happens'));
+    if (nlH.includes(11)) lines.push(_line('Outcome', 'leads to substantial gains'));
+    if (nlH.includes(7)) lines.push(_line('Driver', 'moves with or for a partner'));
+    const dir=T_SIGN_DIRECTION[cs]||'', countryKey=dir+'|'+nl, countries=T_FOREIGN_COUNTRY[countryKey]||[];
+    if (dir&&countries.length) {
+      lines.push(_line('Direction', dir));
+      lines.push(_line('Countries indicated', countries.join(', ')));
+    }
+    return [lines.join('<br>')];
   }
 
   function _sent_h12_visa(suppH, obstH, nlH) {
-    const comm=suppH.includes(3), service=suppH.includes(6), education=suppH.includes(9), direct=suppH.includes(12);
-    const family=obstH.includes(2), domestic=obstH.includes(4), complication=obstH.includes(8);
-    const nlFamily=nlH.includes(4), nlStudent=nlH.includes(5), nlPartner=nlH.includes(7), nlSkilled=nlH.includes(9), nlSettle=nlH.includes(11);
-    let p1='';
-    if (service&&!complication) p1='A work or service visa is the most likely route — and the path is open.';
-    else if (service&&(domestic||family)) p1='Work visa is the route but domestic factors cause delays — family ties or home circumstances slow the process.';
-    else if (education) p1='Education or skilled migration visa is indicated.';
-    else if (!direct&&!service&&!education) p1='Visa is not supported in this window — timing matters significantly.';
-    else p1='Visa is indicated.';
-    let details=[];
-    if (nlPartner) details.push('Partner or dependent visa is also a possibility — the move may happen through a partner\'s opportunity');
-    if (nlSettle) details.push('Eventually leads to long-term settlement');
-    if (complication) details.push('Unexpected complications in the process — expert immigration advice is recommended');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const service=suppH.includes(6), education=suppH.includes(9), direct=suppH.includes(12), domestic=obstH.includes(4), family=obstH.includes(2), complication=obstH.includes(8);
+    let lines = [];
+    if (service&&!domestic&&!family) lines.push(_line('Visa type', 'work or service visa — the path is open'));
+    else if (service&&(domestic||family)) lines.push(_line('Visa type', 'work visa — but domestic factors cause delays'));
+    else if (education) lines.push(_line('Visa type', 'education or skilled migration'));
+    else lines.push(_line('Visa', 'not strongly supported in this window — timing matters significantly'));
+    if (nlH.includes(7)) lines.push(_line('Alternative', 'partner or dependent visa is also a possibility'));
+    if (nlH.includes(11)) lines.push(_line('Outcome', 'leads to long-term settlement'));
+    if (complication) lines.push(_line('Complication', 'unexpected obstacles in the process — expert immigration advice recommended'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h12_residence(suppH, obstH, nlH) {
-    const comm=suppH.includes(3), fortune=suppH.includes(9), direct=suppH.includes(12);
-    const financial=obstH.includes(2), domestic=obstH.includes(4), career=obstH.includes(10);
-    const nlHome=nlH.includes(4), nlPartner=nlH.includes(7), nlFortune=nlH.includes(9), nlGains=nlH.includes(11);
-    let p1='';
-    if (direct&&!domestic&&!financial) p1='Settlement abroad is clearly supported — a genuine chapter of life in a foreign land.';
-    else if (direct&&(domestic||financial)) p1='Settlement abroad is supported — despite family or financial ties pulling toward home, the chart shows a genuine foreign chapter.';
-    else if (domestic&&nlPartner) p1='The home country pull is genuinely strong but foreign residence eventually gets established through a partner. When it happens it becomes a second home.';
-    else if (domestic&&nlGains) p1='Resistance to going abroad is real but when the move happens it leads to substantial gains.';
-    else if (domestic||financial) p1='The person is meant to build their life in their home country — foreign stays are temporary rather than permanent.';
-    else p1='Foreign residence is not strongly indicated.';
-    let details=[];
-    if (nlFortune||fortune) details.push('Fortunate and expansive when it happens');
-    if (nlGains) details.push('Leads to substantial gains');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const direct=suppH.includes(12), fortune=suppH.includes(9), domestic=obstH.includes(4), financial=obstH.includes(2);
+    let lines = [];
+    if (direct&&!domestic&&!financial) lines.push(_line('Foreign residence', 'clearly supported — a genuine chapter of life abroad'));
+    else if (direct&&(domestic||financial)) lines.push(_line('Foreign residence', 'supported — despite family or financial pull toward home, a genuine foreign chapter is indicated'));
+    else if (domestic&&nlH.includes(7)) lines.push(_line('Foreign residence', 'eventually established through a partner — becomes a second home when it happens'));
+    else if (domestic||financial) lines.push(_line('Residence', 'home country is where life is built — foreign stays are temporary'));
+    else lines.push(_line('Foreign residence', 'not strongly indicated'));
+    if (fortune||nlH.includes(9)) lines.push(_line('Quality', 'fortunate and expansive when it happens'));
+    if (nlH.includes(11)) lines.push(_line('Outcome', 'leads to substantial gains'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h12_hospital(suppH, obstH, nlH) {
-    const illness=suppH.includes(6), surgical=suppH.includes(8), direct=suppH.includes(12);
-    const vitality=obstH.includes(1), digestion=obstH.includes(5), recovery=obstH.includes(11);
-    const nlDomestic=nlH.includes(4), nlSystem=nlH.includes(5), nlPartner=nlH.includes(7), nlFortune=nlH.includes(9), nlRecover=nlH.includes(11);
-    let p1='';
-    if (surgical&&direct) p1='Hospitalisation is indicated — surgical or emergency medical intervention is more likely than average. Take care of chronic conditions before they become acute.';
-    else if (illness&&direct) p1='Hospitalisation through illness is indicated. Early attention to symptoms rather than waiting is important.';
-    else p1='Major hospitalisation is not prominently indicated.';
-    let details=[];
-    if (nlSystem) details.push('Related to the digestive or reproductive system');
-    if (nlDomestic) details.push('Domestic or emotional triggers are involved');
-    if (nlPartner) details.push('Partner is present and supportive during the episode');
-    if (nlFortune||nlRecover||recovery) details.push('Recovery is fortunate — this resolves');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const illness=suppH.includes(6), surgical=suppH.includes(8), direct=suppH.includes(12), recovery=obstH.includes(11);
+    let lines = [];
+    if (surgical&&direct) lines.push(_line('Hospitalisation', 'indicated — surgical or emergency intervention is more likely than average'));
+    else if (illness&&direct) lines.push(_line('Hospitalisation', 'through illness — early attention to symptoms rather than waiting is important'));
+    else lines.push(_line('Hospitalisation', 'not prominently indicated in this chart'));
+    if (surgical) lines.push(_line('Risk', 'plan for the possibility of surgical intervention'));
+    if (nlH.includes(5)) lines.push(_line('Area', 'digestive or reproductive system'));
+    if (nlH.includes(7)) lines.push(_line('Support', 'partner is present and supportive during the episode'));
+    if (nlH.includes(9)||nlH.includes(11)||recovery) lines.push(_line('Recovery', 'fortunate — this resolves'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h12_expenses(suppH, obstH, nlH) {
-    const health=suppH.includes(6), sudden=suppH.includes(8), direct=suppH.includes(12);
-    const savings=obstH.includes(2), career=obstH.includes(10), gains=obstH.includes(11);
-    const nlProperty=nlH.includes(4), nlChildren=nlH.includes(5), nlPartner=nlH.includes(7), nlTravel=nlH.includes(9), nlManage=nlH.includes(11);
-    let p1='';
-    if (direct&&health) p1='Expenses flow consistently — primarily through health obligations and ongoing commitments.';
-    else if (sudden) p1='Unexpected and sudden expenses are part of the pattern — maintain a financial buffer at all times.';
-    else if (gains||career) p1='Gains and career income largely cover outflows — expenses are manageable with discipline.';
-    else if (direct) p1='Expenses are a real financial theme that requires active management.';
-    else p1='Expenses are not a dominant drain.';
-    let areas=[];
-    if (nlProperty) areas.push('Property and home costs');
-    if (nlChildren) areas.push('Children');
-    if (nlPartner) areas.push('Shared financial commitments with partner');
-    if (nlTravel) areas.push('Education or travel');
-    let p2=areas.length?'Expenses flow through: '+areas.join(', ')+'.':'';
-    if (nlManage||gains) p2+=(p2?' ':'')+'Gains offset the expenses — manageable with discipline.';
-    return [p1, p2];
+    const health=suppH.includes(6), sudden=suppH.includes(8), direct=suppH.includes(12), gains=obstH.includes(11), career=obstH.includes(10);
+    let lines = [];
+    if (direct&&health) lines.push(_line('Expenses', 'flow consistently — primarily through health obligations and ongoing commitments'));
+    else if (sudden) lines.push(_line('Expenses', 'unexpected and sudden — maintain a financial buffer at all times'));
+    else if (gains||career) lines.push(_line('Expenses', 'gains and career income largely cover outflows — manageable with discipline'));
+    else if (direct) lines.push(_line('Expenses', 'a real financial theme requiring active management'));
+    else lines.push(_line('Expenses', 'not a dominant drain'));
+    if (nlH.includes(4)) lines.push(_line('Where', 'property and home costs'));
+    if (nlH.includes(5)) lines.push(_line('Where', 'children'));
+    if (nlH.includes(7)) lines.push(_line('Where', 'shared financial commitments with partner'));
+    if (nlH.includes(9)) lines.push(_line('Where', 'education or travel'));
+    if (nlH.includes(11)||gains) lines.push(_line('Offset', 'gains offset the expenses — manageable with discipline'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h12_seclusion(suppH, obstH, nlH) {
-    const crisis=suppH.includes(8), spiritual=suppH.includes(9), direct=suppH.includes(12);
-    const drive=obstH.includes(1), partner=obstH.includes(7), ambition=obstH.includes(11);
-    const nlHome=nlH.includes(4), nlCreative=nlH.includes(5), nlPartner2=nlH.includes(7), nlRetreat=nlH.includes(9), nlTemp=nlH.includes(11);
-    let p1='';
-    if (spiritual&&direct) p1='Periods of seclusion and retreat are meaningful and productive — this is a genuine need, not just a preference.';
-    else if (crisis) p1='Seclusion tends to come through crisis or transformation — forced withdrawal rather than chosen retreat.';
-    else if ((partner||ambition)&&!direct) p1='Deep seclusion is not a strong theme — the partner and personal ambitions consistently pull you back into engagement.';
-    else p1='Deep seclusion is not a dominant theme.';
-    let details=[];
-    if (nlHome) details.push('Home-based and familiar');
-    if (nlCreative) details.push('Used for creative work');
-    if (nlRetreat) details.push('Spiritual retreat');
-    if (nlTemp||ambition) details.push('Temporary and productive — strong ambitions and gains pull you back out');
-    let p2=details.length?details.join('; ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2];
+    const spiritual=suppH.includes(9), direct=suppH.includes(12), crisis=suppH.includes(8), ambition=obstH.includes(11), partner=obstH.includes(7);
+    let lines = [];
+    if (spiritual&&direct) lines.push(_line('Seclusion', 'meaningful and productive — a genuine need, not just a preference'));
+    else if (crisis) lines.push(_line('Seclusion', 'tends to come through crisis — forced withdrawal rather than chosen retreat'));
+    else if ((partner||ambition)&&!direct) lines.push(_line('Seclusion', 'not a strong theme — partner and ambitions consistently pull back into engagement'));
+    else lines.push(_line('Seclusion', 'not a dominant theme'));
+    if (nlH.includes(9)) lines.push(_line('Type', 'spiritual retreat'));
+    if (nlH.includes(5)) lines.push(_line('Use', 'for creative work'));
+    if (nlH.includes(11)||ambition) lines.push(_line('Duration', 'temporary — strong ambitions and gains pull you back out'));
+    return [lines.join('<br>')];
   }
 
   function _sent_h12_moksha(suppH, obstH, nlH) {
-    const devotional=suppH.includes(4), service=suppH.includes(6), relationship=suppH.includes(7), transformative=suppH.includes(8), wisdom=suppH.includes(9), direct=suppH.includes(12);
+    const relationship=suppH.includes(7), wisdom=suppH.includes(9), service=suppH.includes(6), direct=suppH.includes(12), devotional=suppH.includes(4), transformative=suppH.includes(8);
     const material=obstH.includes(2), worldly=obstH.includes(10);
-    const nlDevot=nlH.includes(4), nlJoyful=nlH.includes(5), nlEgo=nlH.includes(7), nlWisdom=nlH.includes(9), nlAfter=nlH.includes(11);
-    let p1='';
-    if (relationship) p1='Liberation comes through relationship and the dissolution of ego that relationships force — not a solitary or renunciate path.';
-    else if (wisdom&&direct) p1='The path to liberation is through wisdom, fortune, and conscious spiritual pursuit — directly indicated in this chart.';
-    else if (service&&direct) p1='Liberation comes through service and giving — the daily act of dedicating effort to something beyond the self.';
-    else if (devotional&&service) p1='The spiritual path is devotional, home-based, and applied through service — liberation through daily living, not grand gestures.';
-    else if (transformative||wisdom) p1='Liberation comes through transformation and wisdom — the worldly journey has a genuine transcendent destination.';
-    else if (direct) p1='Liberation is indicated in this chart — the spiritual path is real, whatever form it takes.';
-    else p1='Formal moksha is not a dominant theme — spiritual work happens through integrity and conscious daily conduct.';
-    let details=[];
-    if (nlJoyful) details.push('Joyful rather than ascetic');
-    if (nlAfter) details.push('Desires are fulfilled before liberation is reached — this is a path of completion, not deprivation');
-    if (material) details.push('Material attachments create the main friction on the spiritual path');
-    if (worldly) details.push('Worldly ambitions delay the deeper turn inward');
-    let p2=details.length?details.join('. ')+'.':'';
-    p2=p2?p2[0].toUpperCase()+p2.slice(1):p2;
-    return [p1, p2, 'Permanent reading — spiritual destiny is set in the natal chart.'];
+    let lines = [];
+    if (relationship) lines.push(_line('Path to liberation', 'through relationship — ego dissolution that deep relationships force'));
+    else if (wisdom&&direct) lines.push(_line('Path to liberation', 'through wisdom, fortune, and conscious spiritual pursuit — directly indicated'));
+    else if (service&&direct) lines.push(_line('Path to liberation', 'through service — dedicating effort to something beyond the self'));
+    else if (devotional&&service) lines.push(_line('Path to liberation', 'devotional and service-based — liberation through daily living, not grand gestures'));
+    else if (transformative||wisdom) lines.push(_line('Path to liberation', 'through transformation and wisdom — the worldly journey has a genuine transcendent destination'));
+    else lines.push(_line('Moksha', 'through integrity and conscious daily conduct — not a formal or dramatic path'));
+    if (nlH.includes(5)) lines.push(_line('Quality', 'joyful rather than ascetic'));
+    if (nlH.includes(11)) lines.push(_line('Sequence', 'desires are fulfilled before liberation is reached — a path of completion, not deprivation'));
+    if (material) lines.push(_line('Main friction', 'material attachments — the hardest thing to release'));
+    if (worldly) lines.push(_line('Delay', 'worldly ambitions delay the deeper turn inward'));
+    return [lines.join('<br>'), 'Permanent reading — spiritual destiny is set in the natal chart.'];
   }
 
 
