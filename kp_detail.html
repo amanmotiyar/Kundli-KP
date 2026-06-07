@@ -2176,10 +2176,10 @@ function generateSubEventSummary(se, houseNum, chartData) {
     const both=[...new Set([...slSig,...nlSig])];
     const h9=both.includes(9);
     let lines = [];
-    lines.push(_line('Child 1', g1+' — derived from H5 cusp using CKV rule'));
-    lines.push(_line('Child 2', g2+' — derived from H7 cusp using CKV rule'));
-    if (h9) lines.push(_line('Child 3', g3+' — derived from H9 cusp (if it occurs)'));
-    return [lines.join('<br>'), 'Gender is determined using the C.Kadirvelu (CKV) rule based on each child cusp.'];
+    lines.push(`<strong>Child 1</strong> — ${g1}`);
+    lines.push(`<strong>Child 2</strong> — ${g2}`);
+    if (h9) lines.push(`<strong>Child 3</strong> — ${g3} (if it occurs)`);
+    return [lines.join('<br>')];
   }
 
   function _sent_h5_creativity(suppH, obstH, nlH) {
@@ -4911,6 +4911,8 @@ function loadHouseDetail(houseNum) {
     if (Object.keys(se.attributes).length > 0) {
       attrsHtml = '<div class="attrs-grid">';
       Object.entries(se.attributes).forEach(([k, v]) => {
+        // Skip child gender — handled by summary section
+        if (['child1Gender','child2Gender','child3Gender'].includes(k)) return;
         const label = k.replace(/([A-Z])/g, ' $1').trim();
         attrsHtml += `
           <div class="attr-item">
