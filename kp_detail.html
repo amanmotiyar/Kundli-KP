@@ -4965,6 +4965,13 @@ function loadHouseDetail(houseNum) {
       <div class="interp-text">${interpText}</div>
     </div>
 
+    <!-- Planet+Sign Combination — shown once at house level -->
+    ${r.subEvents && r.subEvents[0] && r.subEvents[0].combination ? `
+    <div class="combo-output" style="margin: 0 0 16px 0;">
+      <div class="combo-label">Planet × Sign Combination (${r.subEvents[0].nlPlanet || r.nlPlanet} × ${r.cuspSign})</div>
+      <div class="combo-text">${r.subEvents[0].combination}</div>
+    </div>` : ''}
+
     <!-- Sub-events -->
     <div class="sub-events-label">Sub-event Analysis</div>`;
 
