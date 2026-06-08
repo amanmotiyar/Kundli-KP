@@ -60,8 +60,8 @@ input[type="file"] { display: none; }
 .score-ring-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-top: 2px; }
 
 /* 5 dimension cards */
-.dimensions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-@media(max-width:600px){ .dimensions-grid { grid-template-columns: 1fr; } }
+.dimensions-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px; }
+
 
 .dim-card { background: var(--bg-section); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
 .dim-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
@@ -74,6 +74,11 @@ input[type="file"] { display: none; }
 .score-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--gold-dim), var(--gold-light)); transition: width 0.8s ease; }
 
 .dim-summary { font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+.dim-body { font-size: 12px; line-height: 1.7; }
+.dim-sub-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 3px; margin-top: 8px; }
+.dim-sub-label:first-child { margin-top: 0; }
+.dim-sub-text { color: var(--text-muted); font-size: 12px; line-height: 1.65; }
+.dim-dba-block { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 .dim-summary strong { color: var(--text-primary); font-weight: 500; }
 
 /* DBA timing card — full width */
@@ -130,6 +135,16 @@ input[type="file"] { display: none; }
           <div class="parsed-info-row" id="parsed-male-text"></div>
         </div>
         <div style="margin-top:14px">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Marital Status</div>
+          <select id="status-male" style="width:100%;background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);font-size:12px;padding:7px 10px;border-radius:4px;margin-bottom:14px">
+            <option value="">Select status</option>
+            <option value="unmarried">Unmarried — looking for match</option>
+            <option value="engaged">Engaged / About to marry</option>
+            <option value="married">Already married</option>
+            <option value="separated">Separated / Divorced</option>
+          </select>
+        </div>
+        <div style="margin-top:0">
           <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Current DBA Period</div>
           <div class="dba-row">
             <div class="dba-field"><label>Mahadasha</label>
@@ -157,6 +172,16 @@ input[type="file"] { display: none; }
           <div class="parsed-info-row" id="parsed-female-text"></div>
         </div>
         <div style="margin-top:14px">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Marital Status</div>
+          <select id="status-female" style="width:100%;background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);font-size:12px;padding:7px 10px;border-radius:4px;margin-bottom:14px">
+            <option value="">Select status</option>
+            <option value="unmarried">Unmarried — looking for match</option>
+            <option value="engaged">Engaged / About to marry</option>
+            <option value="married">Already married</option>
+            <option value="separated">Separated / Divorced</option>
+          </select>
+        </div>
+        <div style="margin-top:0">
           <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Current DBA Period</div>
           <div class="dba-row">
             <div class="dba-field"><label>Mahadasha</label>
@@ -178,7 +203,7 @@ input[type="file"] { display: none; }
     <div class="results-section" id="results">
       <div class="results-header">
         <div class="results-names" id="results-names"></div>
-        <div class="results-subtitle">KP Compatibility Analysis</div>
+        <div class="results-subtitle" id="results-subtitle">KP Compatibility Analysis</div>
       </div>
 
       <!-- Overall score -->
@@ -203,12 +228,7 @@ input[type="file"] { display: none; }
       <!-- 5 Dimensions -->
       <div class="dimensions-grid" id="dimensions-grid"></div>
 
-      <!-- DBA Timing -->
-      <div class="dba-timing-card">
-        <div class="dba-timing-title">Marriage Timing Window</div>
-        <div class="dba-grid" id="dba-grid"></div>
-        <div class="dba-verdict" id="dba-verdict"></div>
-      </div>
+
     </div>
   </div>
 </div>
@@ -325,214 +345,443 @@ function showError(msg) {
   setTimeout(() => el.style.display = 'none', 4000);
 }
 
-// ── Scoring Engine ──
+
+// ══════════════════════════════════════════════════════════
+// MATCH ENGINE v2 — Context-aware, narrative output
+// ══════════════════════════════════════════════════════════
+
+function getMaritalContext(mStatus, fStatus) {
+  // Determine shared context
+  if (mStatus === 'married' || fStatus === 'married') return 'married';
+  if (mStatus === 'separated' || fStatus === 'separated') return 'separated';
+  if (mStatus === 'engaged' || fStatus === 'engaged') return 'engaged';
+  return 'unmarried';
+}
+
+// ── Get house significations ──
 function getSig(chart, house) {
   const cusp = chart.cusps[house] || {};
   const slSig = chart.planet_sig[cusp.sl] || [];
   const nlSig = chart.planet_sig[cusp.nl] || [];
-  return { slSig, nlSig, both: [...new Set([...slSig, ...nlSig])] };
+  return { slSig, nlSig, both: [...new Set([...slSig, ...nlSig])], sl: cusp.sl, nl: cusp.nl };
 }
 
-function overlap(a, b) { return a.filter(x => b.includes(x)).length; }
+function ovl(a, b) { return a.filter(x => b.includes(x)); }
+function clamp(v, lo=1, hi=10) { return Math.max(lo, Math.min(hi, Math.round(v))); }
 
-function clamp(val, min=1, max=10) { return Math.max(min, Math.min(max, val)); }
-
-function computeScores(m, f) {
-  const mDBA = {
-    md: document.getElementById('md-male').value,
-    ad: document.getElementById('ad-male').value,
-    pd: document.getElementById('pd-male').value,
-  };
-  const fDBA = {
-    md: document.getElementById('md-female').value,
-    ad: document.getElementById('ad-female').value,
-    pd: document.getElementById('pd-female').value,
-  };
-
-  // H7 significations
+// ══════════════════════════════════════════════════════════
+// 1. MARRIAGE / UNION
+// ══════════════════════════════════════════════════════════
+function analyseUnion(m, f, mDBA, fDBA, ctx) {
   const mH7 = getSig(m, 7), fH7 = getSig(f, 7);
-  const mH1 = getSig(m, 1), fH1 = getSig(f, 1);
-  const mH4 = getSig(m, 4), fH4 = getSig(f, 4);
-  const mH5 = getSig(m, 5), fH5 = getSig(f, 5);
-  const mH8 = getSig(m, 8), fH8 = getSig(f, 8);
-  const mH2 = getSig(m, 2), fH2 = getSig(f, 2);
-  const mH11 = getSig(m, 11), fH11 = getSig(f, 11);
+  const BOND = [7,2,11], BREAK = [6,8,12];
 
-  // ── 1. Marriage Promise ──
-  const mProm = mH7.slSig.filter(h=>[7,2,11].includes(h)).length;
-  const fProm = fH7.slSig.filter(h=>[7,2,11].includes(h)).length;
-  const crossOvl = overlap(mH7.both, fH7.both);
-  const marriageRaw = mProm + fProm + crossOvl;
-  const marriageScore = clamp(Math.round(marriageRaw / 7 * 9) + 1);
+  const mBond    = mH7.slSig.filter(h=>BOND.includes(h)).length;
+  const mBreak   = mH7.slSig.filter(h=>BREAK.includes(h)).length;
+  const fBond    = fH7.slSig.filter(h=>BOND.includes(h)).length;
+  const fBreak   = fH7.slSig.filter(h=>BREAK.includes(h)).length;
+  const crossOvl = ovl(mH7.both, fH7.both).length;
+  const delay    = mH7.both.includes(1);
 
-  // ── 2. Emotional ──
-  const mElem = ELEM[m.moon_sign] || '';
-  const fElem = ELEM[f.moon_sign] || '';
-  const elemScore = mElem === fElem ? 3 : ([['Fire','Air'],['Earth','Water']].some(pair=>pair.includes(mElem)&&pair.includes(fElem)) ? 2 : 1);
-  const h4Ovl = overlap(mH4.both, fH4.both);
-  const h5Ovl = overlap(mH5.both, fH5.both);
-  const emotRaw = elemScore + h4Ovl + h5Ovl;
-  const emotScore = clamp(Math.round(emotRaw / 11 * 9) + 1);
-
-  // ── 3. Physical/Attraction ──
-  const mToF = mH1.both.filter(h=>fH7.both.includes(h)).length;
-  const fToM = fH1.both.filter(h=>mH7.both.includes(h)).length;
-  const h8Ovl = overlap(mH8.both, fH8.both);
-  const physRaw = mToF + fToM + Math.min(h8Ovl, 3);
-  const physScore = clamp(Math.round(physRaw / 9 * 9) + 1);
-
-  // ── 4. Financial ──
-  const h2Ovl = overlap(mH2.both, fH2.both);
-  const h11Ovl = overlap(mH11.both, fH11.both);
-  const conflict = [...mH2.both, ...mH11.both].filter(h=>[6,8,12].includes(h)&&fH2.both.concat(fH11.both).includes(h)).length;
-  const finRaw = h2Ovl + h11Ovl - conflict;
-  const finScore = clamp(Math.round(Math.max(0,finRaw) / 8 * 9) + 1);
-
-  // ── 5. Longevity ──
-  const mBond    = mH7.both.filter(h=>[2,4,7,11].includes(h)).length;
-  const fBond    = fH7.both.filter(h=>[2,4,7,11].includes(h)).length;
-  const mBreak   = mH7.slSig.filter(h=>[6,8,12].includes(h)).length;
-  const fBreak   = fH7.slSig.filter(h=>[6,8,12].includes(h)).length;
-  const netLong  = (mBond + fBond) - (mBreak + fBreak);
-  const longScore = clamp(Math.round((netLong + 4) / 8 * 9) + 1);
-
-  // ── DBA Timing ──
-  function dbaH7Active(chart, dba) {
-    const BOND = [7,2,11];
-    const check = p => { const s = chart.planet_sig[p]||[]; return s.some(h=>BOND.includes(h)); };
-    return { md: check(dba.md), ad: check(dba.ad), pd: check(dba.pd) };
+  // His reading
+  let hisText = '';
+  if (ctx === 'married') {
+    if (mBond >= 2) hisText = `His H7 is strongly placed — the marriage carries genuine commitment and bonding from his side.`;
+    else if (mBond === 1) hisText = `His H7 has partial bonding — he is committed but the union requires conscious effort from him.`;
+    else hisText = `His H7 does not show strong bonding indicators — the union is more circumstantial than deeply promised from his chart.`;
+    if (mBreak >= 2) hisText += ` Separation indicators are active in his H7 — he needs to consciously choose the relationship.`;
+  } else {
+    if (mBond >= 2) hisText = `His chart strongly promises marriage — bonding house significators are well-placed in H7.`;
+    else if (mBond === 1) hisText = `His chart shows marriage is possible — partial H7 promise.`;
+    else hisText = `His chart does not strongly promise marriage in this window — H7 bonding houses are absent from significators.`;
+    if (delay) hisText += ` There is a delay factor — personal independence resists settling.`;
+    if (mBreak >= 2) hisText += ` Separation indicators are also present — the union, when it comes, will need active maintenance.`;
   }
-  const mDBAhits = dbaH7Active(m, mDBA);
-  const fDBAhits = dbaH7Active(f, fDBA);
-  const totalHits = Object.values(mDBAhits).filter(Boolean).length + Object.values(fDBAhits).filter(Boolean).length;
 
-  return {
-    marriage: { score: marriageScore, mProm, fProm, crossOvl },
-    emotional: { score: emotScore, elemScore, mElem, fElem, h4Ovl, h5Ovl },
-    physical:  { score: physScore, mToF, fToM, h8Ovl },
-    financial: { score: finScore, h2Ovl, h11Ovl, conflict },
-    longevity: { score: longScore, mBond, fBond, mBreak, fBreak, netLong },
-    dba: { mDBA, fDBA, mDBAhits, fDBAhits, totalHits },
-    overall: Math.round((marriageScore + emotScore + physScore + finScore + longScore) / 5),
-  };
+  // Her reading
+  let herText = '';
+  if (ctx === 'married') {
+    if (fBond >= 2) herText = `Her H7 is strongly placed — genuine bond and commitment from her side.`;
+    else if (fBond === 1) herText = `Her H7 shows partial bonding — she is invested but effort is needed.`;
+    else herText = `Her H7 does not show strong bonding — the union is more duty-driven than deeply promised.`;
+    if (fBreak >= 2) herText += ` Separation indicators in her H7 — emotional detachment is a real pattern to watch.`;
+  } else {
+    if (fBond >= 2) herText = `Her chart strongly promises marriage — H7 bonding houses are well-signified.`;
+    else if (fBond === 1) herText = `Her chart shows marriage is possible — partial H7 support.`;
+    else herText = `Her chart does not strongly promise marriage in this window.`;
+    if (fBreak >= 2) herText += ` Separation indicators are present — conflict will come before the union settles.`;
+  }
+
+  // Combined
+  let combinedText = '';
+  if (crossOvl >= 4) combinedText = `The two charts are strongly aligned on union — high overlap in H7 significators. This is a meaningful astrological connection.`;
+  else if (crossOvl >= 2) combinedText = `There is moderate chart alignment — some shared H7 significators create a real but not overwhelming astrological pull.`;
+  else combinedText = `The two charts show limited H7 overlap — this is more a union of circumstance than a strongly chart-indicated connection.`;
+
+  const netLong = (mBond + fBond) - (mBreak + fBreak);
+  if (ctx === 'married') {
+    if (netLong >= 3) combinedText += ` Bonding indicators significantly outweigh separation — the foundation is strong.`;
+    else if (netLong >= 0) combinedText += ` Bonding and separation indicators are roughly balanced — the marriage survives through effort and commitment.`;
+    else combinedText += ` Separation indicators outweigh bonding in the combined chart — this requires significant conscious work from both sides.`;
+  }
+
+  // DBA timing
+  const mMDsig = m.planet_sig[mDBA.md]||[], mADsig = m.planet_sig[mDBA.ad]||[], mPDsig = m.planet_sig[mDBA.pd]||[];
+  const fMDsig = f.planet_sig[fDBA.md]||[], fADsig = f.planet_sig[fDBA.ad]||[], fPDsig = f.planet_sig[fDBA.pd]||[];
+
+  const mH7active = [...mMDsig,...mADsig,...mPDsig].some(h=>BOND.includes(h));
+  const fH7active = [...fMDsig,...fADsig,...fPDsig].some(h=>BOND.includes(h));
+  const mADhit = mADsig.some(h=>BOND.includes(h));
+  const fADhit = fADsig.some(h=>BOND.includes(h));
+  const totalHits = [mMDsig,mADsig,mPDsig,fMDsig,fADsig,fPDsig].filter(s=>s.some(h=>BOND.includes(h))).length;
+
+  let dbaText = '';
+  if (ctx === 'married') {
+    if (mH7active && fH7active) dbaText = `Both are in active union periods — this is a phase of renewed connection and strengthening of the bond. Joint decisions made now carry long-term weight.`;
+    else if (mH7active) dbaText = `His DBA is activating H7 — he is in a phase of focusing on the relationship. Her period is quieter — she may feel less engaged right now.`;
+    else if (fH7active) dbaText = `Her DBA is activating H7 — she is in a phase of focusing on the relationship. His period is quieter. She may feel more invested in the union than he does right now.`;
+    else dbaText = `Neither chart has H7 strongly activated in the current DBA — this is a neutral phase for the union. Neither strongly pulling toward nor away from each other.`;
+  } else {
+    if (mH7active && fH7active) dbaText = `Both are in active marriage periods — this is one of the best windows for the union to happen. The DBA timing strongly supports action now.`;
+    else if (mH7active && mADhit) dbaText = `His DBA strongly supports marriage now. Her period is not the primary trigger — she may not feel the urgency he does.`;
+    else if (fH7active && fADhit) dbaText = `Her DBA strongly supports marriage now. His period is not the primary trigger — the push may come more from her side.`;
+    else if (totalHits >= 2) dbaText = `There is partial DBA support — some movement toward union is possible but this is not the peak window. A stronger period is approaching.`;
+    else dbaText = `The current DBA does not strongly trigger marriage in either chart. Wait for a period when both charts activate H7 bonding houses simultaneously.`;
+  }
+
+  const score = clamp(1 + Math.round((mBond + fBond + crossOvl/2) / 6 * 9));
+  return { score, his: hisText, her: herText, combined: combinedText, dba: dbaText, totalHits };
 }
 
-// ── Summary text generators ──
-function marriageSummary(d, mName, fName) {
-  const {score, mProm, fProm, crossOvl} = d;
-  let lines = [];
-  if (mProm >= 2) lines.push(`<strong>Marriage promise in ${mName}'s chart</strong> — strongly indicated, H7 significators include bonding houses.`);
-  else if (mProm === 1) lines.push(`<strong>Marriage promise in ${mName}'s chart</strong> — partial indication, some bonding house activation.`);
-  else lines.push(`<strong>Marriage promise in ${mName}'s chart</strong> — not directly indicated in H7 significators.`);
-  if (fProm >= 2) lines.push(`<strong>Marriage promise in ${fName}'s chart</strong> — strongly indicated.`);
-  else if (fProm === 1) lines.push(`<strong>Marriage promise in ${fName}'s chart</strong> — partial indication.`);
-  else lines.push(`<strong>Marriage promise in ${fName}'s chart</strong> — not directly indicated.`);
-  if (crossOvl >= 4) lines.push(`<strong>Chart connection</strong> — strong overlap in H7 significators between both charts.`);
-  else if (crossOvl >= 2) lines.push(`<strong>Chart connection</strong> — moderate overlap in H7 significators.`);
-  else lines.push(`<strong>Chart connection</strong> — limited shared significators in H7.`);
-  return lines.join('<br>');
+// ══════════════════════════════════════════════════════════
+// 2. EMOTIONAL COMPATIBILITY
+// ══════════════════════════════════════════════════════════
+function analyseEmotional(m, f, mDBA, fDBA, ctx) {
+  const mH4 = getSig(m,4), fH4 = getSig(f,4);
+  const mH5 = getSig(m,5), fH5 = getSig(f,5);
+  const mMoon = m.moon_sign || '', fMoon = f.moon_sign || '';
+  const ELEM = {Aries:'Fire',Leo:'Fire',Sagittarius:'Fire',Taurus:'Earth',Virgo:'Earth',Capricorn:'Earth',Gemini:'Air',Libra:'Air',Aquarius:'Air',Cancer:'Water',Scorpio:'Water',Pisces:'Water'};
+  const mElem = ELEM[mMoon]||'', fElem = ELEM[fMoon]||'';
+  const elemMatch = mElem===fElem ? 3 : ([['Fire','Air'],['Earth','Water']].some(p=>p.includes(mElem)&&p.includes(fElem)) ? 2 : 1);
+  const h4Ovl = ovl(mH4.both, fH4.both).length;
+  const h5Ovl = ovl(mH5.both, fH5.both).length;
+
+  // His reading
+  let hisText = '';
+  const mEmotStable = mH4.slSig.some(h=>[2,4,11].includes(h));
+  const mEmotRomantic = mH5.slSig.includes(5) || mH5.slSig.includes(11);
+  if (ctx === 'married') {
+    if (mEmotStable) hisText = `His H4 shows emotional stability — he is grounded in the home environment and family-oriented in his approach to the marriage.`;
+    else hisText = `His H4 does not show strong domestic stability — he may struggle with consistent emotional presence at home.`;
+    if (mEmotRomantic) hisText += ` His H5 indicates romantic investment — he brings warmth and creativity to the relationship.`;
+    else hisText += ` His H5 does not strongly show romantic expression — emotional warmth may not come naturally.`;
+  } else {
+    if (mEmotStable && mEmotRomantic) hisText = `Emotionally, he is both domestically grounded and romantically invested — he will bring stability and warmth to the relationship.`;
+    else if (mEmotStable) hisText = `He is domestically stable but not strongly romantic — his love is expressed through reliability rather than affection.`;
+    else if (mEmotRomantic) hisText = `He is romantically expressive but may struggle with consistent domestic stability.`;
+    else hisText = `His emotional indicators are mixed — the relationship will depend more on practical compatibility than deep emotional resonance.`;
+  }
+
+  // Her reading
+  let herText = '';
+  const fEmotStable = fH4.slSig.some(h=>[2,4,11].includes(h));
+  const fEmotRomantic = fH5.slSig.includes(5) || fH5.slSig.includes(11);
+  if (ctx === 'married') {
+    if (fEmotStable) herText = `Her H4 shows domestic stability — she is emotionally grounded and family-oriented.`;
+    else herText = `Her H4 does not show strong domestic stability — emotional consistency at home requires conscious effort from her.`;
+    if (fEmotRomantic) herText += ` Her H5 shows romantic warmth — she brings expressive affection to the relationship.`;
+    else herText += ` Her H5 does not strongly show romantic expression — she expresses love through actions rather than affection.`;
+  } else {
+    if (fEmotStable && fEmotRomantic) herText = `She brings both domestic groundedness and romantic warmth to a relationship — emotionally a strong partner.`;
+    else if (fEmotStable) herText = `She is domestically stable and reliable — emotional security over romantic expression.`;
+    else if (fEmotRomantic) herText = `She is romantically expressive but home life stability requires effort.`;
+    else herText = `Her emotional indicators are not strongly placed — practical compatibility matters more here.`;
+  }
+
+  // Combined
+  let combinedText = '';
+  if (mElem && fElem) {
+    if (elemMatch === 3) combinedText = `Both share ${mElem} Moon energy — natural emotional wavelength, they understand each other's reactions intuitively.`;
+    else if (elemMatch === 2) combinedText = `${mElem} and ${fElem} elements are complementary — ${mElem} and ${fElem} naturally support each other.`;
+    else combinedText = `${mElem} and ${fElem} elements are fundamentally different — emotional misalignment is the primary challenge in this relationship.`;
+  }
+  if (h4Ovl >= 4) combinedText += ` Strong shared domestic values — they want the same things from home life.`;
+  else if (h4Ovl >= 2) combinedText += ` Some alignment in domestic values but differences exist.`;
+  else combinedText += ` Different domestic orientations — home life expectations will need active negotiation.`;
+
+  // DBA
+  const mEmotDBA = [...(m.planet_sig[mDBA.ad]||[]),...(m.planet_sig[mDBA.pd]||[])];
+  const fEmotDBA = [...(f.planet_sig[fDBA.ad]||[]),...(f.planet_sig[fDBA.pd]||[])];
+  const mEmotActive = mEmotDBA.some(h=>[4,5].includes(h));
+  const fEmotActive = fEmotDBA.some(h=>[4,5].includes(h));
+
+  let dbaText = '';
+  if (ctx === 'married') {
+    if (mEmotActive && fEmotActive) dbaText = `Both are in emotionally active periods — feelings are heightened on both sides right now. A good time for deep conversations and reconnection.`;
+    else if (mEmotActive) dbaText = `His DBA is activating emotional and domestic houses — he is more emotionally available than usual. Her period is more outward-focused.`;
+    else if (fEmotActive) dbaText = `Her DBA is activating emotional houses — she needs more connection and presence from him right now. His period is more externally directed.`;
+    else dbaText = `Neither chart has emotional houses strongly activated — a stable but not particularly intimate phase. Practical matters dominate.`;
+  } else {
+    if (mEmotActive && fEmotActive) dbaText = `Both are in emotionally receptive periods — this is a strong window for emotional bonding and deepening the relationship.`;
+    else if (mEmotActive || fEmotActive) dbaText = `One chart is emotionally active — some romantic and domestic deepening is possible, though not fully mutual.`;
+    else dbaText = `Neither chart has H4/H5 strongly activated in the current DBA — emotional depth will take longer to develop in this window.`;
+  }
+
+  const score = clamp(1 + Math.round((elemMatch + h4Ovl + h5Ovl) / 11 * 9));
+  return { score, his: hisText, her: herText, combined: combinedText, dba: dbaText };
 }
 
-function emotionalSummary(d, mName, fName) {
-  const {elemScore, mElem, fElem, h4Ovl, h5Ovl} = d;
-  let lines = [];
-  if (elemScore === 3) lines.push(`<strong>Moon element match</strong> — both ${mElem}. Strong emotional wavelength.`);
-  else if (elemScore === 2) lines.push(`<strong>Moon element</strong> — ${mElem} and ${fElem} are naturally compatible elements.`);
-  else lines.push(`<strong>Moon element</strong> — ${mElem} and ${fElem}. Emotional styles differ significantly.`);
-  if (h4Ovl >= 4) lines.push(`<strong>Domestic values</strong> — strong alignment, similar home and family orientation.`);
-  else if (h4Ovl >= 2) lines.push(`<strong>Domestic values</strong> — reasonable alignment with some differences.`);
-  else lines.push(`<strong>Domestic values</strong> — different orientations toward home and family life.`);
-  if (h5Ovl >= 3) lines.push(`<strong>Romance and creativity</strong> — strong shared energy in expression and affection.`);
-  else if (h5Ovl >= 1) lines.push(`<strong>Romance and creativity</strong> — some shared energy in expression.`);
-  else lines.push(`<strong>Romance and creativity</strong> — different expressive styles, conscious effort needed.`);
-  return lines.join('<br>');
+// ══════════════════════════════════════════════════════════
+// 3. PHYSICAL / ATTRACTION
+// ══════════════════════════════════════════════════════════
+function analysePhysical(m, f, mDBA, fDBA, ctx) {
+  const mH1 = getSig(m,1), fH1 = getSig(f,1);
+  const mH7 = getSig(m,7), fH7 = getSig(f,7);
+  const mH8 = getSig(m,8), fH8 = getSig(f,8);
+  const mToF = ovl(mH1.both, fH7.both).length;
+  const fToM = ovl(fH1.both, mH7.both).length;
+  const h8Ovl = ovl(mH8.both, fH8.both).length;
+  const mH8intense = mH8.slSig.includes(8) || mH8.slSig.includes(12);
+  const fH8intense = fH8.slSig.includes(8) || fH8.slSig.includes(12);
+
+  let hisText = '';
+  if (ctx === 'married') {
+    if (mToF >= 3) hisText = `His H1 strongly connects to her H7 — he is naturally drawn to her. Physical and personal attraction from his side is real and ongoing.`;
+    else if (mToF >= 1) hisText = `Some connection between his H1 and her H7 — attraction exists but requires nurturing to stay alive.`;
+    else hisText = `His H1 does not strongly connect to her H7 — physical attraction may have been circumstantial rather than deeply felt.`;
+  } else {
+    if (mToF >= 3) hisText = `His chart shows strong physical pull toward her — his H1 significators strongly overlap with her H7, creating natural attraction.`;
+    else if (mToF >= 1) hisText = `Some physical attraction from his side — limited H1 to H7 overlap but real.`;
+    else hisText = `Limited physical pull from his chart toward her — attraction exists but is not strongly chart-indicated.`;
+  }
+
+  let herText = '';
+  if (ctx === 'married') {
+    if (fToM >= 3) herText = `Her H1 strongly connects to his H7 — she is naturally drawn to him. Physical attraction from her side is strong.`;
+    else if (fToM >= 1) herText = `Some connection between her H1 and his H7 — attraction is present but may fluctuate.`;
+    else herText = `Her H1 does not strongly connect to his H7 — physical attraction may have weakened over time.`;
+  } else {
+    if (fToM >= 3) herText = `Her chart shows strong physical attraction toward him — H1 to H7 overlap is high.`;
+    else if (fToM >= 1) herText = `Some physical pull from her chart — partial H1 to H7 connection.`;
+    else herText = `Limited physical pull from her chart — attraction is not strongly indicated.`;
+  }
+
+  let combinedText = '';
+  if (mToF >= 3 && fToM >= 3) combinedText = `Mutual physical attraction is strongly indicated — both charts pull toward each other. This is a genuine physical connection, not just compatibility on paper.`;
+  else if (mToF >= 2 || fToM >= 2) combinedText = `Physical attraction is present but asymmetric — one side feels the pull more strongly than the other.`;
+  else combinedText = `Physical attraction is limited in this pairing — the connection is more intellectual or practical than physically magnetic.`;
+  if (h8Ovl >= 4) combinedText += ` Strong H8 overlap — deep psychological and physical intimacy is indicated.`;
+  else if (h8Ovl >= 2) combinedText += ` Some H8 shared energy — moderate physical and psychological depth.`;
+
+  // DBA
+  const mPhysDBA = [...(m.planet_sig[mDBA.ad]||[]),...(m.planet_sig[mDBA.pd]||[])];
+  const fPhysDBA = [...(f.planet_sig[fDBA.ad]||[]),...(f.planet_sig[fDBA.pd]||[])];
+  const mPhysActive = mPhysDBA.some(h=>[1,7,8].includes(h));
+  const fPhysActive = fPhysDBA.some(h=>[1,7,8].includes(h));
+
+  let dbaText = '';
+  if (ctx === 'married') {
+    if (mPhysActive && fPhysActive) dbaText = `Both DBA periods are activating H1/H7/H8 — physical and intimate connection is heightened right now. An active phase for the relationship.`;
+    else if (mPhysActive) dbaText = `His DBA is activating physical houses — he is more physically engaged in the relationship. She may be in a less physically focused period.`;
+    else if (fPhysActive) dbaText = `Her DBA is activating physical houses — she is more physically engaged. He may be more inward or career-focused right now.`;
+    else dbaText = `Neither chart has H1/H7/H8 strongly activated — a quieter phase physically. Emotional and intellectual connection carries the relationship now.`;
+  } else {
+    if (mPhysActive && fPhysActive) dbaText = `Both have physical attraction houses active — strong timing for the initial physical and personal connection to deepen.`;
+    else dbaText = `Physical attraction houses are not strongly activated in the current DBA — the initial magnetic pull may take time to build in this window.`;
+  }
+
+  const score = clamp(1 + Math.round((mToF + fToM + Math.min(h8Ovl,3)) / 9 * 9));
+  return { score, his: hisText, her: herText, combined: combinedText, dba: dbaText };
 }
 
-function physicalSummary(d, mName, fName) {
-  const {mToF, fToM, h8Ovl} = d;
-  let lines = [];
-  if (mToF >= 3) lines.push(`<strong>${mName}'s identity</strong> — strongly connects to ${fName}'s union house. Natural pull and attraction.`);
-  else if (mToF >= 1) lines.push(`<strong>${mName}'s identity</strong> — some connection to ${fName}'s union house.`);
-  else lines.push(`<strong>${mName}'s identity</strong> — limited connection to ${fName}'s union house.`);
-  if (fToM >= 3) lines.push(`<strong>${fName}'s identity</strong> — strongly connects to ${mName}'s union house.`);
-  else if (fToM >= 1) lines.push(`<strong>${fName}'s identity</strong> — some connection to ${mName}'s union house.`);
-  else lines.push(`<strong>${fName}'s identity</strong> — limited connection to ${mName}'s union house.`);
-  if (h8Ovl >= 4) lines.push(`<strong>Physical intensity</strong> — deep shared energy in H8, strong physical and psychological bond.`);
-  else if (h8Ovl >= 2) lines.push(`<strong>Physical intensity</strong> — moderate shared H8 energy.`);
-  else lines.push(`<strong>Physical intensity</strong> — limited H8 overlap, physical connection needs cultivation.`);
-  return lines.join('<br>');
+// ══════════════════════════════════════════════════════════
+// 4. FINANCIAL COMPATIBILITY
+// ══════════════════════════════════════════════════════════
+function analyseFinancial(m, f, mDBA, fDBA, ctx) {
+  const mH2 = getSig(m,2), fH2 = getSig(f,2);
+  const mH11 = getSig(m,11), fH11 = getSig(f,11);
+  const h2Ovl = ovl(mH2.both, fH2.both).length;
+  const h11Ovl = ovl(mH11.both, fH11.both).length;
+  const mFinStrong = mH2.slSig.some(h=>[2,11].includes(h)) || mH11.slSig.some(h=>[2,11].includes(h));
+  const fFinStrong = fH2.slSig.some(h=>[2,11].includes(h)) || fH11.slSig.some(h=>[2,11].includes(h));
+  const mFinRisk = mH2.slSig.some(h=>[6,8,12].includes(h)) || mH11.slSig.some(h=>[12].includes(h));
+  const fFinRisk = fH2.slSig.some(h=>[6,8,12].includes(h)) || fH11.slSig.some(h=>[12].includes(h));
+  const conflict = ovl([...mH2.both,...mH11.both].filter(h=>[6,8,12].includes(h)), [...fH2.both,...fH11.both]).length;
+
+  let hisText = '';
+  if (ctx === 'married') {
+    if (mFinStrong && !mFinRisk) hisText = `His wealth indicators are well-placed — he contributes financially from a position of strength. H2 and H11 are active.`;
+    else if (mFinStrong && mFinRisk) hisText = `His earning capacity is present but financial instability patterns are also there — periods of good income alternating with drains or losses.`;
+    else hisText = `His wealth indicators are not strongly placed — financial contribution is inconsistent or effort-dependent.`;
+  } else {
+    if (mFinStrong) hisText = `His chart shows strong wealth indicators — he is a financially capable partner. H2 and H11 are well-signified.`;
+    else hisText = `His financial indicators are moderate — wealth requires consistent effort rather than natural flow.`;
+    if (mFinRisk) hisText += ` Some financial risk indicators are present — occasional instability is part of his pattern.`;
+  }
+
+  let herText = '';
+  if (ctx === 'married') {
+    if (fFinStrong && !fFinRisk) herText = `Her wealth indicators are well-placed — she contributes financially from a position of strength.`;
+    else if (fFinStrong && fFinRisk) herText = `Her earning is present but some financial drain patterns exist — her income is real but expenses or losses sometimes offset gains.`;
+    else herText = `Her wealth indicators are not strongly placed — financial dependence or inconsistency is a factor.`;
+  } else {
+    if (fFinStrong) herText = `Her chart shows strong wealth indicators — financially a capable and contributing partner.`;
+    else herText = `Her financial indicators are moderate — consistent effort required for financial stability.`;
+    if (fFinRisk) herText += ` Some financial risk indicators present — occasional financial pressure is part of her pattern.`;
+  }
+
+  let combinedText = '';
+  if (h2Ovl >= 4 && h11Ovl >= 3) combinedText = `Strong financial alignment — both approach savings, wealth, and gains through similar channels. Financial harmony is natural in this pairing.`;
+  else if (h2Ovl >= 2 || h11Ovl >= 2) combinedText = `Reasonable financial alignment — some shared approach to wealth but different orientations exist and will need discussion.`;
+  else combinedText = `Limited financial alignment — they earn and manage money very differently. Financial disagreements are a real risk without clear agreements.`;
+  if (conflict >= 3) combinedText += ` Significant financial friction potential — one person's wealth patterns can drain the other's. Separate financial management may help.`;
+  else if (conflict === 0) combinedText += ` No significant financial drain between charts — a positive sign for combined financial health.`;
+
+  // DBA
+  const mFinDBA = [...(m.planet_sig[mDBA.md]||[]),...(m.planet_sig[mDBA.ad]||[])];
+  const fFinDBA = [...(f.planet_sig[fDBA.md]||[]),...(f.planet_sig[fDBA.ad]||[])];
+  const mFinActive = mFinDBA.some(h=>[2,11].includes(h));
+  const fFinActive = fFinDBA.some(h=>[2,11].includes(h));
+  const mFinDrain = mFinDBA.some(h=>[6,8,12].includes(h));
+  const fFinDrain = fFinDBA.some(h=>[6,8,12].includes(h));
+
+  let dbaText = '';
+  if (ctx === 'married') {
+    if (mFinActive && fFinActive) dbaText = `Both are in active wealth periods — a good window for joint financial decisions, investments, or asset building.`;
+    else if (mFinDrain || fFinDrain) dbaText = `One or both charts have financial drain indicators active — avoid major financial commitments now. Focus on managing existing resources.`;
+    else dbaText = `Financial houses are not strongly activated in the current DBA — a stable but not particularly growth-oriented financial phase.`;
+  } else {
+    if (mFinActive && fFinActive) dbaText = `Both have active wealth periods — combining finances now or planning shared financial goals is well-supported.`;
+    else if (mFinActive || fFinActive) dbaText = `One chart has active wealth period — financial partnership can begin but may initially be one-sided.`;
+    else dbaText = `Neither chart has H2/H11 strongly activated — this is not the peak window for financial partnership decisions.`;
+  }
+
+  const score = clamp(1 + Math.round(Math.max(0, h2Ovl + h11Ovl - conflict) / 8 * 9));
+  return { score, his: hisText, her: herText, combined: combinedText, dba: dbaText };
 }
 
-function financialSummary(d) {
-  const {h2Ovl, h11Ovl, conflict} = d;
-  let lines = [];
-  if (h2Ovl >= 4) lines.push(`<strong>Wealth approach</strong> — strong alignment in H2 significators. Compatible savings and family financial values.`);
-  else if (h2Ovl >= 2) lines.push(`<strong>Wealth approach</strong> — reasonable H2 alignment.`);
-  else lines.push(`<strong>Wealth approach</strong> — different approaches to savings and family wealth.`);
-  if (h11Ovl >= 4) lines.push(`<strong>Gains pattern</strong> — strong H11 overlap, both likely to gain through similar channels.`);
-  else if (h11Ovl >= 2) lines.push(`<strong>Gains pattern</strong> — some H11 overlap.`);
-  else lines.push(`<strong>Gains pattern</strong> — different gains orientation, may earn through different channels.`);
-  if (conflict >= 3) lines.push(`<strong>Financial friction</strong> — significant conflict between wealth houses and breaking houses. Careful financial planning needed.`);
-  else if (conflict >= 1) lines.push(`<strong>Financial friction</strong> — some tension between wealth indicators, manageable with discipline.`);
-  else lines.push(`<strong>Financial harmony</strong> — no significant breaking house conflict in wealth indicators.`);
-  return lines.join('<br>');
+// ══════════════════════════════════════════════════════════
+// 5. LONGEVITY OF UNION
+// ══════════════════════════════════════════════════════════
+function analyseLongevity(m, f, mDBA, fDBA, ctx) {
+  const mH7 = getSig(m,7), fH7 = getSig(f,7);
+  const mH2 = getSig(m,2), fH2 = getSig(f,2);
+  const BOND = [2,4,7,11], BREAK = [6,8,12];
+  const mBond  = mH7.both.filter(h=>BOND.includes(h)).length;
+  const fBond  = fH7.both.filter(h=>BOND.includes(h)).length;
+  const mBreak = mH7.slSig.filter(h=>BREAK.includes(h)).length;
+  const fBreak = fH7.slSig.filter(h=>BREAK.includes(h)).length;
+  const mFam   = mH2.slSig.some(h=>[2,4,11].includes(h));
+  const fFam   = fH2.slSig.some(h=>[2,4,11].includes(h));
+  const netLong = (mBond + fBond) - (mBreak + fBreak);
+
+  let hisText = '';
+  const mSepRisk = mBreak >= 2;
+  const mBondStr  = mBond >= 3;
+  if (ctx === 'married') {
+    if (mBondStr && !mSepRisk) hisText = `His H7 is oriented toward lasting union — strong bonding house signification with low separation risk from his side.`;
+    else if (mSepRisk) hisText = `His H7 carries separation indicators — H6/H8/H12 are active in his H7 significators. He may periodically pull away from the union.`;
+    else hisText = `His H7 shows moderate bonding — the union is real but not powerfully held by chart indicators alone. Effort sustains it.`;
+  } else {
+    if (mBondStr) hisText = `His chart indicates a lasting union — bonding houses strongly placed in H7. He is chart-indicated to build a stable marriage.`;
+    else if (mSepRisk) hisText = `His chart carries separation risk alongside the marriage promise — the union will have challenges that test its durability.`;
+    else hisText = `His union indicators are moderate — the marriage lasts through mutual effort rather than chart-guaranteed permanence.`;
+  }
+
+  let herText = '';
+  const fSepRisk = fBreak >= 2;
+  const fBondStr  = fBond >= 3;
+  if (ctx === 'married') {
+    if (fBondStr && !fSepRisk) herText = `Her H7 is strongly oriented toward lasting union — she is chart-indicated to sustain the marriage.`;
+    else if (fSepRisk) herText = `Her H7 carries separation indicators — emotional or physical distance is part of her pattern. She may withdraw at difficult points.`;
+    else herText = `Her H7 shows moderate bonding — the union is sustained through effort and commitment rather than pure chart strength.`;
+  } else {
+    if (fBondStr) herText = `Her chart indicates a lasting union — H7 is strongly bonding-oriented.`;
+    else if (fSepRisk) herText = `Her chart carries separation risk — challenges to the union's durability are chart-indicated.`;
+    else herText = `Her longevity indicators are moderate — sustained effort from both sides keeps the union strong.`;
+  }
+
+  let combinedText = '';
+  if (netLong >= 4) combinedText = `Combined bonding indicators are strong — the union has real chart support for lasting a lifetime. Both charts lean toward holding the relationship together.`;
+  else if (netLong >= 1) combinedText = `Bonding marginally outweighs separation in the combined chart — the union lasts but needs both parties to choose it actively.`;
+  else if (netLong === 0) combinedText = `Bonding and separation indicators are exactly balanced — the durability of this union is entirely in their hands. Chart does not tip either way.`;
+  else combinedText = `Separation indicators outweigh bonding in the combined chart — this is a challenging union to sustain. Not impossible, but it requires exceptional commitment from both sides.`;
+  if (mFam && fFam) combinedText += ` Both bring family-orientation — the shared value of home and family is a stabilising force.`;
+
+  // DBA
+  const mSepDBA = [...(m.planet_sig[mDBA.ad]||[]),...(m.planet_sig[mDBA.pd]||[])];
+  const fSepDBA = [...(f.planet_sig[fDBA.ad]||[]),...(f.planet_sig[fDBA.pd]||[])];
+  const mSepActive = mSepDBA.some(h=>BREAK.includes(h));
+  const fSepActive = fSepDBA.some(h=>BREAK.includes(h));
+  const mBondActive = mSepDBA.some(h=>BOND.includes(h));
+  const fBondActive = fSepDBA.some(h=>BOND.includes(h));
+
+  let dbaText = '';
+  if (ctx === 'married') {
+    if (mSepActive && fSepActive) dbaText = `Both charts have separation houses activated in the current DBA — this is a high-risk phase for the union. Disagreements and distance are more likely now. Active work is essential.`;
+    else if (mSepActive || fSepActive) dbaText = `One chart has separation houses active — one partner may feel the urge to withdraw or create distance. The other needs to hold the space.`;
+    else if (mBondActive && fBondActive) dbaText = `Both charts have bonding houses active — a strengthening phase for the union. Decisions made together now will hold.`;
+    else dbaText = `The current DBA is a neutral phase for longevity — neither strongly pulling toward separation nor toward deeper bonding.`;
+  } else {
+    if (mSepActive && fSepActive) dbaText = `Both charts have separation houses active — this is not the right time to commit. Major conflicts are likely to surface early.`;
+    else if (mBondActive && fBondActive) dbaText = `Both charts have bonding houses active — if the union is made in this period, it carries strong chart support for lasting.`;
+    else dbaText = `Mixed longevity signals in the current DBA — the union can happen but the period does not give it exceptional long-term chart strength.`;
+  }
+
+  const score = clamp(1 + Math.round((netLong + 4) / 8 * 9));
+  return { score, his: hisText, her: herText, combined: combinedText, dba: dbaText };
 }
 
-function longevitySummary(d, mName, fName) {
-  const {mBond, fBond, mBreak, fBreak, netLong} = d;
-  let lines = [];
-  lines.push(`<strong>${mName}'s H7</strong> — bonding houses: ${mBond}, separation risk houses: ${mBreak}.`);
-  lines.push(`<strong>${fName}'s H7</strong> — bonding houses: ${fBond}, separation risk houses: ${fBreak}.`);
-  if (netLong >= 3) lines.push(`<strong>Union strength</strong> — bonding significators strongly outweigh separation indicators. Long-lasting union is supported.`);
-  else if (netLong >= 0) lines.push(`<strong>Union strength</strong> — bonding and separation indicators are roughly balanced. Effort sustains the union.`);
-  else lines.push(`<strong>Union challenge</strong> — separation indicators are present. Strong commitment and conscious effort are needed to sustain the union.`);
-  return lines.join('<br>');
+// ══════════════════════════════════════════════════════════
+// MASTER COMPUTE
+// ══════════════════════════════════════════════════════════
+function computeAllFactors(m, f, mDBA, fDBA, mStatus, fStatus) {
+  const ctx = getMaritalContext(mStatus, fStatus);
+  const union    = analyseUnion(m, f, mDBA, fDBA, ctx);
+  const emotional = analyseEmotional(m, f, mDBA, fDBA, ctx);
+  const physical  = analysePhysical(m, f, mDBA, fDBA, ctx);
+  const financial = analyseFinancial(m, f, mDBA, fDBA, ctx);
+  const longevity = analyseLongevity(m, f, mDBA, fDBA, ctx);
+  const overall   = clamp(Math.round((union.score + emotional.score + physical.score + financial.score + longevity.score) / 5));
+  return { union, emotional, physical, financial, longevity, overall, ctx };
 }
 
-function dbaSummary(d, mName, fName) {
-  const {mDBAhits, fDBAhits, totalHits, mDBA, fDBA} = d;
-  return `${mName}: MD ${mDBAhits.md?'✓':'✗'} AD ${mDBAhits.ad?'✓':'✗'} PD ${mDBAhits.pd?'✓':'✗'} &nbsp;|&nbsp; ${fName}: MD ${fDBAhits.md?'✓':'✗'} AD ${fDBAhits.ad?'✓':'✗'} PD ${fDBAhits.pd?'✓':'✗'}`;
-}
 
-function dbaVerdict(totalHits, mName, fName, d) {
-  if (totalHits >= 5) return { cls:'strong', text:`Both charts are in strong marriage periods simultaneously — this is one of the best windows for union. ${mName}'s and ${fName}'s DBA planets are actively signifying H7 bonding houses.` };
-  if (totalHits >= 3) return { cls:'moderate', text:`Both charts show moderate DBA activation for marriage. The timing has some support — movement is possible in this window.` };
-  if (totalHits >= 1) return { cls:'weak', text:`Marriage period activation is limited in the current DBA. One or both charts are not in a primary marriage window. A stronger period will come.` };
-  return { cls:'weak', text:`The current DBA period does not strongly trigger marriage houses in either chart. Wait for a period when H7 bonding houses are activated in both.` };
-}
 
 // ── Run Match ──
 function runMatch() {
   const m = charts.male, f = charts.female;
   if (!m || !f) { showError('Please upload both charts.'); return; }
 
-  const mDBA = document.getElementById('md-male').value;
-  const fDBA = document.getElementById('md-female').value;
-  if (!mDBA || !fDBA) { showError('Please select DBA periods for both charts.'); return; }
+  const mDBA = { md: document.getElementById('md-male').value, ad: document.getElementById('ad-male').value, pd: document.getElementById('pd-male').value };
+  const fDBA = { md: document.getElementById('md-female').value, ad: document.getElementById('ad-female').value, pd: document.getElementById('pd-female').value };
+  const mStatus = document.getElementById('status-male').value;
+  const fStatus = document.getElementById('status-female').value;
 
-  const scores = computeScores(m, f);
+  if (!mDBA.md || !fDBA.md) { showError('Please select at least Mahadasha for both charts.'); return; }
+
   const mName = m.name || 'Person 1';
   const fName = f.name || 'Person 2';
 
-  // Names
+  const result = computeAllFactors(m, f, mDBA, fDBA, mStatus, fStatus);
+  const ctxLabel = { married:'Married Couple', engaged:'Engaged Couple', unmarried:'Compatibility Assessment', separated:'Separated' }[result.ctx] || 'Compatibility';
+
+  // Names + context
   document.getElementById('results-names').textContent = `${mName}  ×  ${fName}`;
+  document.getElementById('results-subtitle').textContent = `KP ${ctxLabel} · ${result.ctx === 'married' ? 'Union Analysis' : 'Match Analysis'}`;
 
   // Overall ring
-  const overall = scores.overall;
-  document.getElementById('overall-num').textContent = overall;
-  const circ = 326.7;
-  const offset = circ - (circ * overall / 10);
-  setTimeout(() => {
-    document.getElementById('ring-circle').style.strokeDashoffset = offset;
-  }, 100);
+  document.getElementById('overall-num').textContent = result.overall;
+  const offset = 326.7 - (326.7 * result.overall / 10);
+  setTimeout(() => { document.getElementById('ring-circle').style.strokeDashoffset = offset; }, 100);
 
-  // 5 Dimensions
+  // 5 Dimension cards
   const dims = [
-    { key:'marriage', label:'Marriage Promise',       data:scores.marriage, summary: marriageSummary(scores.marriage, mName, fName) },
-    { key:'emotional', label:'Emotional Compatibility', data:scores.emotional, summary: emotionalSummary(scores.emotional, mName, fName) },
-    { key:'physical',  label:'Physical Attraction',    data:scores.physical, summary: physicalSummary(scores.physical, mName, fName) },
-    { key:'financial', label:'Financial Compatibility', data:scores.financial, summary: financialSummary(scores.financial) },
-    { key:'longevity', label:'Longevity of Union',     data:scores.longevity, summary: longevitySummary(scores.longevity, mName, fName) },
+    { label:'Marriage & Union',        r: result.union },
+    { label:'Emotional Compatibility', r: result.emotional },
+    { label:'Physical Attraction',     r: result.physical },
+    { label:'Financial Compatibility', r: result.financial },
+    { label:'Longevity of Union',      r: result.longevity },
   ];
 
   const grid = document.getElementById('dimensions-grid');
@@ -541,47 +790,27 @@ function runMatch() {
       <div class="dim-header">
         <div class="dim-name">${d.label}</div>
         <div class="dim-score-wrap">
-          <div class="dim-score-num">${d.data.score}</div>
+          <div class="dim-score-num">${d.r.score}</div>
           <div class="dim-score-max">/10</div>
         </div>
       </div>
       <div class="score-bar-track">
-        <div class="score-bar-fill" style="width:${d.data.score*10}%"></div>
+        <div class="score-bar-fill" style="width:${d.r.score*10}%"></div>
       </div>
-      <div class="dim-summary">${d.summary}</div>
+      <div class="dim-body">
+        <div class="dim-sub-label">His chart</div>
+        <div class="dim-sub-text">${d.r.his}</div>
+        <div class="dim-sub-label" style="margin-top:10px">Her chart</div>
+        <div class="dim-sub-text">${d.r.her}</div>
+        <div class="dim-sub-label" style="margin-top:10px">Combined</div>
+        <div class="dim-sub-text">${d.r.combined}</div>
+        <div class="dim-dba-block">
+          <div class="dim-sub-label">Current DBA</div>
+          <div class="dim-sub-text">${d.r.dba}</div>
+        </div>
+      </div>
     </div>
   `).join('');
-
-  // DBA grid
-  const mDBAhits = scores.dba.mDBAhits, fDBAhits = scores.dba.fDBAhits;
-  const mDBAv = scores.dba.mDBA, fDBAv = scores.dba.fDBA;
-  document.getElementById('dba-grid').innerHTML = `
-    <div class="dba-period">
-      <div class="dba-period-label">${mName}</div>
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">${mDBAv.md||'—'} / ${mDBAv.ad||'—'} / ${mDBAv.pd||'—'}</div>
-      <div class="dba-period-status ${mDBAhits.md?'active':'inactive'}">MD ${mDBAhits.md?'✓ Active':'✗ Inactive'}</div>
-      <div class="dba-period-status ${mDBAhits.ad?'active':'inactive'}">AD ${mDBAhits.ad?'✓ Active':'✗ Inactive'}</div>
-      <div class="dba-period-status ${mDBAhits.pd?'active':'inactive'}">PD ${mDBAhits.pd?'✓ Active':'✗ Inactive'}</div>
-    </div>
-    <div class="dba-period" style="display:flex;align-items:center;justify-content:center">
-      <div style="text-align:center">
-        <div style="font-size:28px;font-family:'Cormorant Garamond',serif;color:var(--gold-light)">${scores.dba.totalHits}/6</div>
-        <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted)">Active Hits</div>
-      </div>
-    </div>
-    <div class="dba-period">
-      <div class="dba-period-label">${fName}</div>
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">${fDBAv.md||'—'} / ${fDBAv.ad||'—'} / ${fDBAv.pd||'—'}</div>
-      <div class="dba-period-status ${fDBAhits.md?'active':'inactive'}">MD ${fDBAhits.md?'✓ Active':'✗ Inactive'}</div>
-      <div class="dba-period-status ${fDBAhits.ad?'active':'inactive'}">AD ${fDBAhits.ad?'✓ Active':'✗ Inactive'}</div>
-      <div class="dba-period-status ${fDBAhits.pd?'active':'inactive'}">PD ${fDBAhits.pd?'✓ Active':'✗ Inactive'}</div>
-    </div>
-  `;
-
-  const vrd = dbaVerdict(scores.dba.totalHits, mName, fName, scores.dba);
-  const vEl = document.getElementById('dba-verdict');
-  vEl.className = `dba-verdict ${vrd.cls}`;
-  vEl.textContent = vrd.text;
 
   document.getElementById('results').style.display = 'block';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
