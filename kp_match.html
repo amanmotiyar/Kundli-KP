@@ -447,10 +447,12 @@ async function parsePDF(file) {
       }
     }
 
-    // Planet significations: "Sun 5 6 11 12" or "Mercury 1 4 6 7 10"
+    // Planet significations — multi-planet aware
     for (const planet of PLANETS) {
       if (data.planet_sig[planet]) continue;
-      const pm = line.match(new RegExp(`\\b${planet}\\s+((\\d{1,2}\\s*){1,12})(?:[A-Z]|$)`));
+      const otherPlanets = PLANETS.filter(p=>p!==planet).join('|');
+      const re = new RegExp('\\b' + planet + '\\s+((\\d{1,2}\\s*)+?)(?=\\b(?:' + otherPlanets + ')\\b|$)');
+      const pm = line.match(re);
       if (pm) {
         const nums = pm[1].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
         if (nums.length >= 1) data.planet_sig[planet] = nums;
@@ -469,6 +471,7 @@ async function parsePDF(file) {
     }
   }
 
+  console.log('Parsed:', data.name, 'cusps:', Object.keys(data.cusps).length, 'sigs:', JSON.stringify(data.planet_sig).slice(0,200));
   return data;
 }
 
