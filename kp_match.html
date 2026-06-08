@@ -131,6 +131,34 @@ input[type="file"] { display: none; }
 
 .error-msg { color: #f44336; font-size: 12px; margin-top: 8px; text-align: center; display: none; }
 .loading-msg { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; display: none; }
+
+/* ── Custom Dropdown (replaces native select) ── */
+.custom-select { position: relative; width: 100%; }
+.custom-select-trigger {
+  width: 100%; background: var(--bg-page); border: 1px solid var(--border);
+  color: var(--text-primary); font-size: 12px; padding: 8px 28px 8px 10px;
+  border-radius: 4px; cursor: pointer; display: flex; align-items: center;
+  justify-content: space-between; box-sizing: border-box; user-select: none;
+}
+.custom-select-trigger:after {
+  content: ''; width: 0; height: 0; flex-shrink: 0;
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-top: 5px solid var(--gold-dim); margin-left: 8px;
+}
+.custom-select-trigger.open { border-color: var(--gold-dim); }
+.custom-select-trigger.open:after { border-top: none; border-bottom: 5px solid var(--gold-dim); }
+.custom-select-options {
+  position: absolute; top: calc(100% + 2px); left: 0; right: 0; z-index: 1000;
+  background: #1a1a2e; border: 1px solid var(--gold-dim); border-radius: 4px;
+  max-height: 200px; overflow-y: auto; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.custom-select-options.open { display: block; }
+.custom-select-option {
+  padding: 8px 12px; font-size: 12px; color: var(--text-muted); cursor: pointer;
+}
+.custom-select-option:hover { background: rgba(212,175,55,0.1); color: var(--text-primary); }
+.custom-select-option.selected { color: var(--gold-light); background: rgba(212,175,55,0.08); }
+.custom-select-option.placeholder { color: var(--text-muted); font-style: italic; }
 </style>
 </head>
 <body>
@@ -170,23 +198,72 @@ input[type="file"] { display: none; }
         </div>
         <div style="margin-top:14px">
           <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Marital Status</div>
-          <select id="status-male" class="marital-select">
-            <option value="">Select status</option>
-            <option value="unmarried">Unmarried — looking for match</option>
-            <option value="engaged">Engaged / About to marry</option>
-            <option value="married">Already married</option>
-            <option value="separated">Separated / Divorced</option>
-          </select>
+          <div class="custom-select" id="cs-status-male">
+              <input type="hidden" id="status-male" value="">
+              <div class="custom-select-trigger" onclick="toggleDropdown('cs-status-male')"><span id="cs-status-male-label">Select status</span></div>
+              <div class="custom-select-options" id="cs-status-male-opts">
+          <div class="custom-select-option placeholder" data-value="">Select status</div>
+          <div class="custom-select-option" data-value="unmarried">Unmarried — looking for match</div>
+          <div class="custom-select-option" data-value="engaged">Engaged / About to marry</div>
+          <div class="custom-select-option" data-value="married">Already married</div>
+          <div class="custom-select-option" data-value="separated">Separated / Divorced</div>
+              </div>
+            </div>
         </div>
         <div style="margin-top:0">
           <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Current DBA Period</div>
           <div class="dba-row">
             <div class="dba-field"><label>Mahadasha</label>
-              <select id="md-male"><option value="">Select</option></select></div>
+              <div class="custom-select" id="cs-md-male">
+              <input type="hidden" id="md-male" value="">
+              <div class="custom-select-trigger" onclick="toggleDropdown('cs-md-male')"><span id="cs-md-male-label">Select</span></div>
+              <div class="custom-select-options" id="cs-md-male-opts">
+          <div class="custom-select-option placeholder" data-value="">Select</div>
+          <div class="custom-select-option" data-value="Sun">Sun</div>
+          <div class="custom-select-option" data-value="Moon">Moon</div>
+          <div class="custom-select-option" data-value="Mars">Mars</div>
+          <div class="custom-select-option" data-value="Mercury">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus">Venus</div>
+          <div class="custom-select-option" data-value="Saturn">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+              </div>
+            </div></div>
             <div class="dba-field"><label>Antardasha</label>
-              <select id="ad-male"><option value="">Select</option></select></div>
+              <div class="custom-select" id="cs-ad-male">
+              <input type="hidden" id="ad-male" value="">
+              <div class="custom-select-trigger" onclick="toggleDropdown('cs-ad-male')"><span id="cs-ad-male-label">Select</span></div>
+              <div class="custom-select-options" id="cs-ad-male-opts">
+          <div class="custom-select-option placeholder" data-value="">Select</div>
+          <div class="custom-select-option" data-value="Sun">Sun</div>
+          <div class="custom-select-option" data-value="Moon">Moon</div>
+          <div class="custom-select-option" data-value="Mars">Mars</div>
+          <div class="custom-select-option" data-value="Mercury">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus">Venus</div>
+          <div class="custom-select-option" data-value="Saturn">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+              </div>
+            </div></div>
             <div class="dba-field"><label>Pratyantar</label>
-              <select id="pd-male"><option value="">Select</option></select></div>
+              <div class="custom-select" id="cs-pd-male">
+              <input type="hidden" id="pd-male" value="">
+              <div class="custom-select-trigger" onclick="toggleDropdown('cs-pd-male')"><span id="cs-pd-male-label">Select</span></div>
+              <div class="custom-select-options" id="cs-pd-male-opts">
+          <div class="custom-select-option placeholder" data-value="">Select</div>
+          <div class="custom-select-option" data-value="Sun">Sun</div>
+          <div class="custom-select-option" data-value="Moon">Moon</div>
+          <div class="custom-select-option" data-value="Mars">Mars</div>
+          <div class="custom-select-option" data-value="Mercury">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus">Venus</div>
+          <div class="custom-select-option" data-value="Saturn">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+              </div>
+            </div></div>
           </div>
         </div>
       </div>
@@ -207,23 +284,72 @@ input[type="file"] { display: none; }
         </div>
         <div style="margin-top:14px">
           <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Marital Status</div>
-          <select id="status-female" class="marital-select">
-            <option value="">Select status</option>
-            <option value="unmarried">Unmarried — looking for match</option>
-            <option value="engaged">Engaged / About to marry</option>
-            <option value="married">Already married</option>
-            <option value="separated">Separated / Divorced</option>
-          </select>
+          <div class="custom-select" id="cs-status-female">
+              <input type="hidden" id="status-female" value="">
+              <div class="custom-select-trigger" onclick="toggleDropdown('cs-status-female')"><span id="cs-status-female-label">Select status</span></div>
+              <div class="custom-select-options" id="cs-status-female-opts">
+          <div class="custom-select-option placeholder" data-value="">Select status</div>
+          <div class="custom-select-option" data-value="unmarried">Unmarried — looking for match</div>
+          <div class="custom-select-option" data-value="engaged">Engaged / About to marry</div>
+          <div class="custom-select-option" data-value="married">Already married</div>
+          <div class="custom-select-option" data-value="separated">Separated / Divorced</div>
+              </div>
+            </div>
         </div>
         <div style="margin-top:0">
           <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Current DBA Period</div>
           <div class="dba-row">
             <div class="dba-field"><label>Mahadasha</label>
-              <select id="md-female"><option value="">Select</option></select></div>
+              <div class="custom-select" id="cs-md-female">
+              <input type="hidden" id="md-female" value="">
+              <div class="custom-select-trigger" onclick="toggleDropdown('cs-md-female')"><span id="cs-md-female-label">Select</span></div>
+              <div class="custom-select-options" id="cs-md-female-opts">
+          <div class="custom-select-option placeholder" data-value="">Select</div>
+          <div class="custom-select-option" data-value="Sun">Sun</div>
+          <div class="custom-select-option" data-value="Moon">Moon</div>
+          <div class="custom-select-option" data-value="Mars">Mars</div>
+          <div class="custom-select-option" data-value="Mercury">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus">Venus</div>
+          <div class="custom-select-option" data-value="Saturn">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+              </div>
+            </div></div>
             <div class="dba-field"><label>Antardasha</label>
-              <select id="ad-female"><option value="">Select</option></select></div>
+              <div class="custom-select" id="cs-ad-female">
+              <input type="hidden" id="ad-female" value="">
+              <div class="custom-select-trigger" onclick="toggleDropdown('cs-ad-female')"><span id="cs-ad-female-label">Select</span></div>
+              <div class="custom-select-options" id="cs-ad-female-opts">
+          <div class="custom-select-option placeholder" data-value="">Select</div>
+          <div class="custom-select-option" data-value="Sun">Sun</div>
+          <div class="custom-select-option" data-value="Moon">Moon</div>
+          <div class="custom-select-option" data-value="Mars">Mars</div>
+          <div class="custom-select-option" data-value="Mercury">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus">Venus</div>
+          <div class="custom-select-option" data-value="Saturn">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+              </div>
+            </div></div>
             <div class="dba-field"><label>Pratyantar</label>
-              <select id="pd-female"><option value="">Select</option></select></div>
+              <div class="custom-select" id="cs-pd-female">
+              <input type="hidden" id="pd-female" value="">
+              <div class="custom-select-trigger" onclick="toggleDropdown('cs-pd-female')"><span id="cs-pd-female-label">Select</span></div>
+              <div class="custom-select-options" id="cs-pd-female-opts">
+          <div class="custom-select-option placeholder" data-value="">Select</div>
+          <div class="custom-select-option" data-value="Sun">Sun</div>
+          <div class="custom-select-option" data-value="Moon">Moon</div>
+          <div class="custom-select-option" data-value="Mars">Mars</div>
+          <div class="custom-select-option" data-value="Mercury">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus">Venus</div>
+          <div class="custom-select-option" data-value="Saturn">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+              </div>
+            </div></div>
           </div>
         </div>
       </div>
@@ -276,7 +402,6 @@ const PLANETS = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu'
 const ABBR = {SUN:'Sun',MON:'Moon',MAR:'Mars',MER:'Mercury',JUP:'Jupiter',VEN:'Venus',SAT:'Saturn',RAH:'Rahu',KET:'Ketu'};
 const SIGNS = ['Pisces','Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius'];
 const SIGN_PAT = SIGNS.join('|');
-const ELEM = {Aries:'Fire',Leo:'Fire',Sagittarius:'Fire',Taurus:'Earth',Virgo:'Earth',Capricorn:'Earth',Gemini:'Air',Libra:'Air',Aquarius:'Air',Cancer:'Water',Scorpio:'Water',Pisces:'Water'};
 
 let charts = { male: null, female: null };
 
@@ -354,11 +479,7 @@ async function handlePDF(gender, input) {
     document.getElementById(`parsed-${gender}-text`).innerHTML = info;
     document.getElementById(`parsed-${gender}`).style.display = 'block';
 
-    // Populate DBA dropdowns
-    ['md','ad','pd'].forEach(period => {
-      const sel = document.getElementById(`${period}-${gender}`);
-      sel.innerHTML = '<option value="">Select</option>' + PLANETS.map(p => `<option value="${p}">${p}</option>`).join('');
-    });
+    // DBA options pre-populated in HTML
 
     checkReady();
   } catch(e) {
@@ -905,6 +1026,51 @@ function runMatch() {
   document.getElementById('results').style.display = 'block';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 }
+
+// ── Custom dropdown logic ──
+function toggleDropdown(csId) {
+  const cs = document.getElementById(csId);
+  const trigger = cs.querySelector('.custom-select-trigger');
+  const opts = cs.querySelector('.custom-select-options');
+  const isOpen = opts.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.custom-select-options.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.custom-select-trigger.open').forEach(el => el.classList.remove('open'));
+  if (!isOpen) { opts.classList.add('open'); trigger.classList.add('open'); }
+}
+
+function selectOption(csId, value, label) {
+  document.getElementById(csId).value = value;
+  document.getElementById(csId + '-label').textContent = label;
+  document.querySelectorAll('#cs-' + csId + '-opts .custom-select-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.value === value);
+  });
+  // Close
+  document.getElementById('cs-' + csId + '-opts').classList.remove('open');
+  document.querySelector('#cs-' + csId + ' .custom-select-trigger').classList.remove('open');
+}
+
+// Wire up all option clicks
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.custom-select-option').forEach(opt => {
+    opt.addEventListener('click', e => {
+      const optsEl = opt.closest('.custom-select-options');
+      const csEl   = opt.closest('.custom-select');
+      selectOption(csEl.id.replace('cs-',''), opt.dataset.value, opt.textContent);
+      e.stopPropagation();
+    });
+  });
+  // Close on outside click
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.custom-select')) {
+      document.querySelectorAll('.custom-select-options.open').forEach(el => el.classList.remove('open'));
+      document.querySelectorAll('.custom-select-trigger.open').forEach(el => el.classList.remove('open'));
+    }
+  });
+  // Re-populate planet options after PDF upload (DBA dropdowns)
+  // Already pre-populated — no dynamic repopulation needed
+});
+
 </script>
 </div>
 </body>
