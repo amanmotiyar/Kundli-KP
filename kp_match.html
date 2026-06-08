@@ -456,6 +456,17 @@ async function parsePDF(file) {
         if (nums.length >= 1) data.planet_sig[planet] = nums;
       }
     }
+
+    // Planet positions: "Sun 150-27-57 MER SUN RAH KET" — extract sign from degree
+    const ppMatch = line.match(/^(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\s+(\d{2,3})-\d{2}-\d{2}/);
+    if (ppMatch) {
+      const planet = ppMatch[1];
+      const deg = parseFloat(ppMatch[2]);
+      const signIdx = Math.floor(deg / 30) % 12;
+      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      if (!data.planet_signs) data.planet_signs = {};
+      data.planet_signs[planet] = signNames[signIdx];
+    }
   }
 
   return data;
@@ -536,6 +547,59 @@ function getMaritalCtx(ms, fs){
 }
 
 // ══════════════════════════════════════════════════════════
+// KP MULTIPLE MARRIAGE RULES (Kanak Bosmia)
+// Rule 1: H7 SL deposited in dual sign (Gem/Sag/Pis) OR H7 SL is Mercury/Jupiter
+//         AND H7 SL signifies H2 or H11
+// Rule 2: H2 SL signifies H7 or H11
+// Rule 3: H9 SL signifies H2, H9, or H11
+// All 3 rules checked — verdict based on how many fire
+// ══════════════════════════════════════════════════════════
+const DUAL_SIGNS_KP = ['Gemini','Sagittarius','Pisces'];
+const DUAL_PLANETS_KP = ['Mercury','Jupiter'];
+
+function getPlanetSign(chart, planet) {
+  // Derive planet sign from degree if available, else from cusp context
+  // We use the planet_sig to infer — not perfect but workable
+  // Better: store planet signs from PDF parse
+  return chart.planet_signs ? chart.planet_signs[planet] : '';
+}
+
+function checkMultipleMarriage(chart) {
+  const h7  = chart.cusps[7]||{};
+  const h2  = chart.cusps[2]||{};
+  const h9  = chart.cusps[9]||{};
+  const h7sl = h7.sl||'', h2sl = h2.sl||'', h9sl = h9.sl||'';
+  const h7nlP = h7.nl||'';
+
+  const h7slSig  = chart.planet_sig[h7sl]||[];
+  const h7nlSig  = chart.planet_sig[h7nlP]||[];
+  const h2slSig  = chart.planet_sig[h2sl]||[];
+  const h9slSig  = chart.planet_sig[h9sl]||[];
+
+  // Rule 1: H7 SL in dual sign OR H7 SL is dual planet, AND signifies H2 or H11
+  const h7slIsDual = DUAL_PLANETS_KP.includes(h7sl);
+  const h7slInDualSign = chart.planet_signs ? DUAL_SIGNS_KP.includes(chart.planet_signs[h7sl]) : false;
+  const r1cond1 = h7slIsDual || h7slInDualSign;
+  const r1cond2 = h7slSig.some(h=>[2,11].includes(h));
+  const rule1 = r1cond1 && r1cond2;
+
+  // Rule 2: H2 SL signifies H7 or H11
+  const rule2 = h2slSig.some(h=>[7,11].includes(h));
+
+  // Rule 3: H9 SL signifies H2, H9, or H11
+  const rule3 = h9slSig.some(h=>[2,9,11].includes(h));
+
+  const rulesCount = [rule1,rule2,rule3].filter(Boolean).length;
+
+  // Separation/conflict dominance in H7
+  const h7slBreak = h7slSig.filter(h=>[6,8,12].includes(h)).length;
+  const h7slBond  = h7slSig.filter(h=>[2,7,11].includes(h)).length;
+  const separationDominant = h7slBreak >= 2 && h7slBond === 0;
+
+  return { rule1, rule2, rule3, rulesCount, h7sl, h7slSig, h7slBreak, h7slBond, separationDominant };
+}
+
+// ══════════════════════════════════════════════════════════
 // 1. MARRIAGE & UNION
 // ══════════════════════════════════════════════════════════
 function analyseUnion(m, f, mDBA, fDBA, ctx) {
@@ -555,7 +619,10 @@ function analyseUnion(m, f, mDBA, fDBA, ctx) {
   const mPromise= hits(mH7.sl,[7,2,11]);
   const mBreak  = hits(mH7.sl,[6,8,12]);
   const mFulfil = mH7.sl.includes(11);
-  const mSecond = mH7.both.includes(8)&&(mH7.both.includes(12)||mH7.both.includes(6));
+  const mMM = checkMultipleMarriage(m);
+  const fMM = checkMultipleMarriage(f);
+  const mSecond = mMM.rulesCount >= 2;
+  const mSecondSingle = mMM.rulesCount === 1;
   const mFinance= mH7.both.includes(2);
 
   // Type
@@ -572,10 +639,18 @@ function analyseUnion(m, f, mDBA, fDBA, ctx) {
   else if(mPromise>=2) mLines.push(`**Timing** — Marriage is clearly promised and can happen in the right period without unusual delay.`);
   else mLines.push(`**Timing** — Marriage is possible but not automatic. The right period and person both need to align.`);
 
-  // Number of unions
-  if(mSecond) mLines.push(`**Number of unions** — More than one union is indicated. The first marriage faces serious challenges — conflict, distance, or sudden disruption. A second relationship follows after the first ends.`);
-  else if(mBreak>=2&&mPromise>=1) mLines.push(`**Number of unions** — One marriage is indicated but it carries real challenges. Separation is possible depending on how the difficulties are handled.`);
-  else mLines.push(`**Number of unions** — One marriage is indicated.`);
+  // Number of unions — using KP 3-rule method
+  if(mMM.rulesCount >= 2) {
+    mLines.push(`**Number of unions** — More than one union is strongly indicated by the chart. The chart shows the clear pattern of a second union following the first.`);
+    if(mMM.separationDominant) mLines.push(`**First union** — The first marriage is heavily marked by conflict and separation energy. It is more likely to end than to sustain — the chart does not give the first union an easy path.`);
+    else mLines.push(`**First union** — The first marriage will face significant challenges before or instead of lasting. A second union follows.`);
+  } else if(mMM.rulesCount === 1) {
+    mLines.push(`**Number of unions** — One marriage is indicated with some indicators toward a second. Whether a second union occurs depends on how the first unfolds and on the right timing period opening.`);
+  } else if(mMM.separationDominant) {
+    mLines.push(`**Number of unions** — One marriage is indicated but the chart is dominated by conflict and separation energy in the union context. The marriage faces serious and sustained challenges. Separation is more likely than not unless both partners work consciously at it.`);
+  } else {
+    mLines.push(`**Number of unions** — One marriage is indicated.`);
+  }
 
   // Quality
   if(mFulfil) mLines.push(`**Quality** — The marriage is fulfilling and brings genuine satisfaction. Desires through partnership are realised.`);
@@ -598,7 +673,8 @@ function analyseUnion(m, f, mDBA, fDBA, ctx) {
   const fPromise= hits(fH7.sl,[7,2,11]);
   const fBreak  = hits(fH7.sl,[6,8,12]);
   const fFulfil = fH7.sl.includes(11);
-  const fSecond = fH7.both.includes(8)&&(fH7.both.includes(12)||fH7.both.includes(6));
+  const fSecond = fMM.rulesCount >= 2;
+  const fSecondSingle = fMM.rulesCount === 1;
   const fFinance= fH7.both.includes(2);
 
   if(fLove&&fCross) fLines.push(`**Marriage type** — Love marriage, likely with someone from a different background or region. Personal choice over family arrangement.`);
@@ -613,9 +689,17 @@ function analyseUnion(m, f, mDBA, fDBA, ctx) {
   else if(fPromise>=2) fLines.push(`**Timing** — Marriage is clearly promised and can happen in the right period.`);
   else fLines.push(`**Timing** — Marriage is possible when the right period aligns.`);
 
-  if(fSecond) fLines.push(`**Number of unions** — More than one union is indicated. The first marriage faces serious challenges and ends. A second follows.`);
-  else if(fBreak>=2&&fPromise>=1) fLines.push(`**Number of unions** — One marriage with significant challenges. Separation is possible.`);
-  else fLines.push(`**Number of unions** — One marriage is indicated.`);
+  if(fMM.rulesCount >= 2) {
+    fLines.push(`**Number of unions** — More than one union is clearly indicated by multiple KP rules. The chart pattern shows a second union following the first.`);
+    if(fMM.separationDominant) fLines.push(`**First union** — The first marriage is dominated by conflict and separation indicators — it is more likely to end than to sustain.`);
+    else fLines.push(`**First union** — The first marriage faces serious challenges. A second union follows after.`);
+  } else if(fMM.rulesCount === 1) {
+    fLines.push(`**Number of unions** — One marriage with some partial indicators toward a second. Whether a second union occurs depends on how the first unfolds.`);
+  } else if(fMM.separationDominant) {
+    fLines.push(`**Number of unions** — One marriage but dominated by separation and conflict energy. The union faces serious and sustained challenges.`);
+  } else {
+    fLines.push(`**Number of unions** — One marriage is indicated.`);
+  }
 
   if(fFulfil) fLines.push(`**Quality** — The marriage brings genuine fulfilment and satisfaction.`);
   else if(fFinance) fLines.push(`**Quality** — The marriage brings financial grounding and practical security.`);
@@ -642,10 +726,11 @@ function analyseUnion(m, f, mDBA, fDBA, ctx) {
   else if(mBreak===fBreak&&mBreak>=2) combLines.push(`**Union risk** — Both carry significant separation energy. The union will be genuinely tested by both sides. Mutual conscious commitment is the only thing that holds it.`);
   else combLines.push(`**Union stability** — Neither carries dominant separation energy. The union has a reasonable foundation for stability.`);
 
-  // Multiple union scenario
-  if(mSecond&&fSecond) combLines.push(`**Multiple unions** — Both charts indicate more than one union. This particular pairing may be the first relationship that ends, opening the path to a second. Or this could be the second union for one or both of them.`);
-  else if(mSecond) combLines.push(`**Multiple unions** — His chart indicates more than one union. If this is his first, it will face serious challenges. The second union in his chart is more stable.`);
-  else if(fSecond) combLines.push(`**Multiple unions** — Her chart indicates more than one union. If this is her first, the challenges are significant. Her second union is more settled.`);
+  // Multiple union scenario using KP rules
+  if(mMM.rulesCount>=2 && fMM.rulesCount>=2) combLines.push(`**Multiple unions** — Both charts clearly indicate more than one union. This pairing is likely either: (a) the first union for one or both that ends and opens to a second, or (b) a second union for one or both. The context of their current marital status determines which scenario applies.`);
+  else if(mMM.rulesCount>=2) combLines.push(`**Multiple unions (his chart)** — His chart clearly indicates more than one union across his lifetime. If this pairing is his first marriage, it is the one the chart marks as challenged. His second union carries more stability.`);
+  else if(fMM.rulesCount>=2) combLines.push(`**Multiple unions (her chart)** — Her chart clearly indicates more than one union across her lifetime. If this is her first marriage, it carries the challenges indicated. Her second union is more settled.`);
+  else if(mMM.rulesCount===1||fMM.rulesCount===1) combLines.push(`**Multiple unions** — Partial indicators exist in one chart for a second union. Not strongly confirmed but cannot be ruled out.`);
 
   if(netBreak>=2) combLines.push(`**Long-term picture** — The combined separating forces outweigh the bonding ones. This is a relationship that will be tested repeatedly. Not impossible — but clear-eyed commitment from both is essential.`);
   else if(netBreak<=-2) combLines.push(`**Long-term picture** — The combined bonding forces are strong. Both charts lean toward holding the relationship together. Good foundation for a lasting union.`);
