@@ -4509,17 +4509,21 @@ function setActiveSidebar(h) {
 
 // ── Render house detail ──────────────────────────
 function loadHouseDetail(houseNum) {
+  console.log('loadHouseDetail called with', houseNum);
   activeHouse = houseNum;
   setActiveSidebar(houseNum);
   sessionStorage.setItem('kp_active_house', houseNum);
 
   const r = allResults[houseNum];
+  console.log('r for house', houseNum, '=', r ? 'exists, error=' + r.error : 'NULL');
   const detailEl = document.getElementById('detail-content');
+  console.log('detailEl =', detailEl ? 'found' : 'NOT FOUND');
 
   if (!detailEl) { console.error('detail-content element not found'); return; }
 
   if (!r) {
     detailEl.innerHTML = '<div class="detail-loading">No data for this house.</div>';
+    console.log('No data — showed loading');
     return;
   }
 
