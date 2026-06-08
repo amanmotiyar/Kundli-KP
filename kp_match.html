@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KP Kundli Match</title>
+<link rel="stylesheet" href="kp_styles.css">
+<style>
+/* ── Match-specific styles ── */
+.match-container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+.match-header { text-align: center; margin-bottom: 32px; }
+.match-header h1 { font-family: 'Cormorant Garamond', 'Georgia', serif; font-size: 28px; color: var(--gold-light); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.match-header p { color: var(--text-muted); font-size: 13px; letter-spacing: 1px; }
+
+/* Upload cards */
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+@media(max-width:600px){ .upload-grid { grid-template-columns: 1fr; } }
+
+.upload-card { background: var(--bg-section); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+.upload-card-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.gender-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+.gender-badge.male { background: rgba(100,149,237,0.15); color: #6495ED; }
+.gender-badge.female { background: rgba(255,182,193,0.15); color: #FFB6C1; }
+
+.upload-zone { border: 1px dashed var(--border); border-radius: 6px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 16px; }
+.upload-zone:hover { border-color: var(--gold-dim); background: rgba(212,175,55,0.03); }
+.upload-zone.has-file { border-color: var(--gold-dim); background: rgba(212,175,55,0.05); }
+.upload-icon { font-size: 28px; margin-bottom: 8px; }
+.upload-text { font-size: 12px; color: var(--text-muted); }
+.upload-filename { font-size: 12px; color: var(--gold-light); margin-top: 6px; font-style: italic; }
+input[type="file"] { display: none; }
+
+/* DBA input */
+.dba-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.dba-field label { display: block; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+.dba-field select { width: 100%; background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); font-size: 12px; padding: 6px 8px; border-radius: 4px; }
+.dba-field select:focus { outline: none; border-color: var(--gold-dim); }
+
+/* Parsed info display */
+.parsed-info { margin-top: 12px; padding: 10px 12px; background: rgba(212,175,55,0.04); border-radius: 4px; border-left: 2px solid var(--gold-dim); }
+.parsed-info-row { font-size: 11px; color: var(--text-muted); line-height: 1.8; }
+.parsed-info-row span { color: var(--text-primary); }
+
+/* Submit */
+.match-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--gold-dim), var(--gold-light)); color: #0a0a0f; font-size: 13px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; border: none; border-radius: 6px; cursor: pointer; margin-top: 8px; transition: opacity 0.2s; }
+.match-btn:hover { opacity: 0.9; }
+.match-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── RESULTS ── */
+.results-section { display: none; margin-top: 32px; }
+.results-header { text-align: center; margin-bottom: 28px; }
+.results-names { font-family: 'Cormorant Garamond', 'Georgia', serif; font-size: 22px; color: var(--gold-light); margin-bottom: 4px; }
+.results-subtitle { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; }
+
+/* Overall score ring */
+.overall-score-wrap { display: flex; justify-content: center; margin-bottom: 32px; }
+.score-ring { width: 120px; height: 120px; position: relative; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+.score-ring svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+.score-ring-num { font-family: 'Cormorant Garamond', serif; font-size: 36px; color: var(--gold-light); line-height: 1; }
+.score-ring-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-top: 2px; }
+
+/* 5 dimension cards */
+.dimensions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+@media(max-width:600px){ .dimensions-grid { grid-template-columns: 1fr; } }
+
+.dim-card { background: var(--bg-section); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+.dim-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.dim-name { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold-dim); }
+.dim-score-wrap { text-align: right; }
+.dim-score-num { font-family: 'Cormorant Garamond', serif; font-size: 28px; color: var(--gold-light); line-height: 1; }
+.dim-score-max { font-size: 10px; color: var(--text-muted); }
+
+.score-bar-track { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-bottom: 14px; }
+.score-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--gold-dim), var(--gold-light)); transition: width 0.8s ease; }
+
+.dim-summary { font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+.dim-summary strong { color: var(--text-primary); font-weight: 500; }
+
+/* DBA timing card — full width */
+.dba-timing-card { background: var(--bg-section); border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+.dba-timing-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 14px; }
+.dba-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.dba-period { text-align: center; padding: 10px; background: var(--bg-main); border-radius: 4px; }
+.dba-period-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+.dba-period-status { font-size: 12px; font-weight: 500; }
+.dba-period-status.active { color: #4caf7d; }
+.dba-period-status.inactive { color: var(--text-muted); }
+.dba-verdict { margin-top: 14px; padding: 10px 14px; border-radius: 4px; font-size: 12px; line-height: 1.6; }
+.dba-verdict.strong { background: rgba(76,175,80,0.08); border-left: 2px solid #4caf7d; color: var(--text-primary); }
+.dba-verdict.moderate { background: rgba(255,193,7,0.08); border-left: 2px solid #ffc107; color: var(--text-primary); }
+.dba-verdict.weak { background: rgba(244,67,54,0.08); border-left: 2px solid #f44336; color: var(--text-primary); }
+
+.error-msg { color: #f44336; font-size: 12px; margin-top: 8px; text-align: center; display: none; }
+.loading-msg { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; display: none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-brand">
+      <div class="nav-title">KP Astrology Analyser</div>
+      <div class="nav-subtitle">Krishnamurti Paddhati</div>
+    </div>
+    <div class="nav-actions">
+      <a href="kp_input.html" class="nav-btn">← Input</a>
+      <a href="kp_output.html" class="nav-btn">Dashboard</a>
+    </div>
+  </nav>
+
+  <div class="match-container">
+    <div class="match-header">
+      <h1>Kundli Match</h1>
+      <p>KP Compatibility Analysis · Upload both charts to begin</p>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="upload-grid">
+      <!-- Male -->
+      <div class="upload-card">
+        <div class="upload-card-title">
+          Chart 1 <span class="gender-badge male">Male</span>
+        </div>
+        <div class="upload-zone" id="zone-male" onclick="document.getElementById('file-male').click()">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">Upload AstroSage KP PDF</div>
+          <div class="upload-filename" id="fname-male"></div>
+        </div>
+        <input type="file" id="file-male" accept=".pdf" onchange="handlePDF('male',this)">
+        <div class="parsed-info" id="parsed-male" style="display:none">
+          <div class="parsed-info-row" id="parsed-male-text"></div>
+        </div>
+        <div style="margin-top:14px">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Current DBA Period</div>
+          <div class="dba-row">
+            <div class="dba-field"><label>Mahadasha</label>
+              <select id="md-male"><option value="">Select</option></select></div>
+            <div class="dba-field"><label>Antardasha</label>
+              <select id="ad-male"><option value="">Select</option></select></div>
+            <div class="dba-field"><label>Pratyantar</label>
+              <select id="pd-male"><option value="">Select</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Female -->
+      <div class="upload-card">
+        <div class="upload-card-title">
+          Chart 2 <span class="gender-badge female">Female</span>
+        </div>
+        <div class="upload-zone" id="zone-female" onclick="document.getElementById('file-female').click()">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">Upload AstroSage KP PDF</div>
+          <div class="upload-filename" id="fname-female"></div>
+        </div>
+        <input type="file" id="file-female" accept=".pdf" onchange="handlePDF('female',this)">
+        <div class="parsed-info" id="parsed-female" style="display:none">
+          <div class="parsed-info-row" id="parsed-female-text"></div>
+        </div>
+        <div style="margin-top:14px">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Current DBA Period</div>
+          <div class="dba-row">
+            <div class="dba-field"><label>Mahadasha</label>
+              <select id="md-female"><option value="">Select</option></select></div>
+            <div class="dba-field"><label>Antardasha</label>
+              <select id="ad-female"><option value="">Select</option></select></div>
+            <div class="dba-field"><label>Pratyantar</label>
+              <select id="pd-female"><option value="">Select</option></select></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="error-msg" id="error-msg"></div>
+    <div class="loading-msg" id="loading-msg">Analysing compatibility…</div>
+    <button class="match-btn" id="match-btn" onclick="runMatch()" disabled>Analyse Compatibility</button>
+
+    <!-- Results -->
+    <div class="results-section" id="results">
+      <div class="results-header">
+        <div class="results-names" id="results-names"></div>
+        <div class="results-subtitle">KP Compatibility Analysis</div>
+      </div>
+
+      <!-- Overall score -->
+      <div class="overall-score-wrap">
+        <div class="score-ring">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"/>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="url(#goldGrad)" stroke-width="8"
+              stroke-linecap="round" id="ring-circle" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+            <defs>
+              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#8B6914"/>
+                <stop offset="100%" style="stop-color:#D4AF37"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="score-ring-num" id="overall-num">0</div>
+          <div class="score-ring-label">Overall</div>
+        </div>
+      </div>
+
+      <!-- 5 Dimensions -->
+      <div class="dimensions-grid" id="dimensions-grid"></div>
+
+      <!-- DBA Timing -->
+      <div class="dba-timing-card">
+        <div class="dba-timing-title">Marriage Timing Window</div>
+        <div class="dba-grid" id="dba-grid"></div>
+        <div class="dba-verdict" id="dba-verdict"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ── PDF.js setup ──
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const PLANETS = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+const ABBR = {SUN:'Sun',MON:'Moon',MAR:'Mars',MER:'Mercury',JUP:'Jupiter',VEN:'Venus',SAT:'Saturn',RAH:'Rahu',KET:'Ketu'};
+const SIGNS = ['Pisces','Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius'];
+const SIGN_PAT = SIGNS.join('|');
+const ELEM = {Aries:'Fire',Leo:'Fire',Sagittarius:'Fire',Taurus:'Earth',Virgo:'Earth',Capricorn:'Earth',Gemini:'Air',Libra:'Air',Aquarius:'Air',Cancer:'Water',Scorpio:'Water',Pisces:'Water'};
+
+let charts = { male: null, female: null };
+
+// ── PDF Parser ──
+async function parsePDF(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map(it => it.str).join(' ') + '\n';
+  }
+
+  const data = { cusps: {}, planet_sig: {}, name: '', lagna: '', moon_sign: '', sex: '', dob: '', place: '' };
+  const lines = fullText.split('\n');
+
+  for (const line of lines) {
+    // Name
+    if (!data.name) { const m = line.match(/Name\s+([A-Za-z ]+?)\s+(?:Sunrise|http)/); if (m) data.name = m[1].trim(); }
+    // Sex
+    if (!data.sex) { const m = line.match(/Sex\s+(Male|Female)/); if (m) data.sex = m[1]; }
+    // DOB
+    if (!data.dob) { const m = line.match(/Date\s+([\d.]+)/); if (m) data.dob = m[1]; }
+    // Place
+    if (!data.place) { const m = line.match(/Place\s+([A-Za-z]+)/); if (m) data.place = m[1]; }
+    // Lagna
+    if (!data.lagna) { const m = line.match(new RegExp(`Lagna\\s+(${SIGN_PAT})`)); if (m) data.lagna = m[1]; }
+    // Moon sign
+    if (!data.moon_sign) { const m = line.match(new RegExp(`Rashi\\s+(${SIGN_PAT})`)); if (m) data.moon_sign = m[1]; }
+
+    // Cuspal positions: "1 351-00-03 JUP MER VEN SAT" or with noise prefix
+    const cm = line.match(/\b(\d{1,2})\s+\d{2,3}-\d{2}-\d{2}\s+([A-Z]{3})\s+([A-Z]{3})\s+([A-Z]{3})\s+([A-Z]{3})/);
+    if (cm) {
+      const h = parseInt(cm[1]);
+      if (h >= 1 && h <= 12) {
+        data.cusps[h] = {
+          rl: ABBR[cm[2]] || cm[2],
+          nl: ABBR[cm[3]] || cm[3],
+          sl: ABBR[cm[4]] || cm[4],
+          ss: ABBR[cm[5]] || cm[5],
+        };
+      }
+    }
+
+    // Planet significations: "Sun 5 6 11 12" or "Mercury 1 4 6 7 10"
+    for (const planet of PLANETS) {
+      if (data.planet_sig[planet]) continue;
+      const pm = line.match(new RegExp(`\\b${planet}\\s+((\\d{1,2}\\s*){1,12})(?:[A-Z]|$)`));
+      if (pm) {
+        const nums = pm[1].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
+        if (nums.length >= 1) data.planet_sig[planet] = nums;
+      }
+    }
+  }
+
+  return data;
+}
+
+// ── Handle PDF upload ──
+async function handlePDF(gender, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  document.getElementById(`fname-${gender}`).textContent = file.name;
+  document.getElementById(`zone-${gender}`).classList.add('has-file');
+  document.getElementById('loading-msg').style.display = 'block';
+
+  try {
+    const data = await parsePDF(file);
+    charts[gender] = data;
+
+    // Show parsed info
+    const info = `<span>${data.name || 'Unknown'}</span> · ${data.dob || ''} · ${data.place || ''} · Lagna: <span>${data.lagna || '?'}</span> · Moon: <span>${data.moon_sign || '?'}</span>`;
+    document.getElementById(`parsed-${gender}-text`).innerHTML = info;
+    document.getElementById(`parsed-${gender}`).style.display = 'block';
+
+    // Populate DBA dropdowns
+    ['md','ad','pd'].forEach(period => {
+      const sel = document.getElementById(`${period}-${gender}`);
+      sel.innerHTML = '<option value="">Select</option>' + PLANETS.map(p => `<option value="${p}">${p}</option>`).join('');
+    });
+
+    checkReady();
+  } catch(e) {
+    showError('Could not parse PDF: ' + e.message);
+  }
+  document.getElementById('loading-msg').style.display = 'none';
+}
+
+function checkReady() {
+  const ready = charts.male && charts.female;
+  document.getElementById('match-btn').disabled = !ready;
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+// ── Scoring Engine ──
+function getSig(chart, house) {
+  const cusp = chart.cusps[house] || {};
+  const slSig = chart.planet_sig[cusp.sl] || [];
+  const nlSig = chart.planet_sig[cusp.nl] || [];
+  return { slSig, nlSig, both: [...new Set([...slSig, ...nlSig])] };
+}
+
+function overlap(a, b) { return a.filter(x => b.includes(x)).length; }
+
+function clamp(val, min=1, max=10) { return Math.max(min, Math.min(max, val)); }
+
+function computeScores(m, f) {
+  const mDBA = {
+    md: document.getElementById('md-male').value,
+    ad: document.getElementById('ad-male').value,
+    pd: document.getElementById('pd-male').value,
+  };
+  const fDBA = {
+    md: document.getElementById('md-female').value,
+    ad: document.getElementById('ad-female').value,
+    pd: document.getElementById('pd-female').value,
+  };
+
+  // H7 significations
+  const mH7 = getSig(m, 7), fH7 = getSig(f, 7);
+  const mH1 = getSig(m, 1), fH1 = getSig(f, 1);
+  const mH4 = getSig(m, 4), fH4 = getSig(f, 4);
+  const mH5 = getSig(m, 5), fH5 = getSig(f, 5);
+  const mH8 = getSig(m, 8), fH8 = getSig(f, 8);
+  const mH2 = getSig(m, 2), fH2 = getSig(f, 2);
+  const mH11 = getSig(m, 11), fH11 = getSig(f, 11);
+
+  // ── 1. Marriage Promise ──
+  const mProm = mH7.slSig.filter(h=>[7,2,11].includes(h)).length;
+  const fProm = fH7.slSig.filter(h=>[7,2,11].includes(h)).length;
+  const crossOvl = overlap(mH7.both, fH7.both);
+  const marriageRaw = mProm + fProm + crossOvl;
+  const marriageScore = clamp(Math.round(marriageRaw / 7 * 9) + 1);
+
+  // ── 2. Emotional ──
+  const mElem = ELEM[m.moon_sign] || '';
+  const fElem = ELEM[f.moon_sign] || '';
+  const elemScore = mElem === fElem ? 3 : ([['Fire','Air'],['Earth','Water']].some(pair=>pair.includes(mElem)&&pair.includes(fElem)) ? 2 : 1);
+  const h4Ovl = overlap(mH4.both, fH4.both);
+  const h5Ovl = overlap(mH5.both, fH5.both);
+  const emotRaw = elemScore + h4Ovl + h5Ovl;
+  const emotScore = clamp(Math.round(emotRaw / 11 * 9) + 1);
+
+  // ── 3. Physical/Attraction ──
+  const mToF = mH1.both.filter(h=>fH7.both.includes(h)).length;
+  const fToM = fH1.both.filter(h=>mH7.both.includes(h)).length;
+  const h8Ovl = overlap(mH8.both, fH8.both);
+  const physRaw = mToF + fToM + Math.min(h8Ovl, 3);
+  const physScore = clamp(Math.round(physRaw / 9 * 9) + 1);
+
+  // ── 4. Financial ──
+  const h2Ovl = overlap(mH2.both, fH2.both);
+  const h11Ovl = overlap(mH11.both, fH11.both);
+  const conflict = [...mH2.both, ...mH11.both].filter(h=>[6,8,12].includes(h)&&fH2.both.concat(fH11.both).includes(h)).length;
+  const finRaw = h2Ovl + h11Ovl - conflict;
+  const finScore = clamp(Math.round(Math.max(0,finRaw) / 8 * 9) + 1);
+
+  // ── 5. Longevity ──
+  const mBond    = mH7.both.filter(h=>[2,4,7,11].includes(h)).length;
+  const fBond    = fH7.both.filter(h=>[2,4,7,11].includes(h)).length;
+  const mBreak   = mH7.slSig.filter(h=>[6,8,12].includes(h)).length;
+  const fBreak   = fH7.slSig.filter(h=>[6,8,12].includes(h)).length;
+  const netLong  = (mBond + fBond) - (mBreak + fBreak);
+  const longScore = clamp(Math.round((netLong + 4) / 8 * 9) + 1);
+
+  // ── DBA Timing ──
+  function dbaH7Active(chart, dba) {
+    const BOND = [7,2,11];
+    const check = p => { const s = chart.planet_sig[p]||[]; return s.some(h=>BOND.includes(h)); };
+    return { md: check(dba.md), ad: check(dba.ad), pd: check(dba.pd) };
+  }
+  const mDBAhits = dbaH7Active(m, mDBA);
+  const fDBAhits = dbaH7Active(f, fDBA);
+  const totalHits = Object.values(mDBAhits).filter(Boolean).length + Object.values(fDBAhits).filter(Boolean).length;
+
+  return {
+    marriage: { score: marriageScore, mProm, fProm, crossOvl },
+    emotional: { score: emotScore, elemScore, mElem, fElem, h4Ovl, h5Ovl },
+    physical:  { score: physScore, mToF, fToM, h8Ovl },
+    financial: { score: finScore, h2Ovl, h11Ovl, conflict },
+    longevity: { score: longScore, mBond, fBond, mBreak, fBreak, netLong },
+    dba: { mDBA, fDBA, mDBAhits, fDBAhits, totalHits },
+    overall: Math.round((marriageScore + emotScore + physScore + finScore + longScore) / 5),
+  };
+}
+
+// ── Summary text generators ──
+function marriageSummary(d, mName, fName) {
+  const {score, mProm, fProm, crossOvl} = d;
+  let lines = [];
+  if (mProm >= 2) lines.push(`<strong>Marriage promise in ${mName}'s chart</strong> — strongly indicated, H7 significators include bonding houses.`);
+  else if (mProm === 1) lines.push(`<strong>Marriage promise in ${mName}'s chart</strong> — partial indication, some bonding house activation.`);
+  else lines.push(`<strong>Marriage promise in ${mName}'s chart</strong> — not directly indicated in H7 significators.`);
+  if (fProm >= 2) lines.push(`<strong>Marriage promise in ${fName}'s chart</strong> — strongly indicated.`);
+  else if (fProm === 1) lines.push(`<strong>Marriage promise in ${fName}'s chart</strong> — partial indication.`);
+  else lines.push(`<strong>Marriage promise in ${fName}'s chart</strong> — not directly indicated.`);
+  if (crossOvl >= 4) lines.push(`<strong>Chart connection</strong> — strong overlap in H7 significators between both charts.`);
+  else if (crossOvl >= 2) lines.push(`<strong>Chart connection</strong> — moderate overlap in H7 significators.`);
+  else lines.push(`<strong>Chart connection</strong> — limited shared significators in H7.`);
+  return lines.join('<br>');
+}
+
+function emotionalSummary(d, mName, fName) {
+  const {elemScore, mElem, fElem, h4Ovl, h5Ovl} = d;
+  let lines = [];
+  if (elemScore === 3) lines.push(`<strong>Moon element match</strong> — both ${mElem}. Strong emotional wavelength.`);
+  else if (elemScore === 2) lines.push(`<strong>Moon element</strong> — ${mElem} and ${fElem} are naturally compatible elements.`);
+  else lines.push(`<strong>Moon element</strong> — ${mElem} and ${fElem}. Emotional styles differ significantly.`);
+  if (h4Ovl >= 4) lines.push(`<strong>Domestic values</strong> — strong alignment, similar home and family orientation.`);
+  else if (h4Ovl >= 2) lines.push(`<strong>Domestic values</strong> — reasonable alignment with some differences.`);
+  else lines.push(`<strong>Domestic values</strong> — different orientations toward home and family life.`);
+  if (h5Ovl >= 3) lines.push(`<strong>Romance and creativity</strong> — strong shared energy in expression and affection.`);
+  else if (h5Ovl >= 1) lines.push(`<strong>Romance and creativity</strong> — some shared energy in expression.`);
+  else lines.push(`<strong>Romance and creativity</strong> — different expressive styles, conscious effort needed.`);
+  return lines.join('<br>');
+}
+
+function physicalSummary(d, mName, fName) {
+  const {mToF, fToM, h8Ovl} = d;
+  let lines = [];
+  if (mToF >= 3) lines.push(`<strong>${mName}'s identity</strong> — strongly connects to ${fName}'s union house. Natural pull and attraction.`);
+  else if (mToF >= 1) lines.push(`<strong>${mName}'s identity</strong> — some connection to ${fName}'s union house.`);
+  else lines.push(`<strong>${mName}'s identity</strong> — limited connection to ${fName}'s union house.`);
+  if (fToM >= 3) lines.push(`<strong>${fName}'s identity</strong> — strongly connects to ${mName}'s union house.`);
+  else if (fToM >= 1) lines.push(`<strong>${fName}'s identity</strong> — some connection to ${mName}'s union house.`);
+  else lines.push(`<strong>${fName}'s identity</strong> — limited connection to ${mName}'s union house.`);
+  if (h8Ovl >= 4) lines.push(`<strong>Physical intensity</strong> — deep shared energy in H8, strong physical and psychological bond.`);
+  else if (h8Ovl >= 2) lines.push(`<strong>Physical intensity</strong> — moderate shared H8 energy.`);
+  else lines.push(`<strong>Physical intensity</strong> — limited H8 overlap, physical connection needs cultivation.`);
+  return lines.join('<br>');
+}
+
+function financialSummary(d) {
+  const {h2Ovl, h11Ovl, conflict} = d;
+  let lines = [];
+  if (h2Ovl >= 4) lines.push(`<strong>Wealth approach</strong> — strong alignment in H2 significators. Compatible savings and family financial values.`);
+  else if (h2Ovl >= 2) lines.push(`<strong>Wealth approach</strong> — reasonable H2 alignment.`);
+  else lines.push(`<strong>Wealth approach</strong> — different approaches to savings and family wealth.`);
+  if (h11Ovl >= 4) lines.push(`<strong>Gains pattern</strong> — strong H11 overlap, both likely to gain through similar channels.`);
+  else if (h11Ovl >= 2) lines.push(`<strong>Gains pattern</strong> — some H11 overlap.`);
+  else lines.push(`<strong>Gains pattern</strong> — different gains orientation, may earn through different channels.`);
+  if (conflict >= 3) lines.push(`<strong>Financial friction</strong> — significant conflict between wealth houses and breaking houses. Careful financial planning needed.`);
+  else if (conflict >= 1) lines.push(`<strong>Financial friction</strong> — some tension between wealth indicators, manageable with discipline.`);
+  else lines.push(`<strong>Financial harmony</strong> — no significant breaking house conflict in wealth indicators.`);
+  return lines.join('<br>');
+}
+
+function longevitySummary(d, mName, fName) {
+  const {mBond, fBond, mBreak, fBreak, netLong} = d;
+  let lines = [];
+  lines.push(`<strong>${mName}'s H7</strong> — bonding houses: ${mBond}, separation risk houses: ${mBreak}.`);
+  lines.push(`<strong>${fName}'s H7</strong> — bonding houses: ${fBond}, separation risk houses: ${fBreak}.`);
+  if (netLong >= 3) lines.push(`<strong>Union strength</strong> — bonding significators strongly outweigh separation indicators. Long-lasting union is supported.`);
+  else if (netLong >= 0) lines.push(`<strong>Union strength</strong> — bonding and separation indicators are roughly balanced. Effort sustains the union.`);
+  else lines.push(`<strong>Union challenge</strong> — separation indicators are present. Strong commitment and conscious effort are needed to sustain the union.`);
+  return lines.join('<br>');
+}
+
+function dbaSummary(d, mName, fName) {
+  const {mDBAhits, fDBAhits, totalHits, mDBA, fDBA} = d;
+  return `${mName}: MD ${mDBAhits.md?'✓':'✗'} AD ${mDBAhits.ad?'✓':'✗'} PD ${mDBAhits.pd?'✓':'✗'} &nbsp;|&nbsp; ${fName}: MD ${fDBAhits.md?'✓':'✗'} AD ${fDBAhits.ad?'✓':'✗'} PD ${fDBAhits.pd?'✓':'✗'}`;
+}
+
+function dbaVerdict(totalHits, mName, fName, d) {
+  if (totalHits >= 5) return { cls:'strong', text:`Both charts are in strong marriage periods simultaneously — this is one of the best windows for union. ${mName}'s and ${fName}'s DBA planets are actively signifying H7 bonding houses.` };
+  if (totalHits >= 3) return { cls:'moderate', text:`Both charts show moderate DBA activation for marriage. The timing has some support — movement is possible in this window.` };
+  if (totalHits >= 1) return { cls:'weak', text:`Marriage period activation is limited in the current DBA. One or both charts are not in a primary marriage window. A stronger period will come.` };
+  return { cls:'weak', text:`The current DBA period does not strongly trigger marriage houses in either chart. Wait for a period when H7 bonding houses are activated in both.` };
+}
+
+// ── Run Match ──
+function runMatch() {
+  const m = charts.male, f = charts.female;
+  if (!m || !f) { showError('Please upload both charts.'); return; }
+
+  const mDBA = document.getElementById('md-male').value;
+  const fDBA = document.getElementById('md-female').value;
+  if (!mDBA || !fDBA) { showError('Please select DBA periods for both charts.'); return; }
+
+  const scores = computeScores(m, f);
+  const mName = m.name || 'Person 1';
+  const fName = f.name || 'Person 2';
+
+  // Names
+  document.getElementById('results-names').textContent = `${mName}  ×  ${fName}`;
+
+  // Overall ring
+  const overall = scores.overall;
+  document.getElementById('overall-num').textContent = overall;
+  const circ = 326.7;
+  const offset = circ - (circ * overall / 10);
+  setTimeout(() => {
+    document.getElementById('ring-circle').style.strokeDashoffset = offset;
+  }, 100);
+
+  // 5 Dimensions
+  const dims = [
+    { key:'marriage', label:'Marriage Promise',       data:scores.marriage, summary: marriageSummary(scores.marriage, mName, fName) },
+    { key:'emotional', label:'Emotional Compatibility', data:scores.emotional, summary: emotionalSummary(scores.emotional, mName, fName) },
+    { key:'physical',  label:'Physical Attraction',    data:scores.physical, summary: physicalSummary(scores.physical, mName, fName) },
+    { key:'financial', label:'Financial Compatibility', data:scores.financial, summary: financialSummary(scores.financial) },
+    { key:'longevity', label:'Longevity of Union',     data:scores.longevity, summary: longevitySummary(scores.longevity, mName, fName) },
+  ];
+
+  const grid = document.getElementById('dimensions-grid');
+  grid.innerHTML = dims.map(d => `
+    <div class="dim-card">
+      <div class="dim-header">
+        <div class="dim-name">${d.label}</div>
+        <div class="dim-score-wrap">
+          <div class="dim-score-num">${d.data.score}</div>
+          <div class="dim-score-max">/10</div>
+        </div>
+      </div>
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:${d.data.score*10}%"></div>
+      </div>
+      <div class="dim-summary">${d.summary}</div>
+    </div>
+  `).join('');
+
+  // DBA grid
+  const mDBAhits = scores.dba.mDBAhits, fDBAhits = scores.dba.fDBAhits;
+  const mDBAv = scores.dba.mDBA, fDBAv = scores.dba.fDBA;
+  document.getElementById('dba-grid').innerHTML = `
+    <div class="dba-period">
+      <div class="dba-period-label">${mName}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">${mDBAv.md||'—'} / ${mDBAv.ad||'—'} / ${mDBAv.pd||'—'}</div>
+      <div class="dba-period-status ${mDBAhits.md?'active':'inactive'}">MD ${mDBAhits.md?'✓ Active':'✗ Inactive'}</div>
+      <div class="dba-period-status ${mDBAhits.ad?'active':'inactive'}">AD ${mDBAhits.ad?'✓ Active':'✗ Inactive'}</div>
+      <div class="dba-period-status ${mDBAhits.pd?'active':'inactive'}">PD ${mDBAhits.pd?'✓ Active':'✗ Inactive'}</div>
+    </div>
+    <div class="dba-period" style="display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center">
+        <div style="font-size:28px;font-family:'Cormorant Garamond',serif;color:var(--gold-light)">${scores.dba.totalHits}/6</div>
+        <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted)">Active Hits</div>
+      </div>
+    </div>
+    <div class="dba-period">
+      <div class="dba-period-label">${fName}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">${fDBAv.md||'—'} / ${fDBAv.ad||'—'} / ${fDBAv.pd||'—'}</div>
+      <div class="dba-period-status ${fDBAhits.md?'active':'inactive'}">MD ${fDBAhits.md?'✓ Active':'✗ Inactive'}</div>
+      <div class="dba-period-status ${fDBAhits.ad?'active':'inactive'}">AD ${fDBAhits.ad?'✓ Active':'✗ Inactive'}</div>
+      <div class="dba-period-status ${fDBAhits.pd?'active':'inactive'}">PD ${fDBAhits.pd?'✓ Active':'✗ Inactive'}</div>
+    </div>
+  `;
+
+  const vrd = dbaVerdict(scores.dba.totalHits, mName, fName, scores.dba);
+  const vEl = document.getElementById('dba-verdict');
+  vEl.className = `dba-verdict ${vrd.cls}`;
+  vEl.textContent = vrd.text;
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
