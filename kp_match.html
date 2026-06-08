@@ -33,8 +33,42 @@ input[type="file"] { display: none; }
 /* DBA input */
 .dba-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 .dba-field label { display: block; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
-.dba-field select { width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); font-size: 12px; padding: 6px 8px; border-radius: 4px; }
+.dba-field select {
+  width: 100%;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 8px 28px 8px 10px;
+  border-radius: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238B6914'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
 .dba-field select:focus { outline: none; border-color: var(--gold-dim); }
+.dba-field select option { background: #1a1a2e; color: var(--text-primary); }
+.marital-select {
+  width: 100%;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 8px 28px 8px 10px;
+  border-radius: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238B6914'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+.marital-select option { background: #1a1a2e; color: var(--text-primary); }
 
 /* Parsed info display */
 .parsed-info { margin-top: 12px; padding: 10px 12px; background: rgba(212,175,55,0.04); border-radius: 4px; border-left: 2px solid var(--gold-dim); }
@@ -136,7 +170,7 @@ input[type="file"] { display: none; }
         </div>
         <div style="margin-top:14px">
           <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Marital Status</div>
-          <select id="status-male" style="width:100%;background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);font-size:12px;padding:7px 10px;border-radius:4px;margin-bottom:14px">
+          <select id="status-male" class="marital-select">
             <option value="">Select status</option>
             <option value="unmarried">Unmarried — looking for match</option>
             <option value="engaged">Engaged / About to marry</option>
@@ -173,7 +207,7 @@ input[type="file"] { display: none; }
         </div>
         <div style="margin-top:14px">
           <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Marital Status</div>
-          <select id="status-female" style="width:100%;background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);font-size:12px;padding:7px 10px;border-radius:4px;margin-bottom:14px">
+          <select id="status-female" class="marital-select">
             <option value="">Select status</option>
             <option value="unmarried">Unmarried — looking for match</option>
             <option value="engaged">Engaged / About to marry</option>
