@@ -347,396 +347,462 @@ function showError(msg) {
 
 
 
+
 // ══════════════════════════════════════════════════════════
-// MATCH ENGINE v3 — Plain language, no astrological terms
+// MATCH ENGINE v4 — Full KP detail, plain language output
+// Life reading = natal permanent picture
+// Period reading = what current DBA activates
 // ══════════════════════════════════════════════════════════
 
-function getMaritalContext(mStatus, fStatus) {
-  if (mStatus === 'married' || fStatus === 'married') return 'married';
-  if (mStatus === 'separated' || fStatus === 'separated') return 'separated';
-  if (mStatus === 'engaged' || fStatus === 'engaged') return 'engaged';
+const ELEM = {Aries:'Fire',Leo:'Fire',Sagittarius:'Fire',Taurus:'Earth',Virgo:'Earth',Capricorn:'Earth',Gemini:'Air',Libra:'Air',Aquarius:'Air',Cancer:'Water',Scorpio:'Water',Pisces:'Water'};
+const ELEM_COMPAT = {Fire:{Fire:3,Air:2,Earth:1,Water:1},Air:{Air:3,Fire:2,Earth:1,Water:1},Earth:{Earth:3,Water:2,Fire:1,Air:1},Water:{Water:3,Earth:2,Fire:1,Air:1}};
+
+function getSig(chart, house) {
+  const c = chart.cusps[house]||{};
+  const sl = chart.planet_sig[c.sl]||[];
+  const nl = chart.planet_sig[c.nl]||[];
+  return { sl, nl, both:[...new Set([...sl,...nl])], slP:c.sl, nlP:c.nl };
+}
+function ovl(a,b){ return a.filter(x=>b.includes(x)); }
+function clamp(v,lo=1,hi=10){ return Math.max(lo,Math.min(hi,Math.round(v))); }
+function hits(sig, houses){ return sig.filter(h=>houses.includes(h)).length; }
+function hasDBAhit(chart, dba, houses){
+  return ['md','ad','pd'].some(p=>dba[p]&&(chart.planet_sig[dba[p]]||[]).some(h=>houses.includes(h)));
+}
+function dbaHits(chart, dba, houses){
+  return ['md','ad','pd'].map(p=>({p, planet:dba[p]||'', hits:(chart.planet_sig[dba[p]]||[]).filter(h=>houses.includes(h)).length}));
+}
+
+function getMaritalCtx(ms, fs){
+  if(ms==='married'||fs==='married') return 'married';
+  if(ms==='separated'||fs==='separated') return 'separated';
+  if(ms==='engaged'||fs==='engaged') return 'engaged';
   return 'unmarried';
 }
 
-function getSig(chart, house) {
-  const cusp = chart.cusps[house] || {};
-  const slSig = chart.planet_sig[cusp.sl] || [];
-  const nlSig = chart.planet_sig[cusp.nl] || [];
-  return { slSig, nlSig, both: [...new Set([...slSig, ...nlSig])], sl: cusp.sl, nl: cusp.nl };
-}
-
-function ovl(a, b) { return a.filter(x => b.includes(x)); }
-function clamp(v, lo=1, hi=10) { return Math.max(lo, Math.min(hi, Math.round(v))); }
-
 // ══════════════════════════════════════════════════════════
-// 1. MARRIAGE / UNION
+// 1. MARRIAGE & UNION
 // ══════════════════════════════════════════════════════════
 function analyseUnion(m, f, mDBA, fDBA, ctx) {
-  const mH7 = getSig(m,7), fH7 = getSig(f,7);
-  const BOND = [7,2,11], BREAK = [6,8,12];
-  const mBond  = mH7.slSig.filter(h=>BOND.includes(h)).length;
-  const mBreak = mH7.slSig.filter(h=>BREAK.includes(h)).length;
-  const fBond  = fH7.slSig.filter(h=>BOND.includes(h)).length;
-  const fBreak = fH7.slSig.filter(h=>BREAK.includes(h)).length;
+  const mH7=getSig(m,7), fH7=getSig(f,7);
+  const mH5=getSig(m,5), fH5=getSig(f,5);
+  const mH1=getSig(m,1), fH1=getSig(f,1);
+
+  // ── HIS LIFE READING ──
+  const mLines = [];
+
+  // Type of marriage
+  const mLove   = mH7.both.includes(5);
+  const mArranged = (mH7.both.includes(2)||mH7.both.includes(4)) && !mLove;
+  const mCross  = mH7.both.includes(9);
+  const mWork   = mH7.both.includes(6)||mH7.both.includes(10);
+  const mDelay  = mH7.both.includes(1);
+  const mPromise= hits(mH7.sl,[7,2,11]);
+  const mBreak  = hits(mH7.sl,[6,8,12]);
+  const mFulfil = mH7.sl.includes(11);
+  const mSecond = mH7.both.includes(8)&&(mH7.both.includes(12)||mH7.both.includes(6));
+  const mFinance= mH7.both.includes(2);
+
+  // Type
+  if(mLove&&mCross) mLines.push(`**Marriage type** — Love marriage, most likely with someone from a different background, community or region. The relationship develops through personal choice rather than family arrangement.`);
+  else if(mLove) mLines.push(`**Marriage type** — Love marriage. The relationship forms through personal connection and mutual choice.`);
+  else if(mArranged) mLines.push(`**Marriage type** — Arranged or family-backed marriage. The union is rooted in family involvement and conventional setup.`);
+  else if(mCross) mLines.push(`**Marriage type** — Marriage with someone from a different background, belief system, or community.`);
+  else mLines.push(`**Marriage type** — Self-chosen on personal terms. Neither strongly love nor arranged — circumstances and timing bring the person.`);
+
+  if(mWork) mLines.push(`**Meeting context** — A workplace or career-connected origin to the relationship is likely.`);
+
+  // Timing
+  if(mDelay) mLines.push(`**Timing** — Delayed. Personal independence and a tendency to prioritise self over partnership creates resistance to settling. The marriage happens, but later than conventional expectation.`);
+  else if(mPromise>=2) mLines.push(`**Timing** — Marriage is clearly promised and can happen in the right period without unusual delay.`);
+  else mLines.push(`**Timing** — Marriage is possible but not automatic. The right period and person both need to align.`);
+
+  // Number of unions
+  if(mSecond) mLines.push(`**Number of unions** — More than one union is indicated. The first marriage faces serious challenges — conflict, distance, or sudden disruption. A second relationship follows after the first ends.`);
+  else if(mBreak>=2&&mPromise>=1) mLines.push(`**Number of unions** — One marriage is indicated but it carries real challenges. Separation is possible depending on how the difficulties are handled.`);
+  else mLines.push(`**Number of unions** — One marriage is indicated.`);
+
+  // Quality
+  if(mFulfil) mLines.push(`**Quality** — The marriage is fulfilling and brings genuine satisfaction. Desires through partnership are realised.`);
+  else if(mFinance) mLines.push(`**Quality** — The marriage brings financial stability and practical grounding. It works more through compatibility and security than romantic intensity.`);
+  if(mBreak>=2) mLines.push(`**Challenges** — Conflict and separation energy are present. The union requires active and ongoing effort from him to sustain. Periods of friction and emotional withdrawal are part of the pattern.`);
+  else if(mBreak===1) mLines.push(`**Challenges** — Some conflict is part of the marriage pattern. Not insurmountable, but requires awareness.`);
+
+  // Dominance in union
+  const mDominant = mH7.sl.includes(1)||mH7.sl.includes(10)||mH7.sl.includes(3);
+  if(mDominant) mLines.push(`**Role in union** — He tends to be the stronger or more assertive presence in the relationship. The marriage runs largely on his terms or initiative.`);
+
+  // ── HER LIFE READING ──
+  const fLines = [];
+
+  const fLove   = fH7.both.includes(5);
+  const fArranged= (fH7.both.includes(2)||fH7.both.includes(4)) && !fLove;
+  const fCross  = fH7.both.includes(9);
+  const fWork   = fH7.both.includes(6)||fH7.both.includes(10);
+  const fDelay  = fH7.both.includes(1);
+  const fPromise= hits(fH7.sl,[7,2,11]);
+  const fBreak  = hits(fH7.sl,[6,8,12]);
+  const fFulfil = fH7.sl.includes(11);
+  const fSecond = fH7.both.includes(8)&&(fH7.both.includes(12)||fH7.both.includes(6));
+  const fFinance= fH7.both.includes(2);
+
+  if(fLove&&fCross) fLines.push(`**Marriage type** — Love marriage, likely with someone from a different background or region. Personal choice over family arrangement.`);
+  else if(fLove) fLines.push(`**Marriage type** — Love marriage. The relationship forms through personal connection.`);
+  else if(fArranged) fLines.push(`**Marriage type** — Arranged or family-backed marriage. Family involvement is part of how the union forms.`);
+  else if(fCross) fLines.push(`**Marriage type** — Marriage with someone from a different background or belief system.`);
+  else fLines.push(`**Marriage type** — Self-chosen on personal terms.`);
+
+  if(fWork) fLines.push(`**Meeting context** — A workplace or career-connected origin to the relationship is possible.`);
+
+  if(fDelay) fLines.push(`**Timing** — Delayed. Personal priorities or circumstances push the marriage later than conventional expectation.`);
+  else if(fPromise>=2) fLines.push(`**Timing** — Marriage is clearly promised and can happen in the right period.`);
+  else fLines.push(`**Timing** — Marriage is possible when the right period aligns.`);
+
+  if(fSecond) fLines.push(`**Number of unions** — More than one union is indicated. The first marriage faces serious challenges and ends. A second follows.`);
+  else if(fBreak>=2&&fPromise>=1) fLines.push(`**Number of unions** — One marriage with significant challenges. Separation is possible.`);
+  else fLines.push(`**Number of unions** — One marriage is indicated.`);
+
+  if(fFulfil) fLines.push(`**Quality** — The marriage brings genuine fulfilment and satisfaction.`);
+  else if(fFinance) fLines.push(`**Quality** — The marriage brings financial grounding and practical security.`);
+  if(fBreak>=2) fLines.push(`**Challenges** — Conflict and separation energy are present in her marriage pattern. The union requires conscious and sustained effort to hold.`);
+  else if(fBreak===1) fLines.push(`**Challenges** — Some conflict is part of her marriage picture. Manageable with awareness.`);
+
+  const fDominant = fH7.sl.includes(1)||fH7.sl.includes(10)||fH7.sl.includes(3);
+  if(fDominant) fLines.push(`**Role in union** — She tends to be the stronger or more assertive presence in the relationship.`);
+
+  // ── COMBINED LIFE READING ──
+  const combLines = [];
   const crossOvl = ovl(mH7.both, fH7.both).length;
-  const delay  = mH7.both.includes(1);
+  const mBond = mH7.both.filter(h=>[2,4,7,11].includes(h)).length;
+  const fBond = fH7.both.filter(h=>[2,4,7,11].includes(h)).length;
+  const netBreak = (mBreak+fBreak) - (mBond+fBond);
 
-  // His reading
-  let hisText = '';
-  if (ctx === 'married') {
-    if (mBond >= 2) hisText = `Marriage is genuinely written into his life — he carries a strong natural orientation toward committed partnership. The bond from his side is real and deep-rooted.`;
-    else if (mBond === 1) hisText = `He is committed to the marriage but it does not come effortlessly — he has to choose it consciously and consistently. The orientation is there, the ease is not always.`;
-    else hisText = `Partnership is not the central theme of his chart — he functions well alone and the union is more circumstantial than deeply written into his nature.`;
-    if (mBreak >= 2) hisText += ` There is also a pattern of pulling away — periods of conflict or emotional withdrawal are part of how he processes the relationship.`;
-  } else {
-    if (mBond >= 2) hisText = `Marriage is strongly written into his future — the indicators for committed partnership are clear and well-placed. He is ready to settle and the chart supports it.`;
-    else if (mBond === 1) hisText = `Marriage is possible for him in the right period — the promise is partial, not overwhelming. Timing and the right person both matter significantly.`;
-    else hisText = `Marriage is not strongly indicated for him in this window — he may not be ready yet, or the chart points to a later period for this chapter to open.`;
-    if (delay) hisText += ` There is a delay in his chart — personal independence and a tendency to prioritise himself create resistance to settling. It happens, but on his own timeline.`;
-    if (mBreak >= 2) hisText += ` Once in a relationship, conflict and friction are also indicated — the union will require active management to stay strong.`;
-  }
+  if(crossOvl>=4) combLines.push(`**Connection** — The two charts share significant marriage significators. There is genuine astrological pull between them — this is a meaningful, chart-indicated connection.`);
+  else if(crossOvl>=2) combLines.push(`**Connection** — Moderate chart alignment. A real connection exists but it works more through compatibility than magnetic pull.`);
+  else combLines.push(`**Connection** — Limited chart overlap on marriage indicators. The relationship is built more consciously than fated.`);
 
-  // Her reading
-  let herText = '';
-  if (ctx === 'married') {
-    if (fBond >= 2) herText = `Marriage is deeply written into her — she is naturally oriented toward partnership and the bond she brings to the union is genuine and lasting.`;
-    else if (fBond === 1) herText = `She is committed but the union requires effort from her — the orientation toward partnership is present but not effortless.`;
-    else herText = `Partnership is not the dominant theme of her chart — the union is more duty-driven or circumstantial than deeply written into her nature.`;
-    if (fBreak >= 2) herText += ` Emotional distance and periods of withdrawal are also part of her pattern — she may pull back when the relationship becomes difficult.`;
-  } else {
-    if (fBond >= 2) herText = `Marriage is strongly indicated for her — the indicators are clear and she is in a phase where committed partnership is genuinely available.`;
-    else if (fBond === 1) herText = `Marriage is possible for her — partial indicators suggest it happens when the right circumstances align, not automatically.`;
-    else herText = `Marriage is not strongly indicated for her in this window — the chapter may open later or under different circumstances.`;
-    if (fBreak >= 2) herText += ` Conflict is also part of her union picture — things will need to settle before the partnership stabilises.`;
-  }
+  // Who breaks / who holds
+  if(mBreak>fBreak) combLines.push(`**Union risk** — He carries more separation energy than she does. The greater risk to this union comes from his side — through conflict, withdrawal, or his independent nature resisting the constraints of partnership.`);
+  else if(fBreak>mBreak) combLines.push(`**Union risk** — She carries more separation energy than he does. The greater risk to this union comes from her side — through emotional distance, conflict, or circumstances pulling her away.`);
+  else if(mBreak===fBreak&&mBreak>=2) combLines.push(`**Union risk** — Both carry significant separation energy. The union will be genuinely tested by both sides. Mutual conscious commitment is the only thing that holds it.`);
+  else combLines.push(`**Union stability** — Neither carries dominant separation energy. The union has a reasonable foundation for stability.`);
 
-  // Combined
-  let combinedText = '';
-  if (crossOvl >= 4) combinedText = `The two charts are genuinely aligned on union — there is real astrological pull between them. This is not a random pairing; it is a meaningful connection written into both charts.`;
-  else if (crossOvl >= 2) combinedText = `There is a real but moderate connection between the two charts — some genuine pull exists, though it is not overwhelming. The relationship works more through compatibility than magnetic attraction.`;
-  else combinedText = `The astrological pull between these two charts is limited — the relationship is more a meeting of circumstance than a deeply chart-indicated connection. It can work, but it requires more conscious building than natural flow.`;
+  // Multiple union scenario
+  if(mSecond&&fSecond) combLines.push(`**Multiple unions** — Both charts indicate more than one union. This particular pairing may be the first relationship that ends, opening the path to a second. Or this could be the second union for one or both of them.`);
+  else if(mSecond) combLines.push(`**Multiple unions** — His chart indicates more than one union. If this is his first, it will face serious challenges. The second union in his chart is more stable.`);
+  else if(fSecond) combLines.push(`**Multiple unions** — Her chart indicates more than one union. If this is her first, the challenges are significant. Her second union is more settled.`);
 
-  const netLong = (mBond + fBond) - (mBreak + fBreak);
-  if (ctx === 'married') {
-    if (netLong >= 3) combinedText += ` The combined picture leans strongly toward lasting — both bring bonding energy to the union and the separating forces are relatively contained.`;
-    else if (netLong >= 0) combinedText += ` The combined picture is balanced — what holds them together and what pulls them apart are roughly equal. The durability of the union is in their hands.`;
-    else combinedText += ` The combined picture carries real tension — the forces that can pull this union apart are more prominent than the forces that hold it together. Sustained effort is non-negotiable.`;
-  }
+  if(netBreak>=2) combLines.push(`**Long-term picture** — The combined separating forces outweigh the bonding ones. This is a relationship that will be tested repeatedly. Not impossible — but clear-eyed commitment from both is essential.`);
+  else if(netBreak<=-2) combLines.push(`**Long-term picture** — The combined bonding forces are strong. Both charts lean toward holding the relationship together. Good foundation for a lasting union.`);
 
-  // DBA timing
-  const mAllSig = [...(m.planet_sig[mDBA.md]||[]), ...(m.planet_sig[mDBA.ad]||[]), ...(m.planet_sig[mDBA.pd]||[])];
-  const fAllSig = [...(f.planet_sig[fDBA.md]||[]), ...(f.planet_sig[fDBA.ad]||[]), ...(f.planet_sig[fDBA.pd]||[])];
-  const mActive = mAllSig.some(h=>BOND.includes(h));
-  const fActive = fAllSig.some(h=>BOND.includes(h));
-  const mADact  = (m.planet_sig[mDBA.ad]||[]).some(h=>BOND.includes(h));
-  const fADact  = (f.planet_sig[fDBA.ad]||[]).some(h=>BOND.includes(h));
-  const totalHits = [mActive, mADact, fActive, fADact].filter(Boolean).length;
+  // ── CURRENT DBA ──
+  const BOND_H=[7,2,11], BREAK_H=[6,8,12];
+  const mMD=(m.planet_sig[mDBA.md]||[]), mAD=(m.planet_sig[mDBA.ad]||[]), mPD=(m.planet_sig[mDBA.pd]||[]);
+  const fMD=(f.planet_sig[fDBA.md]||[]), fAD=(f.planet_sig[fDBA.ad]||[]), fPD=(f.planet_sig[fDBA.pd]||[]);
 
-  let dbaText = '';
-  if (ctx === 'married') {
-    if (mActive && fActive) dbaText = `Both are in active union periods right now — this is a phase of renewed closeness and mutual pull toward the relationship. Decisions made together in this window carry real weight.`;
-    else if (mActive) dbaText = `He is in an active relationship period — more focused on the union than usual. She is in a more externally directed phase. He may be investing more than she is right now.`;
-    else if (fActive) dbaText = `She is in an active relationship period — she needs more connection and presence from him right now. His phase is more outward-focused.`;
-    else dbaText = `Neither is in a particularly active union period — a stable, neutral phase. The relationship is steady but not in a heightened bonding or testing moment.`;
-  } else {
-    if (mActive && fActive) dbaText = `Both are in active marriage periods simultaneously — this is one of the best windows for the union to happen. The timing from both sides is aligned.`;
-    else if (mActive && mADact) dbaText = `His period is strongly pushing toward marriage — the timing is right for him. Her period is not the primary trigger — the initiative may need to come from his side.`;
-    else if (fActive && fADact) dbaText = `Her period is strongly pushing toward marriage — the timing is right for her. His period is less activated — she may feel the urgency more than he does.`;
-    else if (mActive || fActive) dbaText = `There is partial timing support — one chart is in a marriage-oriented period but the other is not fully aligned yet. Some movement is possible but this is not the peak window.`;
-    else dbaText = `Neither chart is in a strong marriage period right now — the timing does not fully support this step. A better window will come when both charts activate simultaneously.`;
-  }
+  const mMDhit=[...mMD].some(h=>BOND_H.includes(h)), mADhit=[...mAD].some(h=>BOND_H.includes(h)), mPDhit=[...mPD].some(h=>BOND_H.includes(h));
+  const fMDhit=[...fMD].some(h=>BOND_H.includes(h)), fADhit=[...fAD].some(h=>BOND_H.includes(h)), fPDhit=[...fPD].some(h=>BOND_H.includes(h));
+  const mBreakDBA=[...mMD,...mAD,...mPD].some(h=>BREAK_H.includes(h));
+  const fBreakDBA=[...fMD,...fAD,...fPD].some(h=>BREAK_H.includes(h));
 
-  const score = clamp(1 + Math.round((mBond + fBond + crossOvl/2) / 6 * 9));
-  return { score, his: hisText, her: herText, combined: combinedText, dba: dbaText, totalHits };
+  const dbaLines = [];
+
+  // His period
+  if(mMDhit&&mADhit&&mPDhit) dbaLines.push(`**His period** — All three levels of his current planetary period are activating marriage-related themes. This is the strongest possible timing for his union chapter. The window is active and fully open.`);
+  else if(mMDhit&&mADhit) dbaLines.push(`**His period** — Both main and sub-period are activating marriage themes. Strong timing — the push toward union is real and present.`);
+  else if(mADhit&&mPDhit) dbaLines.push(`**His period** — The sub and sub-sub periods are both activating marriage themes. The timing is building — movement is happening at the finer level.`);
+  else if(mMDhit||mADhit) dbaLines.push(`**His period** — One level of his current period is activating marriage themes. Partial timing — some movement toward union is possible but not at full strength.`);
+  else if(mBreakDBA) dbaLines.push(`**His period** — His current period is not activating marriage themes — it is activating separation or outward-moving energy. Not the right window for commitment or union for him right now.`);
+  else dbaLines.push(`**His period** — His current period is not specifically activating marriage themes. Career, travel, or other areas are more in focus right now.`);
+
+  // Her period
+  if(fMDhit&&fADhit&&fPDhit) dbaLines.push(`**Her period** — All three levels of her current planetary period are activating union themes. This is peak timing for her marriage chapter.`);
+  else if(fMDhit&&fADhit) dbaLines.push(`**Her period** — Both main and sub-period are activating union themes. Strong timing from her side.`);
+  else if(fADhit&&fPDhit) dbaLines.push(`**Her period** — Sub and sub-sub periods are both activating union themes. The timing is building from her side.`);
+  else if(fMDhit||fADhit) dbaLines.push(`**Her period** — One level of her current period is activating union themes. Partial timing — some push toward marriage but not at full strength.`);
+  else if(fBreakDBA) dbaLines.push(`**Her period** — Her current period is activating separation or outward energy rather than union themes. Not the strongest window for commitment from her side.`);
+  else dbaLines.push(`**Her period** — Her current period is not specifically activating marriage themes. Other life areas are more active right now.`);
+
+  // Combined verdict
+  const totalHits = [mMDhit,mADhit,mPDhit,fMDhit,fADhit,fPDhit].filter(Boolean).length;
+  if(totalHits>=5) dbaLines.push(`**Combined verdict** — Both charts are simultaneously in strong marriage periods. This is one of the best windows for this union to happen. The timing is aligned on both sides.`);
+  else if(totalHits>=3) dbaLines.push(`**Combined verdict** — Reasonable combined timing — both charts have some activation but not at full strength simultaneously. Movement is possible; this is not the peak but it is not far from it.`);
+  else if(totalHits>=1) dbaLines.push(`**Combined verdict** — Partial timing — one chart is more activated than the other. The union can happen but one side will feel more ready than the other.`);
+  else dbaLines.push(`**Combined verdict** — Neither chart is in a strong marriage period right now. This is not the ideal window for this union. A better timing window will come — watch for when both charts simultaneously activate union themes.`);
+
+  const score = clamp(1 + Math.round((mPromise+fPromise+crossOvl/2)/6*9));
+  return { score, his:mLines.join('\n'), her:fLines.join('\n'), combined:combLines.join('\n'), dba:dbaLines.join('\n') };
 }
 
 // ══════════════════════════════════════════════════════════
 // 2. EMOTIONAL COMPATIBILITY
 // ══════════════════════════════════════════════════════════
 function analyseEmotional(m, f, mDBA, fDBA, ctx) {
-  const mH4 = getSig(m,4), fH4 = getSig(f,4);
-  const mH5 = getSig(m,5), fH5 = getSig(f,5);
-  const ELEM = {Aries:'Fire',Leo:'Fire',Sagittarius:'Fire',Taurus:'Earth',Virgo:'Earth',Capricorn:'Earth',Gemini:'Air',Libra:'Air',Aquarius:'Air',Cancer:'Water',Scorpio:'Water',Pisces:'Water'};
-  const mElem = ELEM[m.moon_sign||'']||'', fElem = ELEM[f.moon_sign||'']||'';
-  const elemMatch = mElem===fElem ? 3 : ([['Fire','Air'],['Earth','Water']].some(p=>p.includes(mElem)&&p.includes(fElem)) ? 2 : 1);
-  const h4Ovl = ovl(mH4.both, fH4.both).length;
-  const h5Ovl = ovl(mH5.both, fH5.both).length;
+  const mH4=getSig(m,4), fH4=getSig(f,4);
+  const mH5=getSig(m,5), fH5=getSig(f,5);
+  const mElem=ELEM[m.moon_sign||'']||'', fElem=ELEM[f.moon_sign||'']||'';
+  const elemScore=mElem===fElem?3:(ELEM_COMPAT[mElem]?.[fElem]||1);
+  const h4Ovl=ovl(mH4.both,fH4.both).length, h5Ovl=ovl(mH5.both,fH5.both).length;
 
-  const mEmotStable   = mH4.slSig.some(h=>[2,4,11].includes(h));
-  const mEmotRomantic = mH5.slSig.includes(5) || mH5.slSig.includes(11);
-  const fEmotStable   = fH4.slSig.some(h=>[2,4,11].includes(h));
-  const fEmotRomantic = fH5.slSig.includes(5) || fH5.slSig.includes(11);
-  const mEmotTense    = mH4.slSig.some(h=>[6,8,12].includes(h));
-  const fEmotTense    = fH4.slSig.some(h=>[6,8,12].includes(h));
+  // His emotional picture
+  const mLines=[];
+  const mStable=hits(mH4.sl,[2,4,11])>=1, mRomantic=mH5.sl.includes(5)||mH5.sl.includes(11);
+  const mTense=hits(mH4.sl,[6,8,12])>=1, mCreative=mH5.sl.includes(3)||mH5.sl.includes(9);
+  const mWithdraw=mH4.sl.includes(12)||mH4.sl.includes(8);
 
-  let hisText = '';
-  if (ctx === 'married') {
-    if (mEmotStable && mEmotRomantic) hisText = `He is both emotionally grounded at home and romantically expressive in the relationship — a genuinely warm and stable emotional presence.`;
-    else if (mEmotStable) hisText = `He is emotionally stable and dependable — love is expressed through reliability and consistency rather than open affection. He shows up steadily.`;
-    else if (mEmotRomantic) hisText = `He is romantically expressive but domestic stability is an effort — warmth is there but consistency at home requires work.`;
-    else hisText = `Emotional expression does not come naturally to him in the relationship — his love is practical and implicit rather than openly felt. The marriage may feel emotionally understated from his side.`;
-    if (mEmotTense) hisText += ` There is also emotional tension in his domestic pattern — conflict and stress at home are recurring rather than exceptional.`;
-  } else {
-    if (mEmotStable && mEmotRomantic) hisText = `He is emotionally ready for a relationship — grounded domestically and romantically invested. He will bring both stability and warmth.`;
-    else if (mEmotStable) hisText = `He offers emotional stability rather than romantic flair — reliable, consistent, and dependable as a partner.`;
-    else if (mEmotRomantic) hisText = `He is romantically expressive and affectionate, but domestic consistency will require deliberate effort from him.`;
-    else hisText = `His emotional indicators are mixed — he functions better in independent or practical contexts than deeply emotionally intimate ones. The relationship will need to work on a different kind of compatibility.`;
-  }
+  mLines.push(`**Emotional nature** — ${mStable&&mRomantic?'Both domestically grounded and romantically expressive — he brings stability and warmth.':mStable?'Emotionally stable and dependable — love expressed through reliability and consistency rather than open affection.':mRomantic?'Romantically expressive but domestic consistency requires effort from him.':'Emotional expression does not come naturally — love is implicit and practical rather than openly felt.'}`);
+  if(mWithdraw) mLines.push(`**Stress pattern** — When the relationship becomes difficult, his natural response is to withdraw rather than engage. He closes down rather than opens up under pressure.`);
+  if(mTense&&!mWithdraw) mLines.push(`**Stress pattern** — Conflict and tension surface periodically at home. Not a permanent state but a recurring pattern.`);
+  mLines.push(`**Emotional temperament** — ${mElem} Moon. ${mElem==='Fire'?'Passionate, reactive, and quick to feel — emotions run hot and express themselves openly.':mElem==='Earth'?'Grounded, practical, and slow to express — emotions are real but deeply internalised.':mElem==='Air'?'Intellectual and communicative — processes feelings through conversation and rationalisation rather than pure emotion.':'Deep, intuitive, and sensitive — absorbs the emotional environment and carries it internally.'}`);
 
-  let herText = '';
-  if (ctx === 'married') {
-    if (fEmotStable && fEmotRomantic) herText = `She brings both emotional groundedness and romantic warmth to the marriage — a strong emotional anchor and an expressive partner.`;
-    else if (fEmotStable) herText = `She is emotionally stable and dependable — her love is expressed through presence and reliability. Not overtly expressive but consistently there.`;
-    else if (fEmotRomantic) herText = `She is romantically expressive and warm, though emotional consistency at home may fluctuate.`;
-    else herText = `Emotional expression does not come easily to her — the marriage may feel emotionally understated from her side. Her investment shows in actions rather than words.`;
-    if (fEmotTense) herText += ` Domestic friction is also part of her pattern — the home environment carries tension that shows up periodically.`;
-  } else {
-    if (fEmotStable && fEmotRomantic) herText = `She is emotionally ready for a relationship — grounded and romantically invested. A strong and warm partner.`;
-    else if (fEmotStable) herText = `She offers stability and reliability in a relationship — emotional consistency is her strength.`;
-    else if (fEmotRomantic) herText = `She is romantically warm and expressive — the affection is real, though domestic stability will need deliberate effort.`;
-    else herText = `Her emotional indicators are not strongly placed — she will work better in a relationship built on shared purpose than pure emotional intimacy.`;
-  }
+  // Her emotional picture
+  const fLines=[];
+  const fStable=hits(fH4.sl,[2,4,11])>=1, fRomantic=fH5.sl.includes(5)||fH5.sl.includes(11);
+  const fTense=hits(fH4.sl,[6,8,12])>=1, fWithdraw=fH4.sl.includes(12)||fH4.sl.includes(8);
 
-  let combinedText = '';
-  if (mElem && fElem) {
-    if (elemMatch === 3) combinedText = `Both share the same emotional temperament — they process feelings, react to stress, and experience life through the same lens. Understanding comes naturally; they do not have to explain themselves to each other.`;
-    else if (elemMatch === 2) combinedText = `Their emotional temperaments are compatible but distinct — they complement rather than mirror each other. Each brings something the other lacks, which can be enriching or occasionally friction-producing.`;
-    else combinedText = `Their emotional temperaments are fundamentally different — they process feelings very differently and can easily misread each other. This is not insurmountable but it is the primary emotional challenge in the relationship.`;
-  }
-  if (h4Ovl >= 4) combinedText += ` They want the same things from home life — shared values around family, comfort, and domestic life make daily living naturally aligned.`;
-  else if (h4Ovl >= 2) combinedText += ` Some alignment in what they want from home life — enough common ground to build on, with some differences that need negotiation.`;
-  else combinedText += ` They have very different visions for home life — expectations around the domestic environment will need explicit, ongoing conversation.`;
+  fLines.push(`**Emotional nature** — ${fStable&&fRomantic?'Both grounded and romantically warm — a strong and expressive emotional partner.':fStable?'Emotionally stable and consistently present — love expressed through dependability rather than open affection.':fRomantic?'Romantically warm and expressive, though domestic consistency requires deliberate effort.':'Emotional expression is understated — love shows in actions rather than words or affection.'}`);
+  if(fWithdraw) fLines.push(`**Stress pattern** — She pulls back emotionally when things become difficult. Distance is how she processes rather than connection.`);
+  if(fTense&&!fWithdraw) fLines.push(`**Stress pattern** — Friction at home is part of her emotional pattern — not constant but recurring.`);
+  fLines.push(`**Emotional temperament** — ${fElem} Moon. ${fElem==='Fire'?'Passionate and expressive — emotions surface quickly and are felt intensely.':fElem==='Earth'?'Grounded and slow to express — stable, dependable emotional presence.':fElem==='Air'?'Processes feelings intellectually — communication is how she expresses and resolves emotion.':'Deeply feeling and intuitive — highly sensitive to emotional atmosphere.'}`);
+
+  // Combined
+  const combLines=[];
+  if(elemScore===3) combLines.push(`**Emotional wavelength** — Both share ${mElem} temperament. They understand each other's emotional reactions without explanation — the instinctive understanding is real.`);
+  else if(elemScore===2) combLines.push(`**Emotional wavelength** — ${mElem} and ${fElem} are complementary. They bring different emotional qualities that can enrich each other — one grounds, the other expresses.`);
+  else combLines.push(`**Emotional wavelength** — ${mElem} and ${fElem} process feelings very differently. What feels natural to one can feel foreign or excessive to the other. This is the primary emotional challenge between them.`);
+
+  if(h4Ovl>=4) combLines.push(`**Domestic alignment** — Strong shared vision for home life. They want the same things from their domestic environment.`);
+  else if(h4Ovl>=2) combLines.push(`**Domestic alignment** — Reasonable but not complete. Some negotiation around home and family expectations will be ongoing.`);
+  else combLines.push(`**Domestic alignment** — Very different visions for home life. Expectations around family, space, and domestic rhythm need explicit ongoing conversation.`);
+
+  if(mWithdraw&&fWithdraw) combLines.push(`**Withdrawal pattern** — Both tend to close down emotionally under stress. When conflict hits, there is a risk of mutual silence and emotional distance rather than resolution. This is the key pattern to break.`);
+  else if(mWithdraw||fWithdraw) combLines.push(`**Withdrawal pattern** — One partner tends to withdraw under stress while the other may need to engage. This gap in stress response needs conscious bridging.`);
 
   // DBA
-  const mEmotDBA = [...(m.planet_sig[mDBA.ad]||[]), ...(m.planet_sig[mDBA.pd]||[])];
-  const fEmotDBA = [...(f.planet_sig[fDBA.ad]||[]), ...(f.planet_sig[fDBA.pd]||[])];
-  const mEmotActive = mEmotDBA.some(h=>[4,5].includes(h));
-  const fEmotActive = fEmotDBA.some(h=>[4,5].includes(h));
+  const dbaLines=[];
+  const mEmotAD=(m.planet_sig[mDBA.ad]||[]).some(h=>[4,5].includes(h));
+  const fEmotAD=(f.planet_sig[fDBA.ad]||[]).some(h=>[4,5].includes(h));
+  const mEmotPD=(m.planet_sig[mDBA.pd]||[]).some(h=>[4,5].includes(h));
+  const fEmotPD=(f.planet_sig[fDBA.pd]||[]).some(h=>[4,5].includes(h));
 
-  let dbaText = '';
-  if (ctx === 'married') {
-    if (mEmotActive && fEmotActive) dbaText = `Both are in emotionally heightened periods right now — feelings are closer to the surface on both sides. A good time for honest conversations and deeper connection. What is said now lands differently.`;
-    else if (mEmotActive) dbaText = `He is in an emotionally active period — more open and available than usual. She is in a more outward-focused phase. He may want more from the relationship right now than she is giving.`;
-    else if (fEmotActive) dbaText = `She is in an emotionally active period — she needs more connection and emotional presence from him right now. His phase is more externally directed.`;
-    else dbaText = `Neither is in a particularly emotionally active period — a stable, steady phase. The relationship is consistent rather than intensely felt right now.`;
-  } else {
-    if (mEmotActive && fEmotActive) dbaText = `Both are in emotionally receptive periods — this is a strong window for genuine emotional bonding and building real intimacy. What develops now has depth.`;
-    else if (mEmotActive || fEmotActive) dbaText = `One is emotionally active, the other less so — some deepening is possible but the emotional connection will take longer to become mutual.`;
-    else dbaText = `Neither is in a strongly emotional period right now — intimacy will build gradually rather than quickly in this window.`;
-  }
+  if(mEmotAD) dbaLines.push(`**His period** — Emotional and domestic themes are actively highlighted right now. He is more emotionally open and available than usual. A good window for genuine connection.`);
+  else dbaLines.push(`**His period** — Emotional themes are not particularly activated. He is focused outward — on career, travel, or personal goals. Emotional availability may be lower than usual.`);
 
-  const score = clamp(1 + Math.round((elemMatch + h4Ovl + h5Ovl) / 11 * 9));
-  return { score, his: hisText, her: herText, combined: combinedText, dba: dbaText };
+  if(fEmotAD) dbaLines.push(`**Her period** — Emotional and home themes are active right now. She needs and is receptive to deeper emotional connection.`);
+  else dbaLines.push(`**Her period** — Emotional themes are quieter. She is in a more outward phase — practical or career matters are more dominant.`);
+
+  if(mEmotAD&&fEmotAD) dbaLines.push(`**Combined** — Both are emotionally activated simultaneously. This is a strong window for genuine intimacy and honest conversation. What happens emotionally between them right now will be remembered.`);
+  else if(!mEmotAD&&!fEmotAD) dbaLines.push(`**Combined** — Neither is in a particularly emotional phase. The relationship is stable but not in a heightened intimacy window. A more connected period will follow.`);
+  else dbaLines.push(`**Combined** — Emotional activation is asymmetric right now — one is more open than the other. The more emotionally active partner may want more than the other is currently available to give.`);
+
+  const score=clamp(1+Math.round((elemScore+h4Ovl+h5Ovl)/11*9));
+  return { score, his:mLines.join('\n'), her:fLines.join('\n'), combined:combLines.join('\n'), dba:dbaLines.join('\n') };
 }
 
 // ══════════════════════════════════════════════════════════
 // 3. PHYSICAL / ATTRACTION
 // ══════════════════════════════════════════════════════════
 function analysePhysical(m, f, mDBA, fDBA, ctx) {
-  const mH1 = getSig(m,1), fH1 = getSig(f,1);
-  const mH7 = getSig(m,7), fH7 = getSig(f,7);
-  const mH8 = getSig(m,8), fH8 = getSig(f,8);
-  const mToF = ovl(mH1.both, fH7.both).length;
-  const fToM = ovl(fH1.both, mH7.both).length;
-  const h8Ovl = ovl(mH8.both, fH8.both).length;
+  const mH1=getSig(m,1), fH1=getSig(f,1);
+  const mH7=getSig(m,7), fH7=getSig(f,7);
+  const mH8=getSig(m,8), fH8=getSig(f,8);
+  const mToF=ovl(mH1.both,fH7.both).length;
+  const fToM=ovl(fH1.both,mH7.both).length;
+  const h8Ovl=ovl(mH8.both,fH8.both).length;
+  const mIntense=mH8.sl.includes(8)||mH8.sl.includes(12);
+  const fIntense=fH8.sl.includes(8)||fH8.sl.includes(12);
 
-  let hisText = '';
-  if (ctx === 'married') {
-    if (mToF >= 3) hisText = `The physical and personal pull he feels toward her is genuine and ongoing — not something that fades easily. He is naturally drawn to her as a person.`;
-    else if (mToF >= 1) hisText = `Some genuine attraction exists from his side — it is real but not overwhelming. It requires nurturing to stay alive over time.`;
-    else hisText = `The initial attraction from his side was likely circumstantial — the sustained physical and personal pull is not strongly written into the chart. The relationship runs more on companionship than magnetism.`;
-  } else {
-    if (mToF >= 3) hisText = `He would feel a strong natural pull toward her — genuine attraction that goes beyond surface compatibility. The draw is real and would feel instinctive to him.`;
-    else if (mToF >= 1) hisText = `He would feel some pull toward her — real but not overwhelming. The attraction builds over time rather than arriving immediately.`;
-    else hisText = `The physical pull from his side is not strongly indicated — he may appreciate her but the magnetic attraction is not a central feature of this pairing for him.`;
-  }
+  const mLines=[];
+  mLines.push(`**Physical nature** — ${mIntense?'He carries deep physical and psychological intensity — the attraction he feels runs below the surface and tends to be consuming when it is present.':'His physical orientation is measured rather than intense — attraction builds through familiarity and trust rather than immediate pull.'}`);
+  if(mToF>=3) mLines.push(`**Pull toward her** — Strong. His chart shows genuine and sustained attraction toward someone with her chart signature. The draw is instinctive, not just circumstantial.`);
+  else if(mToF>=1) mLines.push(`**Pull toward her** — Moderate. Some genuine attraction exists from his side. It builds over time rather than arriving fully formed.`);
+  else mLines.push(`**Pull toward her** — Limited by chart indicators. The attraction exists but is not the dominant feature of this pairing for him. The relationship runs more on compatibility than magnetism.`);
 
-  let herText = '';
-  if (ctx === 'married') {
-    if (fToM >= 3) herText = `The pull she feels toward him is strong and genuine — she is naturally attracted to who he is, not just circumstantially together with him.`;
-    else if (fToM >= 1) herText = `Some attraction from her side — real, though it fluctuates and needs active renewal.`;
-    else herText = `The physical and personal pull from her side is not strongly written in — the relationship may feel more like partnership than magnetic connection for her.`;
-  } else {
-    if (fToM >= 3) herText = `She would feel a strong natural attraction toward him — immediate and instinctive pull. The draw is clearly indicated.`;
-    else if (fToM >= 1) herText = `She would feel some pull toward him — grows with time and familiarity rather than being immediately overwhelming.`;
-    else herText = `The physical pull from her side is not strongly indicated — she may connect with him on other levels more naturally than physical or personal magnetism.`;
-  }
+  const fLines=[];
+  fLines.push(`**Physical nature** — ${fIntense?'She carries strong physical and psychological intensity — when she is attracted, it runs deep.':'Her physical orientation is steady rather than intense — drawn to reliability and presence over immediate spark.'}`);
+  if(fToM>=3) fLines.push(`**Pull toward him** — Strong. Her chart shows genuine pull toward someone with his chart signature. The attraction is real and instinctive.`);
+  else if(fToM>=1) fLines.push(`**Pull toward him** — Moderate. Real attraction from her side that grows with time.`);
+  else fLines.push(`**Pull toward him** — Limited by chart indicators. She connects with him on other levels more naturally than pure physical attraction.`);
 
-  let combinedText = '';
-  if (mToF >= 3 && fToM >= 3) combinedText = `Mutual attraction is strongly indicated — both feel a genuine pull toward each other. This is a physically and personally magnetic pairing, not just a compatible one.`;
-  else if ((mToF + fToM) >= 3) combinedText = `Physical attraction exists in this pairing but runs more strongly in one direction than the other. The one who feels it more strongly will invest more in the physical dimension of the relationship.`;
-  else combinedText = `Physical and personal magnetism is not the primary feature of this pairing — the connection works more through compatibility, trust, and shared values than natural attraction. That is not a weakness, but it is something to be aware of.`;
-  if (h8Ovl >= 4) combinedText += ` There is deep psychological and physical intensity between them — the intimacy runs deeper than the surface.`;
-  else if (h8Ovl >= 2) combinedText += ` Some shared depth and intensity — the connection has layers below the surface.`;
+  const combLines=[];
+  if(mToF>=3&&fToM>=3) combLines.push(`**Mutual attraction** — Strongly mutual. Both feel genuine pull toward each other. This is a physically and personally magnetic pairing.`);
+  else if(mToF+fToM>=3) combLines.push(`**Attraction asymmetry** — The attraction is real but runs more strongly in one direction. The one who feels it more will invest more in the physical dimension of the relationship.`);
+  else combLines.push(`**Attraction** — Physical magnetism is not the primary feature of this pairing. The connection works through compatibility, trust, and shared direction rather than instinctive pull. That is not a weakness — it is a different foundation.`);
 
-  const mPhysDBA = [...(m.planet_sig[mDBA.ad]||[]), ...(m.planet_sig[mDBA.pd]||[])];
-  const fPhysDBA = [...(f.planet_sig[fDBA.ad]||[]), ...(f.planet_sig[fDBA.pd]||[])];
-  const mPhysActive = mPhysDBA.some(h=>[1,7,8].includes(h));
-  const fPhysActive = fPhysDBA.some(h=>[1,7,8].includes(h));
+  if(h8Ovl>=4) combLines.push(`**Depth** — Strong shared psychological and physical intensity. The intimacy between them runs below the surface — they affect each other in ways that are difficult to articulate.`);
+  else if(h8Ovl>=2) combLines.push(`**Depth** — Some shared psychological depth. The connection has layers beneath the practical surface.`);
 
-  let dbaText = '';
-  if (ctx === 'married') {
-    if (mPhysActive && fPhysActive) dbaText = `Both are in an active physical and personal phase right now — the pull between them is heightened. An active and engaged period for the relationship.`;
-    else if (mPhysActive) dbaText = `He is in a personally active phase — more engaged and present in the relationship. She is in a more inward or career-focused period.`;
-    else if (fPhysActive) dbaText = `She is in a personally active phase — more engaged in the relationship. He may be more focused elsewhere right now.`;
-    else dbaText = `Neither is in a particularly charged personal phase — a steady, companionable period rather than an intensely connected one.`;
-  } else {
-    if (mPhysActive && fPhysActive) dbaText = `Both are in personally active periods — strong timing for the initial physical and personal connection to ignite. What starts now has real energy behind it.`;
-    else dbaText = `The current period is not particularly charged for initial attraction — the connection will build gradually rather than starting with strong immediate pull.`;
-  }
+  // Who withdraws physically
+  const mWithdrawPhys=mH8.sl.includes(12)||mH8.sl.includes(8)&&mH8.sl.length<3;
+  const fWithdrawPhys=fH8.sl.includes(12)||fH8.sl.includes(8)&&fH8.sl.length<3;
+  if(mWithdrawPhys&&!fWithdrawPhys) combLines.push(`**Intimacy pattern** — He tends toward emotional closure in intimate contexts — the depth is there but accessing it requires patience from her side.`);
+  else if(fWithdrawPhys&&!mWithdrawPhys) combLines.push(`**Intimacy pattern** — She tends toward emotional closure in intimate contexts — the depth is real but takes time and safety to emerge.`);
 
-  const score = clamp(1 + Math.round((mToF + fToM + Math.min(h8Ovl,3)) / 9 * 9));
-  return { score, his: hisText, her: herText, combined: combinedText, dba: dbaText };
+  const dbaLines=[];
+  const mPhysAD=(m.planet_sig[mDBA.ad]||[]).some(h=>[1,7,8].includes(h));
+  const fPhysAD=(f.planet_sig[fDBA.ad]||[]).some(h=>[1,7,8].includes(h));
+
+  dbaLines.push(`**His period** — ${mPhysAD?'Personal and physical energy is activated right now. He is more engaged and present in the relationship than usual.':'His focus is elsewhere right now — outward or internal rather than toward relationship energy.'}`);
+  dbaLines.push(`**Her period** — ${fPhysAD?'She is in a personally and physically active period — more engaged and receptive in the relationship.':'Her focus is directed elsewhere — career, personal growth, or family matters are more prominent.'}`);
+  if(mPhysAD&&fPhysAD) dbaLines.push(`**Combined** — Both are in personally active phases simultaneously. A strong window for the physical and personal connection to deepen. Energy between them is heightened right now.`);
+  else dbaLines.push(`**Combined** — Physical and personal energy between them is not at its peak right now. A quieter but steady phase.`);
+
+  const score=clamp(1+Math.round((mToF+fToM+Math.min(h8Ovl,3))/9*9));
+  return { score, his:mLines.join('\n'), her:fLines.join('\n'), combined:combLines.join('\n'), dba:dbaLines.join('\n') };
 }
 
 // ══════════════════════════════════════════════════════════
 // 4. FINANCIAL COMPATIBILITY
 // ══════════════════════════════════════════════════════════
 function analyseFinancial(m, f, mDBA, fDBA, ctx) {
-  const mH2 = getSig(m,2), fH2 = getSig(f,2);
-  const mH11 = getSig(m,11), fH11 = getSig(f,11);
-  const h2Ovl = ovl(mH2.both, fH2.both).length;
-  const h11Ovl = ovl(mH11.both, fH11.both).length;
-  const mFinStrong = mH2.slSig.some(h=>[2,11].includes(h)) || mH11.slSig.some(h=>[2,11].includes(h));
-  const fFinStrong = fH2.slSig.some(h=>[2,11].includes(h)) || fH11.slSig.some(h=>[2,11].includes(h));
-  const mFinRisk   = mH2.slSig.some(h=>[6,8,12].includes(h));
-  const fFinRisk   = fH2.slSig.some(h=>[6,8,12].includes(h));
-  const conflict   = ovl([...mH2.both,...mH11.both].filter(h=>[6,8,12].includes(h)), [...fH2.both,...fH11.both]).length;
+  const mH2=getSig(m,2), fH2=getSig(f,2);
+  const mH11=getSig(m,11), fH11=getSig(f,11);
+  const h2Ovl=ovl(mH2.both,fH2.both).length, h11Ovl=ovl(mH11.both,fH11.both).length;
+  const mEarn=hits(mH2.sl,[2,6,10,11])>=1, fEarn=hits(fH2.sl,[2,6,10,11])>=1;
+  const mSave=mH2.sl.includes(2)||mH2.sl.includes(4), fSave=fH2.sl.includes(2)||fH2.sl.includes(4);
+  const mRisk=hits(mH2.sl,[6,8,12])>=1, fRisk=hits(fH2.sl,[6,8,12])>=1;
+  const mGains=mH11.sl.includes(11)||mH11.sl.includes(2), fGains=fH11.sl.includes(11)||fH11.sl.includes(2);
+  const mDrain=mH11.sl.includes(12)||mH11.sl.includes(8), fDrain=fH11.sl.includes(12)||fH11.sl.includes(8);
+  const conflict=ovl([...mH2.both,...mH11.both].filter(h=>[6,8,12].includes(h)),[...fH2.both,...fH11.both]).length;
 
-  let hisText = '';
-  if (ctx === 'married') {
-    if (mFinStrong && !mFinRisk) hisText = `He is a financially strong contributor to the marriage — earning capacity and savings orientation are both well-placed in his chart.`;
-    else if (mFinStrong && mFinRisk) hisText = `He earns well but financial instability runs alongside — good periods alternate with drains. Income is real but savings discipline is the ongoing challenge.`;
-    else hisText = `His financial contribution to the marriage is inconsistent — earning requires sustained effort and the savings pattern is not naturally strong.`;
-  } else {
-    if (mFinStrong) hisText = `He is a financially capable partner — earning and savings capacity are indicated. He brings financial strength to a shared life.`;
-    else hisText = `His financial indicators are moderate — income requires consistent effort rather than natural flow. Financial security is built, not inherited.`;
-    if (mFinRisk) hisText += ` Some financial instability is also part of his pattern — occasional pressure or losses are possible and should be planned for.`;
-  }
+  const mLines=[];
+  mLines.push(`**Earning capacity** — ${mEarn?'Strong earning indicators — salary, service, or career-driven income is well-placed in his chart.':'Earning requires consistent effort — income does not flow naturally but builds through discipline.'}`);
+  mLines.push(`**Savings pattern** — ${mSave?'Natural savings orientation — accumulation and financial security are instinctive priorities.':'Saving requires deliberate effort — money tends to move rather than accumulate.'}`);
+  if(mRisk) mLines.push(`**Financial risk** — Instability is part of his pattern — periods of loss, unexpected expenses, or debt are written in alongside earning. Financial planning and buffers are essential.`);
+  if(mDrain) mLines.push(`**Outflow pattern** — His gains tend to leave — spent, invested abroad, or directed elsewhere. High earning does not automatically mean high saving.`);
 
-  let herText = '';
-  if (ctx === 'married') {
-    if (fFinStrong && !fFinRisk) herText = `She is a financially capable and stable contributor to the marriage — earning and savings are both well-placed.`;
-    else if (fFinStrong && fFinRisk) herText = `She earns well but some financial drain runs alongside — expenses or outflows periodically offset her gains.`;
-    else herText = `Her financial contribution is not strongly placed — financial dependence or inconsistency is a factor in the shared finances.`;
-  } else {
-    if (fFinStrong) herText = `She brings financial capability to a shared life — earning and savings orientation are indicated.`;
-    else herText = `Her financial indicators are moderate — consistent effort creates stability, but it does not come as natural flow.`;
-    if (fFinRisk) herText += ` Some financial pressure is part of her pattern — occasional outflows or losses will need managing.`;
-  }
+  const fLines=[];
+  fLines.push(`**Earning capacity** — ${fEarn?'Strong earning indicators — she brings real financial capability to a shared life.':'Earning is effort-dependent — income builds through consistent work rather than natural flow.'}`);
+  fLines.push(`**Savings pattern** — ${fSave?'Natural savings orientation — financial security is an instinctive priority.':'Saving requires deliberate structure — money tends to move out as fast as it comes in.'}`);
+  if(fRisk) fLines.push(`**Financial risk** — Financial instability is part of her pattern — occasional losses or pressures are written into her money picture.`);
+  if(fDrain) fLines.push(`**Outflow pattern** — Her gains tend to leave through expenses, travel, or outward direction. Financial retention requires conscious systems.`);
 
-  let combinedText = '';
-  if (h2Ovl >= 4 && h11Ovl >= 3) combinedText = `Strong financial alignment — they approach money, savings, and wealth through similar channels. Financial harmony is natural in this pairing.`;
-  else if (h2Ovl >= 2 || h11Ovl >= 2) combinedText = `Reasonable financial alignment — some common ground in how they approach money, though differences exist and will need open discussion.`;
-  else combinedText = `Their financial orientations are quite different — they earn, spend, and save in very different ways. Without clear shared agreements, money is likely to become a recurring source of friction.`;
-  if (conflict >= 3) combinedText += ` There is a significant risk of one person's financial pattern draining the other's — separate financial management alongside shared expenses may be the healthiest structure.`;
-  else if (conflict === 0) combinedText += ` No significant financial drain between them — a positive sign for their combined financial health.`;
+  const combLines=[];
+  if(h2Ovl>=4&&h11Ovl>=3) combLines.push(`**Financial alignment** — Strong. Both approach saving, earning, and wealth through similar channels. Financial harmony is natural — they will not constantly fight about money.`);
+  else if(h2Ovl>=2||h11Ovl>=2) combLines.push(`**Financial alignment** — Reasonable but not complete. Common ground exists alongside real differences in how each manages and values money.`);
+  else combLines.push(`**Financial alignment** — Limited. They earn, spend, and save very differently. Without clear shared financial agreements, money is likely to become a recurring source of friction.`);
 
-  const mFinDBA = [...(m.planet_sig[mDBA.md]||[]), ...(m.planet_sig[mDBA.ad]||[])];
-  const fFinDBA = [...(f.planet_sig[fDBA.md]||[]), ...(f.planet_sig[fDBA.ad]||[])];
-  const mFinActive = mFinDBA.some(h=>[2,11].includes(h));
-  const fFinActive = fFinDBA.some(h=>[2,11].includes(h));
-  const mFinDrain  = mFinDBA.some(h=>[6,8,12].includes(h));
-  const fFinDrain  = fFinDBA.some(h=>[6,8,12].includes(h));
+  if(conflict>=3) combLines.push(`**Financial drain risk** — Significant. One person's financial pattern can actively drain the other's. Separate financial management alongside a shared household account is the most practical structure.`);
+  else if(conflict>=1) combLines.push(`**Financial friction** — Some tension between their financial patterns. Manageable with clear agreements and transparency.`);
+  else combLines.push(`**Financial friction** — Minimal. No significant drain pattern between their financial indicators.`);
 
-  let dbaText = '';
-  if (ctx === 'married') {
-    if (mFinActive && fFinActive) dbaText = `Both are in active earning and gains periods — a good window for joint financial decisions, investments, or building shared assets.`;
-    else if (mFinDrain || fFinDrain) dbaText = `One or both charts have financial drain indicators active right now — avoid major financial commitments in this period. Focus on managing what already exists.`;
-    else dbaText = `Financial matters are stable but not in a growth phase — a maintenance period rather than a building one.`;
-  } else {
-    if (mFinActive && fFinActive) dbaText = `Both are in active earning periods — financial partnership can begin on strong footing. Shared financial planning now is well-supported.`;
-    else if (mFinActive || fFinActive) dbaText = `One chart has an active earning period — financial partnership can start, though it may be one-sided initially.`;
-    else dbaText = `Neither is in a strong financial period — not the peak window for major financial decisions or combining assets.`;
-  }
+  // Who earns more / who saves more
+  if(mEarn&&!fEarn) combLines.push(`**Financial roles** — He is the stronger earner in this pairing. The financial balance in the relationship leans on his income.`);
+  else if(fEarn&&!mEarn) combLines.push(`**Financial roles** — She is the stronger earner in this pairing.`);
+  if(mSave&&!fSave) combLines.push(`**Savings role** — He is more naturally savings-oriented. She tends to spend or move money rather than hold it.`);
+  else if(fSave&&!mSave) combLines.push(`**Savings role** — She is more naturally savings-oriented. He tends to spend or direct money outward.`);
 
-  const score = clamp(1 + Math.round(Math.max(0, h2Ovl + h11Ovl - conflict) / 8 * 9));
-  return { score, his: hisText, her: herText, combined: combinedText, dba: dbaText };
+  const dbaLines=[];
+  const mFinMD=(m.planet_sig[mDBA.md]||[]).some(h=>[2,11].includes(h));
+  const mFinAD=(m.planet_sig[mDBA.ad]||[]).some(h=>[2,11].includes(h));
+  const fFinMD=(f.planet_sig[fDBA.md]||[]).some(h=>[2,11].includes(h));
+  const fFinAD=(f.planet_sig[fDBA.ad]||[]).some(h=>[2,11].includes(h));
+  const mDrainDBA=(m.planet_sig[mDBA.ad]||[]).some(h=>[6,8,12].includes(h));
+  const fDrainDBA=(f.planet_sig[fDBA.ad]||[]).some(h=>[6,8,12].includes(h));
+
+  dbaLines.push(`**His period** — ${mFinMD||mFinAD?'Active earning and gains period — financial momentum is present. A good window for income-generating decisions.':mDrainDBA?'Financial drain is active right now — expenses, losses, or outflows are highlighted. Avoid major financial commitments in this window.':'Financial matters are steady but not in a growth phase.'}`);
+  dbaLines.push(`**Her period** — ${fFinMD||fFinAD?'Active earning period — her financial capacity is activated. Good timing for financial decisions.':fDrainDBA?'Financial drain is active — expenses and outflows are prominent right now. Caution with major financial commitments.':'Financially stable but not in a peak growth phase.'}`);
+  if((mFinMD||mFinAD)&&(fFinMD||fFinAD)) dbaLines.push(`**Combined** — Both are in active earning periods. Good window for joint financial decisions, investments, or combining financial goals.`);
+  else if(mDrainDBA||fDrainDBA) dbaLines.push(`**Combined** — Financial drain is active in one or both charts. Not the right window for large financial commitments together.`);
+
+  const score=clamp(1+Math.round(Math.max(0,h2Ovl+h11Ovl-conflict)/8*9));
+  return { score, his:mLines.join('\n'), her:fLines.join('\n'), combined:combLines.join('\n'), dba:dbaLines.join('\n') };
 }
 
 // ══════════════════════════════════════════════════════════
 // 5. LONGEVITY OF UNION
 // ══════════════════════════════════════════════════════════
 function analyseLongevity(m, f, mDBA, fDBA, ctx) {
-  const mH7 = getSig(m,7), fH7 = getSig(f,7);
-  const mH2 = getSig(m,2), fH2 = getSig(f,2);
-  const BOND = [2,4,7,11], BREAK = [6,8,12];
-  const mBond  = mH7.both.filter(h=>BOND.includes(h)).length;
-  const fBond  = fH7.both.filter(h=>BOND.includes(h)).length;
-  const mBreak = mH7.slSig.filter(h=>BREAK.includes(h)).length;
-  const fBreak = fH7.slSig.filter(h=>BREAK.includes(h)).length;
-  const mFam   = mH2.slSig.some(h=>[2,4,11].includes(h));
-  const fFam   = fH2.slSig.some(h=>[2,4,11].includes(h));
-  const netLong = (mBond + fBond) - (mBreak + fBreak);
+  const mH7=getSig(m,7), fH7=getSig(f,7);
+  const mH2=getSig(m,2), fH2=getSig(f,2);
+  const BOND=[2,4,7,11], BREAK=[6,8,12];
+  const mBond=mH7.both.filter(h=>BOND.includes(h)).length;
+  const fBond=fH7.both.filter(h=>BOND.includes(h)).length;
+  const mBreak=hits(mH7.sl,BREAK);
+  const fBreak=hits(fH7.sl,BREAK);
+  const mFam=hits(mH2.sl,[2,4,11])>=1, fFam=hits(fH2.sl,[2,4,11])>=1;
+  const mWithdraw=mH7.sl.includes(12)||mH7.sl.includes(8);
+  const fWithdraw=fH7.sl.includes(12)||fH7.sl.includes(8);
+  const netLong=(mBond+fBond)-(mBreak+fBreak);
 
-  let hisText = '';
-  if (ctx === 'married') {
-    if (mBond >= 3 && mBreak === 0) hisText = `He is built for lasting partnership — the indicators for sustained union are strong in his chart with minimal separating forces. He will hold the relationship together through difficult phases.`;
-    else if (mBreak >= 2) hisText = `There is a pattern of periodic pulling away from the relationship in his chart — not necessarily separation, but emotional withdrawal, conflict phases, or periods of distance are written into how he experiences partnership.`;
-    else hisText = `He sustains the marriage through deliberate effort — the staying power is there but it is a choice he makes, not a deeply automatic orientation.`;
-  } else {
-    if (mBond >= 3) hisText = `He is built for lasting commitment — his chart shows strong staying power in relationships. Once he commits, the orientation is toward permanence.`;
-    else if (mBreak >= 2) hisText = `While marriage is indicated for him, challenges to its durability are also written in — the union will require active and ongoing work to stay strong over years.`;
-    else hisText = `He can sustain a lasting relationship but it will be through consistent choice rather than effortless permanence.`;
-  }
+  const mLines=[];
+  if(mBond>=3&&mBreak===0) mLines.push(`**Staying power** — Strong. His chart is oriented toward lasting partnership — the bonding indicators significantly outweigh the separating ones. He will hold the relationship together through difficult phases.`);
+  else if(mBreak>=2&&mBond<2) mLines.push(`**Staying power** — Challenged. His chart carries more separating energy than bonding in the union context. The relationship will be tested repeatedly from his side.`);
+  else mLines.push(`**Staying power** — Moderate. He can sustain a lasting relationship but it is through deliberate and conscious choice rather than automatic orientation.`);
 
-  let herText = '';
-  if (ctx === 'married') {
-    if (fBond >= 3 && fBreak === 0) herText = `She is deeply oriented toward lasting partnership — the staying power in her chart is strong. She will invest in the union and hold it together even through difficult phases.`;
-    else if (fBreak >= 2) herText = `There is a pattern of emotional withdrawal or distance in her chart when the relationship becomes difficult — not necessarily separation, but periods of pulling away are part of her pattern.`;
-    else herText = `She sustains the marriage through conscious commitment — the orientation is there but requires deliberate renewal rather than running automatically.`;
-  } else {
-    if (fBond >= 3) herText = `She is built for lasting commitment — once she chooses, the orientation is toward permanence and stability.`;
-    else if (fBreak >= 2) herText = `The durability of the union is a real question in her chart — challenges to long-term stability are indicated alongside the marriage promise.`;
-    else herText = `She can sustain a lasting partnership through consistent effort — not automatically, but genuinely.`;
-  }
+  if(mWithdraw) mLines.push(`**When things get hard** — He tends to create distance — physically or emotionally — when the relationship becomes difficult. Withdrawal is his instinctive response to relationship stress.`);
+  else if(mBreak>=1) mLines.push(`**When things get hard** — Conflict surfaces periodically from his side. He may push back or create friction when the relationship constrains him.`);
 
-  let combinedText = '';
-  if (netLong >= 4) combinedText = `The combined picture strongly favours lasting union — both charts lean toward holding the relationship together. The separating forces between them are relatively contained. This pairing has real long-term potential.`;
-  else if (netLong >= 1) combinedText = `The combined picture leans toward lasting — the staying forces marginally outweigh the separating ones. The union endures through both of them actively choosing to sustain it.`;
-  else if (netLong === 0) combinedText = `Bonding and separation forces are perfectly balanced in the combined chart — the durability of this union is entirely determined by their choices. The chart does not tip either way.`;
-  else combinedText = `The combined chart carries more separating force than bonding force — this is a relationship that will be genuinely tested over time. It is not impossible, but both parties need to be clear-eyed about the effort required.`;
-  if (mFam && fFam) combinedText += ` Both bring family-orientation to the relationship — shared values around home and family are a genuine stabilising force.`;
+  mLines.push(`**Family orientation** — ${mFam?'He is family-oriented and places value on the home unit. This is a stabilising force in sustaining the union.':'Family and domestic stability are not the dominant motivation for him. The union needs to offer something beyond home and family to hold his attention.'}`);
 
-  const mLongDBA = [...(m.planet_sig[mDBA.ad]||[]), ...(m.planet_sig[mDBA.pd]||[])];
-  const fLongDBA = [...(f.planet_sig[fDBA.ad]||[]), ...(f.planet_sig[fDBA.pd]||[])];
-  const mSepActive  = mLongDBA.some(h=>BREAK.includes(h));
-  const fSepActive  = fLongDBA.some(h=>BREAK.includes(h));
-  const mBondActive = mLongDBA.some(h=>BOND.includes(h));
-  const fBondActive = fLongDBA.some(h=>BOND.includes(h));
+  const fLines=[];
+  if(fBond>=3&&fBreak===0) fLines.push(`**Staying power** — Strong. Her chart is deeply oriented toward lasting partnership. She will invest in the union and sustain it through difficult phases.`);
+  else if(fBreak>=2&&fBond<2) fLines.push(`**Staying power** — Challenged. Her chart carries significant separating energy in the union context. The relationship will be tested repeatedly from her side.`);
+  else fLines.push(`**Staying power** — Moderate. She sustains the relationship through conscious commitment rather than effortless permanence.`);
 
-  let dbaText = '';
-  if (ctx === 'married') {
-    if (mSepActive && fSepActive) dbaText = `Both are in periods with separating forces active — this is a high-risk phase for the union. Disagreements, emotional distance, and friction are more likely now. Active, deliberate work on the relationship is essential in this window.`;
-    else if (mSepActive) dbaText = `His current period carries separating energy — he may feel the urge to withdraw or create distance. She needs to hold the space without escalating.`;
-    else if (fSepActive) dbaText = `Her current period carries separating energy — she may pull back or feel disconnected. He needs to stay present rather than mirror her withdrawal.`;
-    else if (mBondActive && fBondActive) dbaText = `Both are in bonding periods — a strengthening phase for the union. Commitments and decisions made together now will hold.`;
-    else dbaText = `The current period is neutral for longevity — neither strongly pulling toward deeper bonding nor toward separation. A stable, steady phase.`;
-  } else {
-    if (mSepActive && fSepActive) dbaText = `Both charts have separating forces active right now — not the right time to commit to a lasting union. Conflicts would likely surface early and powerfully.`;
-    else if (mBondActive && fBondActive) dbaText = `Both charts have bonding forces active — if the union is made in this period, it carries strong long-term chart support. A good window for commitment.`;
-    else dbaText = `Mixed longevity signals in the current period — the union can happen but the long-term chart strength is not at its peak right now.`;
-  }
+  if(fWithdraw) fLines.push(`**When things get hard** — She tends to withdraw emotionally rather than engage. Distance is how she processes relationship difficulty.`);
+  else if(fBreak>=1) fLines.push(`**When things get hard** — Conflict and friction surface periodically from her side. She may push back when the relationship feels constraining.`);
 
-  const score = clamp(1 + Math.round((netLong + 4) / 8 * 9));
-  return { score, his: hisText, her: herText, combined: combinedText, dba: dbaText };
+  fLines.push(`**Family orientation** — ${fFam?'She is family-oriented — home and family are central motivations. This is a significant stabilising force in the union.':'Family as a primary motivation is not strongly indicated. The union needs to offer growth, purpose, or independence alongside home.'}`);
+
+  const combLines=[];
+  if(netLong>=4) combLines.push(`**Combined durability** — Strongly in favour of lasting. The bonding forces significantly outweigh the separating ones in the combined chart. Both charts lean toward holding the relationship together.`);
+  else if(netLong>=1) combLines.push(`**Combined durability** — Leaning toward lasting, but not dramatically. The union endures through both of them actively choosing it — not through automatic permanence.`);
+  else if(netLong===0) combLines.push(`**Combined durability** — Perfectly balanced. The chart does not tip toward lasting or separation. The durability is entirely in their hands — neither chart is working for or against the union.`);
+  else combLines.push(`**Combined durability** — Challenged. The combined separating forces outweigh the bonding ones. This relationship will be genuinely and repeatedly tested. Lasting requires exceptional and continuous commitment from both sides.`);
+
+  // Who is the greater risk
+  if(mBreak>fBreak&&mBreak>=2) combLines.push(`**Primary risk source** — The greater risk to this union's durability comes from his side. His separation energy is the more prominent force between the two charts.`);
+  else if(fBreak>mBreak&&fBreak>=2) combLines.push(`**Primary risk source** — The greater risk to this union's durability comes from her side. Her separation energy is the more prominent force in the combined picture.`);
+  else if(mBreak===fBreak&&mBreak>=2) combLines.push(`**Shared risk** — Both carry significant separation energy. The risk to durability is shared equally — both sides need to work consciously to sustain the union.`);
+
+  if(mFam&&fFam) combLines.push(`**Stabilising force** — Both are family-oriented. Shared values around home and family are a genuine anchor for this relationship.`);
+  else if(!mFam&&!fFam) combLines.push(`**Note** — Neither is strongly family-oriented in their union indicators. The relationship needs a clear shared purpose beyond family to sustain long-term interest.`);
+
+  const dbaLines=[];
+  const mBondAD=(m.planet_sig[mDBA.ad]||[]).some(h=>BOND.includes(h));
+  const mBreakAD=(m.planet_sig[mDBA.ad]||[]).some(h=>BREAK.includes(h));
+  const fBondAD=(f.planet_sig[fDBA.ad]||[]).some(h=>BOND.includes(h));
+  const fBreakAD=(f.planet_sig[fDBA.ad]||[]).some(h=>BREAK.includes(h));
+  const mBondPD=(m.planet_sig[mDBA.pd]||[]).some(h=>BOND.includes(h));
+  const fBondPD=(f.planet_sig[fDBA.pd]||[]).some(h=>BOND.includes(h));
+  const mBreakPD=(m.planet_sig[mDBA.pd]||[]).some(h=>BREAK.includes(h));
+  const fBreakPD=(f.planet_sig[fDBA.pd]||[]).some(h=>BREAK.includes(h));
+
+  dbaLines.push(`**His period** — ${mBreakAD&&mBreakPD?'Both sub-period levels are activating separation energy — this is a high-risk phase for him in the union. Conflict, distance, or withdrawal are more likely now.':mBondAD?'Bonding energy is active in his current period — he is more invested in sustaining the relationship than usual.':mBreakAD?'Some separation energy is active. Friction or withdrawal is possible in this window.':'His period is neutral — neither strongly toward bonding nor separation.'}`);
+
+  dbaLines.push(`**Her period** — ${fBreakAD&&fBreakPD?'Both sub-period levels are activating separation energy — high-risk phase for her in the union. Emotional distance and conflict are more likely.':fBondAD?'Bonding energy is active — she is invested in sustaining and deepening the relationship right now.':fBreakAD?'Some separation energy active. Distance or friction is possible.':'Her period is neutral for union longevity.'}`);
+
+  if(mBreakAD&&fBreakAD) dbaLines.push(`**Combined** — Both charts have separation energy simultaneously active. This is the most challenging window for the union. Major relationship decisions, confrontations, or external pressures could put real strain on the bond right now. Extra intentional care is needed.`);
+  else if(mBondAD&&fBondAD) dbaLines.push(`**Combined** — Both charts have bonding energy active. A strengthening phase for the union — commitments and decisions made together now carry long-term weight.`);
+  else dbaLines.push(`**Combined** — Mixed longevity signals in the current period. One partner is more invested in holding the union than the other right now. The more stable partner needs to carry more of the relational load in this window.`);
+
+  const score=clamp(1+Math.round((netLong+4)/8*9));
+  return { score, his:mLines.join('\n'), her:fLines.join('\n'), combined:combLines.join('\n'), dba:dbaLines.join('\n') };
 }
 
 // ══════════════════════════════════════════════════════════
-// MASTER COMPUTE
+// MASTER
 // ══════════════════════════════════════════════════════════
 function computeAllFactors(m, f, mDBA, fDBA, mStatus, fStatus) {
-  const ctx = getMaritalContext(mStatus, fStatus);
-  const union     = analyseUnion(m, f, mDBA, fDBA, ctx);
-  const emotional = analyseEmotional(m, f, mDBA, fDBA, ctx);
-  const physical  = analysePhysical(m, f, mDBA, fDBA, ctx);
-  const financial = analyseFinancial(m, f, mDBA, fDBA, ctx);
-  const longevity = analyseLongevity(m, f, mDBA, fDBA, ctx);
-  const overall   = clamp(Math.round((union.score + emotional.score + physical.score + financial.score + longevity.score) / 5));
-  return { union, emotional, physical, financial, longevity, overall, ctx };
+  const ctx=getMaritalCtx(mStatus,fStatus);
+  const union     =analyseUnion(m,f,mDBA,fDBA,ctx);
+  const emotional =analyseEmotional(m,f,mDBA,fDBA,ctx);
+  const physical  =analysePhysical(m,f,mDBA,fDBA,ctx);
+  const financial =analyseFinancial(m,f,mDBA,fDBA,ctx);
+  const longevity =analyseLongevity(m,f,mDBA,fDBA,ctx);
+  const overall   =clamp(Math.round((union.score+emotional.score+physical.score+financial.score+longevity.score)/5));
+  return {union,emotional,physical,financial,longevity,overall,ctx};
 }
 
 
+
+// Convert **bold** markdown to HTML and newlines to <br>
+  function md(text) {
+    return text
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br><br>');
+  }
 
 // ── Run Match ──
 function runMatch() {
@@ -789,14 +855,14 @@ function runMatch() {
       </div>
       <div class="dim-body">
         <div class="dim-sub-label">His chart</div>
-        <div class="dim-sub-text">${d.r.his}</div>
+        <div class="dim-sub-text">${md(d.r.his)}</div>
         <div class="dim-sub-label" style="margin-top:10px">Her chart</div>
-        <div class="dim-sub-text">${d.r.her}</div>
+        <div class="dim-sub-text">${md(d.r.her)}</div>
         <div class="dim-sub-label" style="margin-top:10px">Combined</div>
-        <div class="dim-sub-text">${d.r.combined}</div>
+        <div class="dim-sub-text">${md(d.r.combined)}</div>
         <div class="dim-dba-block">
           <div class="dim-sub-label">Current DBA</div>
-          <div class="dim-sub-text">${d.r.dba}</div>
+          <div class="dim-sub-text">${md(d.r.dba)}</div>
         </div>
       </div>
     </div>
