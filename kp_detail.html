@@ -4514,10 +4514,12 @@ function loadHouseDetail(houseNum) {
   sessionStorage.setItem('kp_active_house', houseNum);
 
   const r = allResults[houseNum];
-  const content = document.getElementById('detail-content');
+  const detailEl = document.getElementById('detail-content');
+
+  if (!detailEl) { console.error('detail-content element not found'); return; }
 
   if (!r) {
-    content.innerHTML = '<div class="detail-loading">No data for this house.</div>';
+    detailEl.innerHTML = '<div class="detail-loading">No data for this house.</div>';
     return;
   }
 
@@ -4711,7 +4713,8 @@ function loadHouseDetail(houseNum) {
       </div>`;
   });
 
-  content.innerHTML = html;
+  detailEl.innerHTML = html;
+  detailEl.scrollTop = 0;
 }
 
 function toggleSubEvent(id) {
