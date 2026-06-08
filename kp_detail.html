@@ -1819,31 +1819,29 @@ function generateSubEventSummary(se, houseNum, chartData) {
   const T_RKS = ['Rahu','Ketu','Saturn'];
 
   function _ckv_gender(cuspNum) {
+    // CKV Rule (C. Kadirvelu): gender is determined by the planet nature of the Sub Lord of the child cusp
+    // Male planets: Sun, Mars, Jupiter, Rahu
+    // Female planets: Moon, Venus, Saturn, Ketu
+    // Mercury: check its sign (male sign → male, female sign → female)
     if (!chartData || !chartData.cusps) return 'Unknown';
     const cd = chartData.cusps[cuspNum];
     if (!cd) return 'Unknown';
-    const csl     = cd.sl;
-    const cslSign = chartData.planets && chartData.planets[csl] ? chartData.planets[csl].sign : '';
-    if (!cslSign) return 'Unknown';
-    const G = T_MALE_SIGNS.includes(cslSign) ? 'Male' : 'Female';
-    const cuspSignLord = cd.sign ? (SIGN_DATA[cd.sign] || {}).ruler || '' : '';
-    const K = [cuspSignLord, cd.nl, cd.ss].filter(p => T_RKS.includes(p)).length;
-    const cslPlanet = chartData.planets[csl] || {};
-    const cslSignData = SIGN_DATA[cslSign] || {};
-    const cslSignLord = cslSignData.ruler || '';
-    const cslNak = cslPlanet.nak || '';
-    const L = [cslSignLord, cslNak].filter(p => T_RKS.includes(p)).length;
-    const M = Object.entries(chartData.planets || {})
-      .filter(([p, d]) => p !== csl && d.sign === cslSign && T_RKS.includes(p)).length;
-    const N = K + L + M;
-    return (N % 2 === 0) ? G : (G === 'Male' ? 'Female' : 'Male');
+    const sl = cd.sl;
+    if (!sl) return 'Unknown';
+    const MALE_P   = ['Sun','Mars','Jupiter','Rahu'];
+    const FEMALE_P = ['Moon','Venus','Saturn','Ketu'];
+    if (MALE_P.includes(sl))   return 'Male';
+    if (FEMALE_P.includes(sl)) return 'Female';
+    // Mercury — check its sign
+    if (sl === 'Mercury') {
+      const mercSign = chartData.planets && chartData.planets['Mercury'] ? chartData.planets['Mercury'].sign : '';
+      const MALE_SIGNS = ['Aries','Gemini','Leo','Libra','Sagittarius','Aquarius'];
+      return MALE_SIGNS.includes(mercSign) ? 'Male' : 'Female';
+    }
+    return 'Unknown';
   }
 
-  // ── TEXT ASSEMBLY HELPERS ──
-  // Converts house hits into flowing sentences per sub-event
 
-        // ── HELPER: build a formatted line ──
-  // _line('Bold label', 'clear statement') → '<strong>Bold label</strong> — clear statement.'
   function _line(label, statement) {
     return `<strong>${label}</strong> — ${statement}.`;
   }
