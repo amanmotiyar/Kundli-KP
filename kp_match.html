@@ -1064,9 +1064,15 @@ function _runMatch() {
 
   let result;
   try {
+    console.log('Step 1: starting computeAllFactors');
+    console.log('m.cusps:', Object.keys(m.cusps||{}).length, 'm.planet_sig:', JSON.stringify(m.planet_sig).slice(0,100));
+    console.log('f.cusps:', Object.keys(f.cusps||{}).length, 'f.planet_sig:', JSON.stringify(f.planet_sig).slice(0,100));
+    console.log('mDBA:', JSON.stringify(mDBA), 'fDBA:', JSON.stringify(fDBA));
     result = computeAllFactors(m, f, mDBA, fDBA, mStatus, fStatus);
+    console.log('Step 2: computeAllFactors done, score=', result && result.overall);
   } catch(e) {
-    showError('Analysis error: ' + e.message + '. Please check both PDFs are valid KP charts.');
+    console.error('CRASH:', e.message, e.stack);
+    showError('Analysis error: ' + e.message);
     document.getElementById('loading-msg').style.display = 'none';
     document.getElementById('match-btn').disabled = false;
     return;
