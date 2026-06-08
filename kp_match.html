@@ -471,7 +471,10 @@ async function parsePDF(file) {
     }
   }
 
-  console.log('Parsed:', data.name, 'cusps:', Object.keys(data.cusps).length, 'sigs:', JSON.stringify(data.planet_sig).slice(0,200));
+  // Debug: show first 30 lines from pdf.js
+  console.log('=== PDF LINES (first 30) ===');
+  lines.slice(0,30).forEach((l,i) => console.log(i, JSON.stringify(l)));
+  console.log('Parsed:', data.name, 'cusps:', Object.keys(data.cusps).length, 'sigs:', JSON.stringify(data.planet_sig).slice(0,300));
   return data;
 }
 
