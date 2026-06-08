@@ -1043,8 +1043,14 @@ function computeAllFactors(m, f, mDBA, fDBA, mStatus, fStatus) {
 
 // ── Run Match ──
 function runMatch() {
+  document.getElementById('loading-msg').style.display = 'block';
+  document.getElementById('match-btn').disabled = true;
+  setTimeout(() => _runMatch(), 50);
+}
+
+function _runMatch() {
   const m = charts.male, f = charts.female;
-  if (!m || !f) { showError('Please upload both charts.'); return; }
+  if (!m || !f) { showError('Please upload both charts.'); document.getElementById('loading-msg').style.display='none'; document.getElementById('match-btn').disabled=false; return; }
 
   const mDBA = { md: document.getElementById('md-male').value, ad: document.getElementById('ad-male').value, pd: document.getElementById('pd-male').value };
   const fDBA = { md: document.getElementById('md-female').value, ad: document.getElementById('ad-female').value, pd: document.getElementById('pd-female').value };
@@ -1056,7 +1062,15 @@ function runMatch() {
   const mName = m.name || 'Person 1';
   const fName = f.name || 'Person 2';
 
-  const result = computeAllFactors(m, f, mDBA, fDBA, mStatus, fStatus);
+  let result;
+  try {
+    result = computeAllFactors(m, f, mDBA, fDBA, mStatus, fStatus);
+  } catch(e) {
+    showError('Analysis error: ' + e.message + '. Please check both PDFs are valid KP charts.');
+    document.getElementById('loading-msg').style.display = 'none';
+    document.getElementById('match-btn').disabled = false;
+    return;
+  }
   const ctxLabel = { married:'Married Couple', engaged:'Engaged Couple', unmarried:'Compatibility Assessment', separated:'Separated' }[result.ctx] || 'Compatibility';
 
   // Names + context
@@ -1105,6 +1119,8 @@ function runMatch() {
     </div>
   `).join('');
 
+  document.getElementById('loading-msg').style.display = 'none';
+  document.getElementById('match-btn').disabled = false;
   document.getElementById('results').style.display = 'block';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 }
