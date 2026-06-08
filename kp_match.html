@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="kp_styles.css">
 <style>
 /* ── Match-specific styles ── */
-.match-container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+.match-container { padding: 0; }
 .match-header { text-align: center; margin-bottom: 32px; }
 .match-header h1 { font-family: 'Cormorant Garamond', 'Georgia', serif; font-size: 28px; color: var(--gold-light); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
 .match-header p { color: var(--text-muted); font-size: 13px; letter-spacing: 1px; }
@@ -33,7 +33,7 @@ input[type="file"] { display: none; }
 /* DBA input */
 .dba-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 .dba-field label { display: block; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
-.dba-field select { width: 100%; background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); font-size: 12px; padding: 6px 8px; border-radius: 4px; }
+.dba-field select { width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); font-size: 12px; padding: 6px 8px; border-radius: 4px; }
 .dba-field select:focus { outline: none; border-color: var(--gold-dim); }
 
 /* Parsed info display */
@@ -80,7 +80,7 @@ input[type="file"] { display: none; }
 .dba-timing-card { background: var(--bg-section); border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 16px; }
 .dba-timing-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 14px; }
 .dba-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-.dba-period { text-align: center; padding: 10px; background: var(--bg-main); border-radius: 4px; }
+.dba-period { text-align: center; padding: 10px; background: var(--bg-page); border-radius: 4px; }
 .dba-period-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
 .dba-period-status { font-size: 12px; font-weight: 500; }
 .dba-period-status.active { color: #4caf7d; }
@@ -95,20 +95,19 @@ input[type="file"] { display: none; }
 </style>
 </head>
 <body>
-<div id="app">
-  <!-- Nav -->
-  <nav class="nav">
-    <div class="nav-brand">
-      <div class="nav-title">KP Astrology Analyser</div>
-      <div class="nav-subtitle">Krishnamurti Paddhati</div>
-    </div>
-    <div class="nav-actions">
-      <a href="kp_input.html" class="nav-btn">← Input</a>
-      <a href="kp_output.html" class="nav-btn">Dashboard</a>
-    </div>
-  </nav>
+<nav class="global-nav">
+  <div class="nav-brand" onclick="window.location.href='index.html'">
+    KP Astrology Analyser
+    <span>Krishnamurti Paddhati</span>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-ghost" onclick="window.location.href='index.html'">← New Chart</button>
+    <button class="btn-ghost" onclick="window.location.href='kp_output.html'">Dashboard</button>
+  </div>
+</nav>
 
-  <div class="match-container">
+<div class="wrapper" style="max-width:960px; margin:0 auto; padding:24px 16px;">
+  <div class="match-container" style="max-width:100%">
     <div class="match-header">
       <h1>Kundli Match</h1>
       <p>KP Compatibility Analysis · Upload both charts to begin</p>
@@ -588,5 +587,6 @@ function runMatch() {
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 }
 </script>
+</div>
 </body>
 </html>
