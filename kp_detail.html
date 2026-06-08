@@ -1819,26 +1819,51 @@ function generateSubEventSummary(se, houseNum, chartData) {
   const T_RKS = ['Rahu','Ketu','Saturn'];
 
   function _ckv_gender(cuspNum) {
-    // CKV Rule (C. Kadirvelu): gender is determined by the planet nature of the Sub Lord of the child cusp
-    // Male planets: Sun, Mars, Jupiter, Rahu
-    // Female planets: Moon, Venus, Saturn, Ketu
-    // Mercury: check its sign (male sign → male, female sign → female)
+    // CKV Rule — 4-factor approach:
+    // RL (sign lord of cusp), NL (star lord), SL (sub lord), SL-Dispositor (sign lord of SL's placement)
+    // Majority male/female planet nature determines gender
+    // Rahu/Ketu take the nature of their sign lord
     if (!chartData || !chartData.cusps) return 'Unknown';
     const cd = chartData.cusps[cuspNum];
     if (!cd) return 'Unknown';
-    const sl = cd.sl;
-    if (!sl) return 'Unknown';
-    const MALE_P   = ['Sun','Mars','Jupiter','Rahu'];
-    const FEMALE_P = ['Moon','Venus','Saturn','Ketu'];
-    if (MALE_P.includes(sl))   return 'Male';
-    if (FEMALE_P.includes(sl)) return 'Female';
-    // Mercury — check its sign
-    if (sl === 'Mercury') {
-      const mercSign = chartData.planets && chartData.planets['Mercury'] ? chartData.planets['Mercury'].sign : '';
-      const MALE_SIGNS = ['Aries','Gemini','Leo','Libra','Sagittarius','Aquarius'];
-      return MALE_SIGNS.includes(mercSign) ? 'Male' : 'Female';
+
+    const MALE_P   = ['Sun','Mars','Jupiter'];
+    const FEMALE_P = ['Moon','Venus','Saturn'];
+    const MALE_S   = ['Aries','Gemini','Leo','Libra','Sagittarius','Aquarius'];
+    const SIGN_AT  = d => ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(d/30)%12];
+    const SIGN_LORD = {Aries:'Mars',Taurus:'Venus',Gemini:'Mercury',Cancer:'Moon',Leo:'Sun',Virgo:'Mercury',Libra:'Venus',Scorpio:'Mars',Sagittarius:'Jupiter',Capricorn:'Saturn',Aquarius:'Saturn',Pisces:'Jupiter'};
+
+    function pGender(p) {
+      if (MALE_P.includes(p)) return 'M';
+      if (FEMALE_P.includes(p)) return 'F';
+      if (p === 'Mercury') {
+        const pd = chartData.planets && chartData.planets['Mercury'];
+        if (pd && pd.sign) return MALE_S.includes(pd.sign) ? 'M' : 'F';
+        return 'N';
+      }
+      if (p === 'Rahu' || p === 'Ketu') {
+        const pd = chartData.planets && chartData.planets[p];
+        if (pd && pd.sign) return pGender(SIGN_LORD[pd.sign]);
+        return 'N';
+      }
+      return 'N';
     }
-    return 'Unknown';
+
+    const rl = cd.rl, nl = cd.nl, sl = cd.sl;
+    const factors = [pGender(rl), pGender(nl), pGender(sl)];
+
+    // SL dispositor — sign lord of where SL is placed
+    const slPlanetData = chartData.planets && chartData.planets[sl];
+    if (slPlanetData && slPlanetData.sign) {
+      factors.push(pGender(SIGN_LORD[slPlanetData.sign]));
+    }
+
+    const m = factors.filter(g => g === 'M').length;
+    const f = factors.filter(g => g === 'F').length;
+
+    if (m > f) return 'Male tendency';
+    if (f > m) return 'Female tendency';
+    return 'Mixed';
   }
 
 
@@ -2225,7 +2250,7 @@ function generateSubEventSummary(se, houseNum, chartData) {
     lines.push(`<strong>Child 1</strong> — ${g1}`);
     lines.push(`<strong>Child 2</strong> — ${g2}`);
     if (h9) lines.push(`<strong>Child 3</strong> — ${g3} (if it occurs)`);
-    return [lines.join('<br>')];
+    return [lines.join('<br>'), 'Gender is indicated using the CKV 4-factor rule — this is a tendency, not a certainty. Chart indicators point toward the gender but are not 100% deterministic.'];
   }
 
   function _sent_h5_creativity(suppH, obstH, nlH) {
