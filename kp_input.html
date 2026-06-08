@@ -806,6 +806,27 @@ function fillFormFromParsed(parsed) {
     });
   });
 
+  // Cusps
+  if (parsed.cusps) {
+    Object.entries(parsed.cusps).forEach(([h, c]) => {
+      const hNum = parseInt(h);
+      if (hNum < 1 || hNum > 12) return;
+      const signEl = document.getElementById(`cusp-${hNum}-sign`);
+      const degEl  = document.getElementById(`cusp-${hNum}-deg`);
+      const rlEl   = document.getElementById(`cusp-${hNum}-rl`);
+      const nlEl   = document.getElementById(`cusp-${hNum}-nl`);
+      const slEl   = document.getElementById(`cusp-${hNum}-sl`);
+      const ssEl   = document.getElementById(`cusp-${hNum}-ss`);
+      if (signEl) signEl.value = c.sign   || '';
+      if (degEl)  { degEl.value = c.deg_fmt || ''; degEl.dataset.raw = c.deg_raw || ''; }
+      if (rlEl)   rlEl.value = c.rl    || '';
+      if (nlEl)   nlEl.value = c.nl    || '';
+      if (slEl)   slEl.value = c.sl    || '';
+      if (ssEl)   ssEl.value = c.ss    || '';
+      if (c.sl) report.cusps++;
+    });
+  }
+
   // DBA
   if (parsed.dba.md) {
     const mdEl = document.getElementById('dba-md');
