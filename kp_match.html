@@ -202,11 +202,11 @@ input[type="file"] { display: none; }
               <input type="hidden" id="status-male" value="">
               <div class="custom-select-trigger" onclick="toggleDropdown('cs-status-male')"><span id="cs-status-male-label">Select status</span></div>
               <div class="custom-select-options" id="cs-status-male-opts">
-          <div class="custom-select-option placeholder" data-value="">Select status</div>
-          <div class="custom-select-option" data-value="unmarried">Unmarried — looking for match</div>
-          <div class="custom-select-option" data-value="engaged">Engaged / About to marry</div>
-          <div class="custom-select-option" data-value="married">Already married</div>
-          <div class="custom-select-option" data-value="separated">Separated / Divorced</div>
+          <div class="custom-select-option placeholder" data-value="" onclick="pickOption(this)">Select status</div>
+          <div class="custom-select-option" data-value="unmarried" onclick="pickOption(this)">Unmarried — looking for match</div>
+          <div class="custom-select-option" data-value="engaged" onclick="pickOption(this)">Engaged / About to marry</div>
+          <div class="custom-select-option" data-value="married" onclick="pickOption(this)">Already married</div>
+          <div class="custom-select-option" data-value="separated" onclick="pickOption(this)">Separated / Divorced</div>
               </div>
             </div>
         </div>
@@ -218,16 +218,16 @@ input[type="file"] { display: none; }
               <input type="hidden" id="md-male" value="">
               <div class="custom-select-trigger" onclick="toggleDropdown('cs-md-male')"><span id="cs-md-male-label">Select</span></div>
               <div class="custom-select-options" id="cs-md-male-opts">
-          <div class="custom-select-option placeholder" data-value="">Select</div>
-          <div class="custom-select-option" data-value="Sun">Sun</div>
-          <div class="custom-select-option" data-value="Moon">Moon</div>
-          <div class="custom-select-option" data-value="Mars">Mars</div>
-          <div class="custom-select-option" data-value="Mercury">Mercury</div>
-          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
-          <div class="custom-select-option" data-value="Venus">Venus</div>
-          <div class="custom-select-option" data-value="Saturn">Saturn</div>
-          <div class="custom-select-option" data-value="Rahu">Rahu</div>
-          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+          <div class="custom-select-option placeholder" data-value="" onclick="pickOption(this)">Select</div>
+          <div class="custom-select-option" data-value="Sun" onclick="pickOption(this)">Sun</div>
+          <div class="custom-select-option" data-value="Moon" onclick="pickOption(this)">Moon</div>
+          <div class="custom-select-option" data-value="Mars" onclick="pickOption(this)">Mars</div>
+          <div class="custom-select-option" data-value="Mercury" onclick="pickOption(this)">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter" onclick="pickOption(this)">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus" onclick="pickOption(this)">Venus</div>
+          <div class="custom-select-option" data-value="Saturn" onclick="pickOption(this)">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu" onclick="pickOption(this)">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu" onclick="pickOption(this)">Ketu</div>
               </div>
             </div></div>
             <div class="dba-field"><label>Antardasha</label>
@@ -235,16 +235,16 @@ input[type="file"] { display: none; }
               <input type="hidden" id="ad-male" value="">
               <div class="custom-select-trigger" onclick="toggleDropdown('cs-ad-male')"><span id="cs-ad-male-label">Select</span></div>
               <div class="custom-select-options" id="cs-ad-male-opts">
-          <div class="custom-select-option placeholder" data-value="">Select</div>
-          <div class="custom-select-option" data-value="Sun">Sun</div>
-          <div class="custom-select-option" data-value="Moon">Moon</div>
-          <div class="custom-select-option" data-value="Mars">Mars</div>
-          <div class="custom-select-option" data-value="Mercury">Mercury</div>
-          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
-          <div class="custom-select-option" data-value="Venus">Venus</div>
-          <div class="custom-select-option" data-value="Saturn">Saturn</div>
-          <div class="custom-select-option" data-value="Rahu">Rahu</div>
-          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+          <div class="custom-select-option placeholder" data-value="" onclick="pickOption(this)">Select</div>
+          <div class="custom-select-option" data-value="Sun" onclick="pickOption(this)">Sun</div>
+          <div class="custom-select-option" data-value="Moon" onclick="pickOption(this)">Moon</div>
+          <div class="custom-select-option" data-value="Mars" onclick="pickOption(this)">Mars</div>
+          <div class="custom-select-option" data-value="Mercury" onclick="pickOption(this)">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter" onclick="pickOption(this)">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus" onclick="pickOption(this)">Venus</div>
+          <div class="custom-select-option" data-value="Saturn" onclick="pickOption(this)">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu" onclick="pickOption(this)">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu" onclick="pickOption(this)">Ketu</div>
               </div>
             </div></div>
             <div class="dba-field"><label>Pratyantar</label>
@@ -252,16 +252,16 @@ input[type="file"] { display: none; }
               <input type="hidden" id="pd-male" value="">
               <div class="custom-select-trigger" onclick="toggleDropdown('cs-pd-male')"><span id="cs-pd-male-label">Select</span></div>
               <div class="custom-select-options" id="cs-pd-male-opts">
-          <div class="custom-select-option placeholder" data-value="">Select</div>
-          <div class="custom-select-option" data-value="Sun">Sun</div>
-          <div class="custom-select-option" data-value="Moon">Moon</div>
-          <div class="custom-select-option" data-value="Mars">Mars</div>
-          <div class="custom-select-option" data-value="Mercury">Mercury</div>
-          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
-          <div class="custom-select-option" data-value="Venus">Venus</div>
-          <div class="custom-select-option" data-value="Saturn">Saturn</div>
-          <div class="custom-select-option" data-value="Rahu">Rahu</div>
-          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+          <div class="custom-select-option placeholder" data-value="" onclick="pickOption(this)">Select</div>
+          <div class="custom-select-option" data-value="Sun" onclick="pickOption(this)">Sun</div>
+          <div class="custom-select-option" data-value="Moon" onclick="pickOption(this)">Moon</div>
+          <div class="custom-select-option" data-value="Mars" onclick="pickOption(this)">Mars</div>
+          <div class="custom-select-option" data-value="Mercury" onclick="pickOption(this)">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter" onclick="pickOption(this)">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus" onclick="pickOption(this)">Venus</div>
+          <div class="custom-select-option" data-value="Saturn" onclick="pickOption(this)">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu" onclick="pickOption(this)">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu" onclick="pickOption(this)">Ketu</div>
               </div>
             </div></div>
           </div>
@@ -288,11 +288,11 @@ input[type="file"] { display: none; }
               <input type="hidden" id="status-female" value="">
               <div class="custom-select-trigger" onclick="toggleDropdown('cs-status-female')"><span id="cs-status-female-label">Select status</span></div>
               <div class="custom-select-options" id="cs-status-female-opts">
-          <div class="custom-select-option placeholder" data-value="">Select status</div>
-          <div class="custom-select-option" data-value="unmarried">Unmarried — looking for match</div>
-          <div class="custom-select-option" data-value="engaged">Engaged / About to marry</div>
-          <div class="custom-select-option" data-value="married">Already married</div>
-          <div class="custom-select-option" data-value="separated">Separated / Divorced</div>
+          <div class="custom-select-option placeholder" data-value="" onclick="pickOption(this)">Select status</div>
+          <div class="custom-select-option" data-value="unmarried" onclick="pickOption(this)">Unmarried — looking for match</div>
+          <div class="custom-select-option" data-value="engaged" onclick="pickOption(this)">Engaged / About to marry</div>
+          <div class="custom-select-option" data-value="married" onclick="pickOption(this)">Already married</div>
+          <div class="custom-select-option" data-value="separated" onclick="pickOption(this)">Separated / Divorced</div>
               </div>
             </div>
         </div>
@@ -304,16 +304,16 @@ input[type="file"] { display: none; }
               <input type="hidden" id="md-female" value="">
               <div class="custom-select-trigger" onclick="toggleDropdown('cs-md-female')"><span id="cs-md-female-label">Select</span></div>
               <div class="custom-select-options" id="cs-md-female-opts">
-          <div class="custom-select-option placeholder" data-value="">Select</div>
-          <div class="custom-select-option" data-value="Sun">Sun</div>
-          <div class="custom-select-option" data-value="Moon">Moon</div>
-          <div class="custom-select-option" data-value="Mars">Mars</div>
-          <div class="custom-select-option" data-value="Mercury">Mercury</div>
-          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
-          <div class="custom-select-option" data-value="Venus">Venus</div>
-          <div class="custom-select-option" data-value="Saturn">Saturn</div>
-          <div class="custom-select-option" data-value="Rahu">Rahu</div>
-          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+          <div class="custom-select-option placeholder" data-value="" onclick="pickOption(this)">Select</div>
+          <div class="custom-select-option" data-value="Sun" onclick="pickOption(this)">Sun</div>
+          <div class="custom-select-option" data-value="Moon" onclick="pickOption(this)">Moon</div>
+          <div class="custom-select-option" data-value="Mars" onclick="pickOption(this)">Mars</div>
+          <div class="custom-select-option" data-value="Mercury" onclick="pickOption(this)">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter" onclick="pickOption(this)">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus" onclick="pickOption(this)">Venus</div>
+          <div class="custom-select-option" data-value="Saturn" onclick="pickOption(this)">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu" onclick="pickOption(this)">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu" onclick="pickOption(this)">Ketu</div>
               </div>
             </div></div>
             <div class="dba-field"><label>Antardasha</label>
@@ -321,16 +321,16 @@ input[type="file"] { display: none; }
               <input type="hidden" id="ad-female" value="">
               <div class="custom-select-trigger" onclick="toggleDropdown('cs-ad-female')"><span id="cs-ad-female-label">Select</span></div>
               <div class="custom-select-options" id="cs-ad-female-opts">
-          <div class="custom-select-option placeholder" data-value="">Select</div>
-          <div class="custom-select-option" data-value="Sun">Sun</div>
-          <div class="custom-select-option" data-value="Moon">Moon</div>
-          <div class="custom-select-option" data-value="Mars">Mars</div>
-          <div class="custom-select-option" data-value="Mercury">Mercury</div>
-          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
-          <div class="custom-select-option" data-value="Venus">Venus</div>
-          <div class="custom-select-option" data-value="Saturn">Saturn</div>
-          <div class="custom-select-option" data-value="Rahu">Rahu</div>
-          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+          <div class="custom-select-option placeholder" data-value="" onclick="pickOption(this)">Select</div>
+          <div class="custom-select-option" data-value="Sun" onclick="pickOption(this)">Sun</div>
+          <div class="custom-select-option" data-value="Moon" onclick="pickOption(this)">Moon</div>
+          <div class="custom-select-option" data-value="Mars" onclick="pickOption(this)">Mars</div>
+          <div class="custom-select-option" data-value="Mercury" onclick="pickOption(this)">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter" onclick="pickOption(this)">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus" onclick="pickOption(this)">Venus</div>
+          <div class="custom-select-option" data-value="Saturn" onclick="pickOption(this)">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu" onclick="pickOption(this)">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu" onclick="pickOption(this)">Ketu</div>
               </div>
             </div></div>
             <div class="dba-field"><label>Pratyantar</label>
@@ -338,16 +338,16 @@ input[type="file"] { display: none; }
               <input type="hidden" id="pd-female" value="">
               <div class="custom-select-trigger" onclick="toggleDropdown('cs-pd-female')"><span id="cs-pd-female-label">Select</span></div>
               <div class="custom-select-options" id="cs-pd-female-opts">
-          <div class="custom-select-option placeholder" data-value="">Select</div>
-          <div class="custom-select-option" data-value="Sun">Sun</div>
-          <div class="custom-select-option" data-value="Moon">Moon</div>
-          <div class="custom-select-option" data-value="Mars">Mars</div>
-          <div class="custom-select-option" data-value="Mercury">Mercury</div>
-          <div class="custom-select-option" data-value="Jupiter">Jupiter</div>
-          <div class="custom-select-option" data-value="Venus">Venus</div>
-          <div class="custom-select-option" data-value="Saturn">Saturn</div>
-          <div class="custom-select-option" data-value="Rahu">Rahu</div>
-          <div class="custom-select-option" data-value="Ketu">Ketu</div>
+          <div class="custom-select-option placeholder" data-value="" onclick="pickOption(this)">Select</div>
+          <div class="custom-select-option" data-value="Sun" onclick="pickOption(this)">Sun</div>
+          <div class="custom-select-option" data-value="Moon" onclick="pickOption(this)">Moon</div>
+          <div class="custom-select-option" data-value="Mars" onclick="pickOption(this)">Mars</div>
+          <div class="custom-select-option" data-value="Mercury" onclick="pickOption(this)">Mercury</div>
+          <div class="custom-select-option" data-value="Jupiter" onclick="pickOption(this)">Jupiter</div>
+          <div class="custom-select-option" data-value="Venus" onclick="pickOption(this)">Venus</div>
+          <div class="custom-select-option" data-value="Saturn" onclick="pickOption(this)">Saturn</div>
+          <div class="custom-select-option" data-value="Rahu" onclick="pickOption(this)">Rahu</div>
+          <div class="custom-select-option" data-value="Ketu" onclick="pickOption(this)">Ketu</div>
               </div>
             </div></div>
           </div>
@@ -1033,42 +1033,29 @@ function toggleDropdown(csId) {
   const trigger = cs.querySelector('.custom-select-trigger');
   const opts = cs.querySelector('.custom-select-options');
   const isOpen = opts.classList.contains('open');
-  // Close all
   document.querySelectorAll('.custom-select-options.open').forEach(el => el.classList.remove('open'));
   document.querySelectorAll('.custom-select-trigger.open').forEach(el => el.classList.remove('open'));
   if (!isOpen) { opts.classList.add('open'); trigger.classList.add('open'); }
 }
 
-function selectOption(csId, value, label) {
+function pickOption(el) {
+  const csOpts = el.closest('.custom-select-options');
+  const cs     = el.closest('.custom-select');
+  const csId   = cs.id.replace('cs-', '');
+  const value  = el.getAttribute('data-value');
+  const label  = el.textContent.trim();
   document.getElementById(csId).value = value;
-  document.getElementById(csId + '-label').textContent = label;
-  document.querySelectorAll('#cs-' + csId + '-opts .custom-select-option').forEach(el => {
-    el.classList.toggle('selected', el.dataset.value === value);
-  });
-  // Close
-  document.getElementById('cs-' + csId + '-opts').classList.remove('open');
-  document.querySelector('#cs-' + csId + ' .custom-select-trigger').classList.remove('open');
+  document.getElementById('cs-' + csId + '-label').textContent = label;
+  cs.querySelectorAll('.custom-select-option').forEach(o => o.classList.toggle('selected', o.getAttribute('data-value') === value));
+  csOpts.classList.remove('open');
+  cs.querySelector('.custom-select-trigger').classList.remove('open');
 }
 
-// Wire up all option clicks
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.custom-select-option').forEach(opt => {
-    opt.addEventListener('click', e => {
-      const optsEl = opt.closest('.custom-select-options');
-      const csEl   = opt.closest('.custom-select');
-      selectOption(csEl.id.replace('cs-',''), opt.dataset.value, opt.textContent);
-      e.stopPropagation();
-    });
-  });
-  // Close on outside click
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.custom-select')) {
-      document.querySelectorAll('.custom-select-options.open').forEach(el => el.classList.remove('open'));
-      document.querySelectorAll('.custom-select-trigger.open').forEach(el => el.classList.remove('open'));
-    }
-  });
-  // Re-populate planet options after PDF upload (DBA dropdowns)
-  // Already pre-populated — no dynamic repopulation needed
+document.addEventListener('click', e => {
+  if (!e.target.closest('.custom-select')) {
+    document.querySelectorAll('.custom-select-options.open').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.custom-select-trigger.open').forEach(el => el.classList.remove('open'));
+  }
 });
 
 </script>
