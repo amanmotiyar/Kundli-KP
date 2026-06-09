@@ -66,6 +66,30 @@
   letter-spacing: 0.04em;
   margin-top: 6px;
 }
+.pd-days-remaining {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.pd-days-remaining.active {
+  background: rgba(80,168,112,0.12);
+  color: var(--nature-support);
+  border: 1px solid rgba(80,168,112,0.25);
+}
+.pd-days-remaining.ending {
+  background: rgba(212,160,64,0.12);
+  color: var(--nature-mixed);
+  border: 1px solid rgba(212,160,64,0.25);
+}
+.pd-days-remaining.ended {
+  background: rgba(192,80,64,0.1);
+  color: var(--nature-obstruct);
+  border: 1px solid rgba(192,80,64,0.2);
+}
 
 
 
@@ -209,6 +233,12 @@
   background: rgba(80,168,112,0.12);
   color: var(--nature-support);
   border: 1px solid rgba(80,168,112,0.25);
+}
+.verdict-pd-confirmed {
+  background: rgba(80,168,112,0.22);
+  color: #6dcc96;
+  border: 1px solid rgba(80,168,112,0.5);
+  font-weight: 600;
 }
 .verdict-possible {
   background: rgba(212,160,64,0.12);
@@ -3805,11 +3835,16 @@ function runHousePrediction(houseNum, chartData) {
   const adGateOpen = adSig.includes(houseNum) ||
                      houseInfo.cluster.some(h => adSig.includes(h));
 
+  // PD confirmation — PD also signifies this house or cluster
+  const pdGateOpen = pdSig.includes(houseNum) ||
+                     houseInfo.cluster.some(h => pdSig.includes(h));
+
   let houseVerdict = 'Not Promised';
   if (mainPresent || clusterHits.length >= 1) {
-    if (adGateOpen && houseNetScore >= 0) houseVerdict = 'Active';
-    else if (adGateOpen)                   houseVerdict = 'Active with challenges';
-    else                                   houseVerdict = 'Promised — awaiting period';
+    if (adGateOpen && pdGateOpen && houseNetScore >= 0) houseVerdict = 'Active — PD confirmed';
+    else if (adGateOpen && houseNetScore >= 0)          houseVerdict = 'Active';
+    else if (adGateOpen)                                houseVerdict = 'Active with challenges';
+    else                                                houseVerdict = 'Promised — awaiting period';
   }
 
   // Occupying planets
@@ -3877,6 +3912,7 @@ function getChartSummary(results) {
   Object.values(results).forEach(r => {
     if (r.error) { notPromised++; return; }
     if (r.houseVerdict === 'Not Promised') notPromised++;
+    else if (r.houseVerdict === 'Active — PD confirmed') supportive++;
     else if (r.houseNature === 'Supportive') supportive++;
     else if (r.houseNature === 'Obstructive') obstructive++;
     else mixed++;
@@ -4518,11 +4554,16 @@ function runHousePrediction(houseNum, chartData) {
   const adGateOpen = adSig.includes(houseNum) ||
                      houseInfo.cluster.some(h => adSig.includes(h));
 
+  // PD confirmation — PD also signifies this house or cluster
+  const pdGateOpen = pdSig.includes(houseNum) ||
+                     houseInfo.cluster.some(h => pdSig.includes(h));
+
   let houseVerdict = 'Not Promised';
   if (mainPresent || clusterHits.length >= 1) {
-    if (adGateOpen && houseNetScore >= 0) houseVerdict = 'Active';
-    else if (adGateOpen)                   houseVerdict = 'Active with challenges';
-    else                                   houseVerdict = 'Promised — awaiting period';
+    if (adGateOpen && pdGateOpen && houseNetScore >= 0) houseVerdict = 'Active — PD confirmed';
+    else if (adGateOpen && houseNetScore >= 0)          houseVerdict = 'Active';
+    else if (adGateOpen)                                houseVerdict = 'Active with challenges';
+    else                                                houseVerdict = 'Promised — awaiting period';
   }
 
   // Occupying planets
@@ -4590,6 +4631,7 @@ function getChartSummary(results) {
   Object.values(results).forEach(r => {
     if (r.error) { notPromised++; return; }
     if (r.houseVerdict === 'Not Promised') notPromised++;
+    else if (r.houseVerdict === 'Active — PD confirmed') supportive++;
     else if (r.houseNature === 'Supportive') supportive++;
     else if (r.houseNature === 'Obstructive') obstructive++;
     else mixed++;
@@ -4637,14 +4679,15 @@ function getNatureClass(nature) {
 }
 
 function getVerdictClass(verdict) {
+  if (verdict === 'Active — PD confirmed')                return 'verdict-pd-confirmed';
   if (verdict === 'Active' || verdict === 'Active with challenges') return 'verdict-active';
-  if (verdict === 'Promised — awaiting period') return 'verdict-promised';
-  if (verdict === 'Not Promised') return 'verdict-denied';
+  if (verdict === 'Promised — awaiting period')           return 'verdict-promised';
+  if (verdict === 'Not Promised')                         return 'verdict-denied';
   return 'verdict-possible';
 }
 
 function displayVerdict(verdict) {
-  if (verdict === 'Not Promised') return 'Not Active Now';
+  if (verdict === 'Not Promised')          return 'Not Active Now';
   if (verdict === 'Active with challenges') return 'Active — with friction';
   return verdict;
 }
@@ -4659,15 +4702,28 @@ function renderDashboard(chartData, results) {
   document.getElementById('dba-ad-display').textContent = chartData.dba.ad || '—';
   document.getElementById('dba-pd-display').textContent = chartData.dba.pd || '—';
 
-  // Show period dates if entered
+  // Show PD period dates with days remaining
   const dbaFrom = chartData.dba.from;
   const dbaTo   = chartData.dba.to;
   const dbaDateEl = document.getElementById('dba-dates-display');
   if (dbaDateEl) {
     if (dbaFrom || dbaTo) {
-      dbaDateEl.textContent = `Period: ${dbaFrom || '—'}  to  ${dbaTo || '—'}`;
+      let daysHtml = '';
+      if (dbaTo) {
+        const today   = new Date();
+        const endDate = new Date(dbaTo);
+        const diff    = Math.round((endDate - today) / (1000 * 60 * 60 * 24));
+        if (diff > 14) {
+          daysHtml = `<span class="pd-days-remaining active">${diff} days remaining</span>`;
+        } else if (diff >= 0) {
+          daysHtml = `<span class="pd-days-remaining ending">ends in ${diff} day${diff === 1 ? '' : 's'}</span>`;
+        } else {
+          daysHtml = `<span class="pd-days-remaining ended">PD ended ${Math.abs(diff)} day${Math.abs(diff) === 1 ? '' : 's'} ago</span>`;
+        }
+      }
+      dbaDateEl.innerHTML = `Pratyantar (PD) Window:&nbsp;&nbsp;${dbaFrom || '—'}&nbsp; to &nbsp;${dbaTo || '—'}${daysHtml}`;
     } else {
-      dbaDateEl.textContent = '';
+      dbaDateEl.innerHTML = '';
     }
   }
 
@@ -4816,14 +4872,16 @@ function renderTimePattern(chartData, results) {
     return;
   }
 
-  const activeHouses   = [];  // verdict = Active
+  const activeHouses   = [];  // verdict = Active — PD confirmed
+  const confirmedHouses= [];  // verdict = Active (AD only)
   const frictionHouses = [];  // verdict = Active with challenges
   const awaitingHouses = [];  // verdict = Promised — awaiting period
 
   for (let h = 1; h <= 12; h++) {
     const r = results[h];
     if (!r || r.error) continue;
-    if (r.houseVerdict === 'Active')                 activeHouses.push(h);
+    if (r.houseVerdict === 'Active — PD confirmed')      activeHouses.push(h);
+    else if (r.houseVerdict === 'Active')                confirmedHouses.push(h);
     else if (r.houseVerdict === 'Active with challenges') frictionHouses.push(h);
     else if (r.houseVerdict === 'Promised — awaiting period') awaitingHouses.push(h);
   }
@@ -4834,34 +4892,45 @@ function renderTimePattern(chartData, results) {
     5:'children & creativity',6:'service & competition',7:'marriage & partnership',
     8:'transformation',9:'fortune & travel',10:'career',11:'gains & desires',12:'foreign & expenses'
   };
-  const allActive = [...activeHouses, ...frictionHouses];
+  const allActive = [...activeHouses, ...confirmedHouses, ...frictionHouses];
+  const pdConfirmedAny = activeHouses.length > 0;
 
   let spotlightHtml = '';
   if (allActive.length === 0) {
-    spotlightHtml = `<div class="time-spotlight-text">No houses are in an active window during the current <strong>${md}–${ad}</strong> period. Promised areas of life are waiting for the right sub-period to open. This is a consolidation phase — steady effort over dramatic movement.</div>`;
+    spotlightHtml = `<div class="time-spotlight-text">No houses are in an active window during the current <strong>${md}–${ad}${pd ? '–' + pd : ''}</strong> Pratyantar. Promised areas of life are waiting for the right sub-period to open. This is a consolidation phase — steady effort over dramatic movement.</div>`;
   } else {
-    const topHouse    = activeHouses[0] || frictionHouses[0];
-    const topName     = HOUSE_DATA[topHouse]?.name || '';
-    const topShort    = HOUSE_SHORT[topHouse] || topName;
-    const activeNames = activeHouses.map(h => HOUSE_SHORT[h]).join(', ') || '—';
-    const watchHouse  = awaitingHouses[0];
-    const watchName   = watchHouse ? HOUSE_DATA[watchHouse]?.name : null;
+    const topHouse = activeHouses[0] || confirmedHouses[0] || frictionHouses[0];
+    const topShort = HOUSE_SHORT[topHouse] || HOUSE_DATA[topHouse]?.name;
+    const pdLabel  = pd ? `<strong>${md}–${ad}–${pd}</strong> Pratyantar` : `<strong>${md}–${ad}</strong> period`;
 
-    const spotlightLine = `During the current <strong>${md}–${ad}${pd ? '–' + pd : ''}</strong> period, your most active area is <strong>${topShort}</strong>.`
-      + (activeHouses.length > 1 ? ` Other areas in motion: <strong>${activeNames}</strong>.` : '')
-      + (frictionHouses.length ? ` Movement in <strong>${frictionHouses.map(h=>HOUSE_SHORT[h]).join(', ')}</strong> is present but comes with resistance — progress happens, just not smoothly.` : '');
+    let spotlightLine = `You are currently in the ${pdLabel}`;
+    if (chartData.dba.to) {
+      spotlightLine += `, running until <strong>${chartData.dba.to}</strong>`;
+    }
+    spotlightLine += `. Your most active area right now is <strong>${topShort}</strong>.`;
 
-    spotlightHtml = `<div class="time-spotlight-label">Spotlight</div>
+    if (pdConfirmedAny) {
+      spotlightLine += ` <span style="color:var(--nature-support);font-size:12px;">◉ PD confirmed</span> — both the Antardasha and Pratyantar align on this house. This is the peak window.`;
+    }
+    if (frictionHouses.length) {
+      spotlightLine += ` Movement in <strong>${frictionHouses.map(h=>HOUSE_SHORT[h]).join(', ')}</strong> is present but comes with resistance.`;
+    }
+
+    const watchHouse = awaitingHouses[0];
+    const watchName  = watchHouse ? HOUSE_DATA[watchHouse]?.name : null;
+
+    spotlightHtml = `<div class="time-spotlight-label">Pratyantar Spotlight</div>
       <div class="time-spotlight-text">${spotlightLine}</div>`;
 
     if (watchName) {
       spotlightHtml += `<div class="time-watch-box" style="margin-top:12px;">
-        <strong>Watch for:</strong> House ${watchHouse} (${watchName}) is strongly promised in the chart but waiting for the right period to open. When the ${HOUSE_DATA[watchHouse]?.name?.toLowerCase()} themes next appear in your DBA sequence, that is when movement begins.
+        <strong>Watch for:</strong> House ${watchHouse} (${watchName}) is strongly promised in the chart but the AD gate is not yet open. When the Antardasha changes to a planet signifying this house, movement begins.
       </div>`;
     }
   }
 
-  function pillsHtml(arr, cls) {
+  function pillsHtml(arr, cls, label) {
+    if (!arr.length) return '';
     return arr.map(h => `
       <div class="time-house-pill ${cls}">
         <span class="time-house-pill-num">${h}</span>
@@ -4869,22 +4938,29 @@ function renderTimePattern(chartData, results) {
       </div>`).join('');
   }
 
+  const hasPills = allActive.length || awaitingHouses.length;
+
   document.getElementById('time-pattern-body').innerHTML = `
     <div class="time-pattern-spotlight">${spotlightHtml}</div>
-    ${allActive.length ? `
-    <div style="margin-bottom:6px;">
-      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Active Houses This Period</div>
-      <div class="time-active-houses">
-        ${pillsHtml(activeHouses, 'is-active')}
-        ${pillsHtml(frictionHouses, 'is-friction')}
-      </div>
+    ${activeHouses.length ? `
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--nature-support);margin-bottom:8px;">◉ PD Confirmed — Peak Window</div>
+      <div class="time-active-houses">${pillsHtml(activeHouses, 'is-active', '')}</div>
+    </div>` : ''}
+    ${confirmedHouses.length ? `
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Active (AD open)</div>
+      <div class="time-active-houses">${pillsHtml(confirmedHouses, 'is-active', '')}</div>
+    </div>` : ''}
+    ${frictionHouses.length ? `
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Active — with friction</div>
+      <div class="time-active-houses">${pillsHtml(frictionHouses, 'is-friction', '')}</div>
     </div>` : ''}
     ${awaitingHouses.length ? `
     <div>
       <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Promised — Awaiting Right Period</div>
-      <div class="time-active-houses">
-        ${pillsHtml(awaitingHouses, '')}
-      </div>
+      <div class="time-active-houses">${pillsHtml(awaitingHouses, '', '')}</div>
     </div>` : ''}`;
 }
 
