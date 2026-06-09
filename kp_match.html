@@ -1220,21 +1220,32 @@ function _runMatch() {
   const mStatus = document.getElementById('status-male').value;
   const fStatus = document.getElementById('status-female').value;
 
-  if (!mDBA.md || !fDBA.md) { showError('Please select at least Mahadasha for both charts.'); return; }
+  if (!mDBA.md || !fDBA.md) {
+    showError('Please select at least Mahadasha for both charts.');
+    document.getElementById('loading-msg').style.display = 'none';
+    document.getElementById('match-btn').disabled = false;
+    return;
+  }
 
   const mName = m.name || 'Person 1';
   const fName = f.name || 'Person 2';
 
   let result;
   try {
-    console.log('Step 1: starting computeAllFactors');
-    console.log('m.cusps:', Object.keys(m.cusps||{}).length, 'm.planet_sig:', JSON.stringify(m.planet_sig).slice(0,100));
-    console.log('f.cusps:', Object.keys(f.cusps||{}).length, 'f.planet_sig:', JSON.stringify(f.planet_sig).slice(0,100));
+    const mSigCount = Object.keys(m.planet_sig||{}).length;
+    const fSigCount = Object.keys(f.planet_sig||{}).length;
+    const mCuspCount = Object.keys(m.cusps||{}).length;
+    const fCuspCount = Object.keys(f.cusps||{}).length;
+    console.log(`Charts loaded — His: ${mSigCount} planets, ${mCuspCount} cusps | Hers: ${fSigCount} planets, ${fCuspCount} cusps`);
+    console.log('His planet_sig:', JSON.stringify(m.planet_sig));
+    console.log('Her planet_sig:', JSON.stringify(f.planet_sig));
+    console.log('His cusps:', JSON.stringify(m.cusps));
+    console.log('Her cusps:', JSON.stringify(f.cusps));
     console.log('mDBA:', JSON.stringify(mDBA), 'fDBA:', JSON.stringify(fDBA));
     result = computeAllFactors(m, f, mDBA, fDBA, mStatus, fStatus);
-    console.log('Step 2: computeAllFactors done, score=', result && result.overall);
+    console.log('computeAllFactors done, overall=', result && result.overall);
   } catch(e) {
-    console.error('CRASH:', e.message, e.stack);
+    console.error('CRASH in computeAllFactors:', e.message, '\n', e.stack);
     showError('Analysis error: ' + e.message);
     document.getElementById('loading-msg').style.display = 'none';
     document.getElementById('match-btn').disabled = false;
@@ -1292,9 +1303,8 @@ function _runMatch() {
   document.getElementById('match-btn').disabled = false;
   document.getElementById('results').style.display = 'block';
 
-  // Render new sections
-  renderBestWindow(m, f, mDBA, fDBA, mName, fName);
-  renderWhyScores(result, m, f, mDBA, fDBA);
+  try { renderBestWindow(m, f, mDBA, fDBA, mName, fName); } catch(e) { console.error('renderBestWindow error:', e); }
+  try { renderWhyScores(result, m, f, mDBA, fDBA); } catch(e) { console.error('renderWhyScores error:', e); }
 
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 }
