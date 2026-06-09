@@ -4052,7 +4052,17 @@ function runHousePrediction(houseNum, chartData) {
     const rule    = SUB_EVENT_RULES[fullKey];
     if (!rule) return null;
 
-    const promise    = checkPromise(fullKey, slSig);
+    const _rawPromise = checkPromise(fullKey, slSig);
+    const promise = Object.assign({}, _rawPromise, {
+      promised:      _rawPromise.mainPresent || _rawPromise.clusterHits.length >= 1,
+      strength:      _rawPromise.mainPresent && _rawPromise.obstructHits.length === 0 ? 'strong'
+                   : _rawPromise.mainPresent ? 'mixed'
+                   : _rawPromise.clusterHits.length >= 2 ? 'indirect'
+                   : _rawPromise.clusterHits.length >= 1 ? 'weak' : 'absent',
+      supportCount:  (_rawPromise.mainPresent ? 1 : 0) + _rawPromise.clusterHits.length,
+      obstructCount: _rawPromise.obstructHits.length,
+      netScore:      _rawPromise.score
+    });
     const dbaResult  = rule.type === 'Life'
       ? { score:0, verdict:'life_reading', adGate:'na' }
       : scoreDBA(fullKey, houseNum, mdSig, adSig, pdSig);
@@ -4765,7 +4775,17 @@ function runHousePrediction(houseNum, chartData) {
     const rule    = SUB_EVENT_RULES[fullKey];
     if (!rule) return null;
 
-    const promise    = checkPromise(fullKey, slSig);
+    const _rawPromise = checkPromise(fullKey, slSig);
+    const promise = Object.assign({}, _rawPromise, {
+      promised:      _rawPromise.mainPresent || _rawPromise.clusterHits.length >= 1,
+      strength:      _rawPromise.mainPresent && _rawPromise.obstructHits.length === 0 ? 'strong'
+                   : _rawPromise.mainPresent ? 'mixed'
+                   : _rawPromise.clusterHits.length >= 2 ? 'indirect'
+                   : _rawPromise.clusterHits.length >= 1 ? 'weak' : 'absent',
+      supportCount:  (_rawPromise.mainPresent ? 1 : 0) + _rawPromise.clusterHits.length,
+      obstructCount: _rawPromise.obstructHits.length,
+      netScore:      _rawPromise.score
+    });
     const dbaResult  = rule.type === 'Life'
       ? { score:0, verdict:'life_reading', adGate:'na' }
       : scoreDBA(fullKey, houseNum, mdSig, adSig, pdSig);
