@@ -312,6 +312,176 @@
 }
 .no-data p { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
 
+.no-data p { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+
+/* ── Summary Sections ── */
+.summary-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.summary-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  border-radius: 3px 3px 0 0;
+}
+.summary-section.collapsed .summary-section-header {
+  border-radius: 3px;
+  border-bottom: none;
+}
+.summary-section-icon { font-size: 14px; }
+.summary-section-title {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gold-light);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  flex: 1;
+}
+.summary-section-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+.summary-toggle {
+  color: var(--text-muted);
+  font-size: 13px;
+  transition: transform 0.25s;
+}
+.summary-section.collapsed .summary-toggle { transform: rotate(-90deg); }
+.summary-section-body { padding: 20px 22px; }
+.summary-section.collapsed .summary-section-body { display: none; }
+
+/* Life Pattern */
+.life-pattern-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.life-pattern-col-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.life-house-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(180,150,100,0.1);
+}
+.life-house-item:last-child { border-bottom: none; }
+.life-house-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.life-house-dot.support { background: var(--nature-support); }
+.life-house-dot.obstruct { background: var(--nature-obstruct); }
+.life-house-dot.mixed { background: var(--nature-mixed); }
+.life-house-info { flex: 1; }
+.life-house-name {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.life-house-line {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+.life-pattern-note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  padding: 12px 14px;
+  background: var(--bg-section);
+  border-left: 3px solid var(--gold-dim);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Current Time Pattern */
+.time-pattern-spotlight {
+  background: linear-gradient(135deg, rgba(212,160,64,0.08), rgba(30,37,53,0.6));
+  border: 1px solid rgba(212,160,64,0.2);
+  border-radius: 3px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+.time-spotlight-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 8px;
+}
+.time-spotlight-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text-primary);
+  font-weight: 400;
+}
+.time-spotlight-text strong { color: var(--gold-light); }
+.time-active-houses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.time-house-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 2px;
+  background: var(--bg-section);
+  border: 1px solid var(--border);
+  font-size: 11px;
+}
+.time-house-pill.is-active {
+  background: rgba(80,168,112,0.1);
+  border-color: rgba(80,168,112,0.3);
+}
+.time-house-pill.is-friction {
+  background: rgba(212,160,64,0.1);
+  border-color: rgba(212,160,64,0.25);
+}
+.time-house-pill-num {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: var(--gold-light);
+}
+.time-house-pill-name {
+  color: var(--text-secondary);
+}
+.time-watch-box {
+  padding: 12px 14px;
+  background: rgba(80,128,192,0.08);
+  border: 1px solid rgba(80,128,192,0.2);
+  border-radius: 2px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+.time-watch-box strong { color: var(--accent-blue); }
+
 @media (max-width: 768px) {
   .row-body { grid-template-columns: 1fr; }
   .row-side { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
@@ -378,6 +548,32 @@
           </div>
         </div>
         <div class="dba-dates" id="dba-dates-display"></div>
+      </div>
+    </div>
+
+    <!-- Life Pattern Summary -->
+    <div class="summary-section" id="section-life-pattern">
+      <div class="summary-section-header" onclick="toggleSummarySection('section-life-pattern')">
+        <span class="summary-section-icon">◈</span>
+        <span class="summary-section-title">Life Pattern</span>
+        <span class="summary-section-subtitle">Permanent chart indications</span>
+        <span class="summary-toggle">▾</span>
+      </div>
+      <div class="summary-section-body" id="life-pattern-body">
+        <!-- filled by renderLifePattern() -->
+      </div>
+    </div>
+
+    <!-- Current Time Pattern Summary -->
+    <div class="summary-section" id="section-time-pattern">
+      <div class="summary-section-header" onclick="toggleSummarySection('section-time-pattern')">
+        <span class="summary-section-icon">◉</span>
+        <span class="summary-section-title">Current Time Pattern</span>
+        <span class="summary-section-subtitle">What is active in your DBA period right now</span>
+        <span class="summary-toggle">▾</span>
+      </div>
+      <div class="summary-section-body" id="time-pattern-body">
+        <!-- filled by renderTimePattern() -->
       </div>
     </div>
 
@@ -4447,6 +4643,12 @@ function getVerdictClass(verdict) {
   return 'verdict-possible';
 }
 
+function displayVerdict(verdict) {
+  if (verdict === 'Not Promised') return 'Not Active Now';
+  if (verdict === 'Active with challenges') return 'Active — with friction';
+  return verdict;
+}
+
 function renderDashboard(chartData, results) {
   document.getElementById('nav-native-name').textContent = chartData.native.name || '';
   document.getElementById('native-name-display').textContent = chartData.native.name || 'Native';
@@ -4506,7 +4708,7 @@ function renderDashboard(chartData, results) {
       <div class="row-body">
         <div class="row-interp">${interpText}</div>
         <div class="row-side">
-          <div class="row-verdict ${verdictCls}">${r.houseVerdict}</div>
+          <div class="row-verdict ${verdictCls}">${displayVerdict(r.houseVerdict)}</div>
           <div class="score-mini">
             <div class="score-mini-label">Net Score</div>
             <div class="score-mini-val ${scoreClass}">${r.houseNetScore > 0 ? '+' : ''}${r.houseNetScore}</div>
@@ -4519,11 +4721,171 @@ function renderDashboard(chartData, results) {
           <span>Obstruct <strong>${r.totalObstruct}</strong></span>
           <span>Sub-events <strong>${r.subEvents.length}</strong></span>
         </div>
-        <span class="row-detail-link">View Detail →</span>
       </div>`;
 
     list.appendChild(row);
   }
+}
+
+function toggleSummarySection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ── LIFE PATTERN ─────────────────────────────────────────────────────────────
+// Looks at ALL 12 houses purely from SL signification (chart promise, DBA-independent)
+function renderLifePattern(results) {
+  const strong   = [], moderate = [], dormant = [];
+  const LIFE_LABELS = {
+    1:'Personality & health',2:'Wealth & family',3:'Courage & communication',
+    4:'Home & property',5:'Children & creativity',6:'Service & health challenges',
+    7:'Marriage & partnership',8:'Longevity & transformation',9:'Fortune & higher learning',
+    10:'Career & status',11:'Gains & desires',12:'Foreign & spirituality'
+  };
+  const LIFE_HINTS = {
+    1:'How you carry yourself and your overall vitality.',
+    2:'Financial accumulation and family bonds over the lifetime.',
+    3:'Your boldness, expression, and sibling connections.',
+    4:'The home you build and your emotional roots.',
+    5:'Children, creative gifts, and speculative ventures.',
+    6:'Work ethic, health battles, and competitive spirit.',
+    7:'The partnership you attract and the union you form.',
+    8:'How deeply life transforms you and what you inherit.',
+    9:'The luck and grace operating in your life.',
+    10:'The career you are built for and the status you reach.',
+    11:'How abundantly your desires are fulfilled over time.',
+    12:'Your connection to foreign lands, solitude, and spirit.'
+  };
+
+  for (let h = 1; h <= 12; h++) {
+    const r = results[h];
+    if (!r || r.error) { dormant.push(h); continue; }
+    if (r.houseNetScore >= 2)       strong.push(h);
+    else if (r.houseNetScore >= 0)  moderate.push(h);
+    else                            dormant.push(h);
+  }
+
+  function houseItems(arr, dotClass) {
+    if (!arr.length) return '<div style="font-size:11px;color:var(--text-hint);padding:6px 0;">None in this category</div>';
+    return arr.map(h => {
+      const r = results[h];
+      const score = r && !r.error ? `${r.houseNetScore > 0 ? '+' : ''}${r.houseNetScore}` : '—';
+      return `<div class="life-house-item">
+        <div class="life-house-dot ${dotClass}"></div>
+        <div class="life-house-info">
+          <div class="life-house-name">House ${h} — ${LIFE_LABELS[h]}</div>
+          <div class="life-house-line">${LIFE_HINTS[h]}</div>
+        </div>
+        <span style="font-family:'Cinzel',serif;font-size:11px;color:var(--text-muted);margin-left:8px;">${score}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Build a one-line life summary
+  const strongNames  = strong.map(h => HOUSE_DATA[h].name).join(', ') || 'none strongly active';
+  const dormantNames = dormant.map(h => HOUSE_DATA[h].name).join(', ') || 'none dormant';
+  const noteLine = `This chart's most enduring strengths lie in <strong>${strongNames}</strong>. `
+    + (dormant.length ? `Areas that are less prominent in this lifetime include <strong>${dormantNames}</strong> — these themes are not absent but tend to require more effort or arrive through unconventional routes.` : '');
+
+  document.getElementById('life-pattern-body').innerHTML = `
+    <div class="life-pattern-grid">
+      <div>
+        <div class="life-pattern-col-title">Strongly Promised (Net ≥ +2)</div>
+        ${houseItems(strong, 'support')}
+      </div>
+      <div>
+        <div class="life-pattern-col-title">Moderate Promise (Net 0 to +1)</div>
+        ${houseItems(moderate, 'mixed')}
+      </div>
+    </div>
+    ${dormant.length ? `
+    <div style="margin-bottom:16px;">
+      <div class="life-pattern-col-title">Not Active Now (Net below 0 or no connection)</div>
+      ${houseItems(dormant, 'obstruct')}
+    </div>` : ''}
+    <div class="life-pattern-note">${noteLine}</div>`;
+}
+
+// ── CURRENT TIME PATTERN ─────────────────────────────────────────────────────
+function renderTimePattern(chartData, results) {
+  const dba = chartData.dba || {};
+  const md = dba.md, ad = dba.ad, pd = dba.pd;
+
+  if (!md && !ad) {
+    document.getElementById('time-pattern-body').innerHTML =
+      '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Enter the current DBA period in the input form to see what is active right now.</div>';
+    return;
+  }
+
+  const activeHouses   = [];  // verdict = Active
+  const frictionHouses = [];  // verdict = Active with challenges
+  const awaitingHouses = [];  // verdict = Promised — awaiting period
+
+  for (let h = 1; h <= 12; h++) {
+    const r = results[h];
+    if (!r || r.error) continue;
+    if (r.houseVerdict === 'Active')                 activeHouses.push(h);
+    else if (r.houseVerdict === 'Active with challenges') frictionHouses.push(h);
+    else if (r.houseVerdict === 'Promised — awaiting period') awaitingHouses.push(h);
+  }
+
+  // Build spotlight sentence
+  const HOUSE_SHORT = {
+    1:'self & health',2:'money & family',3:'communication',4:'home & property',
+    5:'children & creativity',6:'service & competition',7:'marriage & partnership',
+    8:'transformation',9:'fortune & travel',10:'career',11:'gains & desires',12:'foreign & expenses'
+  };
+  const allActive = [...activeHouses, ...frictionHouses];
+
+  let spotlightHtml = '';
+  if (allActive.length === 0) {
+    spotlightHtml = `<div class="time-spotlight-text">No houses are in an active window during the current <strong>${md}–${ad}</strong> period. Promised areas of life are waiting for the right sub-period to open. This is a consolidation phase — steady effort over dramatic movement.</div>`;
+  } else {
+    const topHouse    = activeHouses[0] || frictionHouses[0];
+    const topName     = HOUSE_DATA[topHouse]?.name || '';
+    const topShort    = HOUSE_SHORT[topHouse] || topName;
+    const activeNames = activeHouses.map(h => HOUSE_SHORT[h]).join(', ') || '—';
+    const watchHouse  = awaitingHouses[0];
+    const watchName   = watchHouse ? HOUSE_DATA[watchHouse]?.name : null;
+
+    const spotlightLine = `During the current <strong>${md}–${ad}${pd ? '–' + pd : ''}</strong> period, your most active area is <strong>${topShort}</strong>.`
+      + (activeHouses.length > 1 ? ` Other areas in motion: <strong>${activeNames}</strong>.` : '')
+      + (frictionHouses.length ? ` Movement in <strong>${frictionHouses.map(h=>HOUSE_SHORT[h]).join(', ')}</strong> is present but comes with resistance — progress happens, just not smoothly.` : '');
+
+    spotlightHtml = `<div class="time-spotlight-label">Spotlight</div>
+      <div class="time-spotlight-text">${spotlightLine}</div>`;
+
+    if (watchName) {
+      spotlightHtml += `<div class="time-watch-box" style="margin-top:12px;">
+        <strong>Watch for:</strong> House ${watchHouse} (${watchName}) is strongly promised in the chart but waiting for the right period to open. When the ${HOUSE_DATA[watchHouse]?.name?.toLowerCase()} themes next appear in your DBA sequence, that is when movement begins.
+      </div>`;
+    }
+  }
+
+  function pillsHtml(arr, cls) {
+    return arr.map(h => `
+      <div class="time-house-pill ${cls}">
+        <span class="time-house-pill-num">${h}</span>
+        <span class="time-house-pill-name">${HOUSE_DATA[h]?.name}</span>
+      </div>`).join('');
+  }
+
+  document.getElementById('time-pattern-body').innerHTML = `
+    <div class="time-pattern-spotlight">${spotlightHtml}</div>
+    ${allActive.length ? `
+    <div style="margin-bottom:6px;">
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Active Houses This Period</div>
+      <div class="time-active-houses">
+        ${pillsHtml(activeHouses, 'is-active')}
+        ${pillsHtml(frictionHouses, 'is-friction')}
+      </div>
+    </div>` : ''}
+    ${awaitingHouses.length ? `
+    <div>
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Promised — Awaiting Right Period</div>
+      <div class="time-active-houses">
+        ${pillsHtml(awaitingHouses, '')}
+      </div>
+    </div>` : ''}`;
 }
 
 function init() {
@@ -4536,6 +4898,8 @@ function init() {
   const results = runFullChart(chartData);
   saveResults(results);
   document.getElementById('dashboard-content').style.display = 'block';
+  renderLifePattern(results);
+  renderTimePattern(chartData, results);
   renderDashboard(chartData, results);
 }
 

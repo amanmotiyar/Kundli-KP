@@ -132,6 +132,107 @@ input[type="file"] { display: none; }
 .error-msg { color: #f44336; font-size: 12px; margin-top: 8px; text-align: center; display: none; }
 .loading-msg { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; display: none; }
 
+/* ── Match Extra Sections (Why Scores / Best Window) ── */
+.match-extra-section {
+  background: var(--bg-section);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.match-extra-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(0,0,0,0.15);
+  border-bottom: 1px solid var(--border);
+}
+.match-extra-header:hover { background: rgba(212,175,55,0.05); }
+.match-extra-icon { font-size: 14px; color: var(--gold-dim); flex-shrink: 0; }
+.match-extra-title {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: var(--gold-light);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  flex: 1;
+}
+.match-extra-sub { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; }
+.match-extra-toggle { color: var(--text-muted); font-size: 13px; transition: transform 0.25s; flex-shrink: 0; }
+.match-extra-body { padding: 18px 20px; }
+
+/* Why Scores content */
+.why-dim { margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.why-dim:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.why-dim-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 8px; }
+.why-dim-body { font-size: 12px; color: var(--text-muted); line-height: 1.75; }
+.why-dim-body strong { color: var(--text-primary); font-weight: 500; }
+.why-formula {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  align-items: center;
+}
+.why-formula-item {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 3px;
+  background: rgba(212,175,55,0.07);
+  border: 1px solid rgba(212,175,55,0.15);
+  color: var(--text-secondary);
+}
+.why-formula-op { color: var(--text-hint); font-size: 12px; }
+
+/* Best Window content */
+.window-status {
+  padding: 14px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.window-status.good { background: rgba(80,168,112,0.1); border: 1px solid rgba(80,168,112,0.25); color: var(--text-primary); }
+.window-status.caution { background: rgba(212,160,64,0.1); border: 1px solid rgba(212,160,64,0.25); color: var(--text-primary); }
+.window-status.wait { background: rgba(106,122,150,0.1); border: 1px solid rgba(106,122,150,0.2); color: var(--text-muted); }
+.window-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+@media(max-width:600px){ .window-grid { grid-template-columns: 1fr; } }
+.window-card {
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.window-card-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+.window-planet-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.window-planet { font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold-light); }
+.window-planet-sigs { font-size: 11px; color: var(--text-muted); }
+.window-planet-sigs .sig-hit { color: var(--nature-support); }
+.window-planet-sigs .sig-miss { color: var(--nature-obstruct); }
+.window-verdict {
+  margin-top: 10px;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 500;
+}
+.window-verdict.open { background: rgba(80,168,112,0.12); color: var(--nature-support); border: 1px solid rgba(80,168,112,0.25); }
+.window-verdict.partial { background: rgba(212,160,64,0.12); color: var(--nature-mixed); border: 1px solid rgba(212,160,64,0.25); }
+.window-verdict.closed { background: rgba(106,122,150,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+.window-advice {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  padding: 12px 14px;
+  background: rgba(212,160,64,0.05);
+  border-left: 3px solid var(--gold-dim);
+  border-radius: 0 4px 4px 0;
+}
+
 /* ── Custom Dropdown (replaces native select) ── */
 .custom-select { position: relative; width: 100%; }
 .custom-select-trigger {
@@ -385,9 +486,29 @@ input[type="file"] { display: none; }
         </div>
       </div>
 
-      <!-- 5 Dimensions -->
-      <div class="dimensions-grid" id="dimensions-grid"></div>
+      <!-- 5 Dimensions -->\n      <div class=\"dimensions-grid\" id=\"dimensions-grid\"></div>
 
+      <!-- Best Window to Marry -->
+      <div class="match-extra-section" id="best-window-section" style="display:none">
+        <div class="match-extra-header" onclick="toggleMatchExtra('best-window-body','best-window-toggle')">
+          <span class="match-extra-icon">◈</span>
+          <span class="match-extra-title">Best Window to Marry</span>
+          <span class="match-extra-sub">When both charts activate marriage houses simultaneously</span>
+          <span class="match-extra-toggle" id="best-window-toggle">▾</span>
+        </div>
+        <div class="match-extra-body" id="best-window-body"></div>
+      </div>
+
+      <!-- Why These Scores -->
+      <div class="match-extra-section" id="why-scores-section" style="display:none">
+        <div class="match-extra-header" onclick="toggleMatchExtra('why-scores-body','why-scores-toggle')">
+          <span class="match-extra-icon">◎</span>
+          <span class="match-extra-title">Why These Scores?</span>
+          <span class="match-extra-sub">The KP logic behind each compatibility dimension</span>
+          <span class="match-extra-toggle" id="why-scores-toggle">▾</span>
+        </div>
+        <div class="match-extra-body" id="why-scores-body" style="display:none"></div>
+      </div>
 
     </div>
   </div>
@@ -1128,10 +1249,169 @@ function _runMatch() {
   document.getElementById('loading-msg').style.display = 'none';
   document.getElementById('match-btn').disabled = false;
   document.getElementById('results').style.display = 'block';
+
+  // Render new sections
+  renderBestWindow(m, f, mDBA, fDBA, mName, fName);
+  renderWhyScores(result, m, f, mDBA, fDBA);
+
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 }
 
 // ── Custom dropdown logic ──
+function toggleMatchExtra(bodyId, toggleId) {
+  const body    = document.getElementById(bodyId);
+  const toggle  = document.getElementById(toggleId);
+  const hidden  = body.style.display === 'none';
+  body.style.display   = hidden ? 'block' : 'none';
+  toggle.style.transform = hidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+}
+
+// ══════════════════════════════════════════════════════════
+// BEST WINDOW TO MARRY
+// ══════════════════════════════════════════════════════════
+function renderBestWindow(m, f, mDBA, fDBA, mName, fName) {
+  const MARRIAGE_HOUSES = [2, 7, 11];
+  const DENY_HOUSES     = [1, 6, 10, 12];
+
+  function getMarriageScore(chart, dba) {
+    const sig    = chart.planet_sig || {};
+    const adSig  = sig[dba.ad] || [];
+    const mdSig  = sig[dba.md] || [];
+    const pdSig  = sig[dba.pd] || [];
+    const adHits = MARRIAGE_HOUSES.filter(h => adSig.includes(h));
+    const mdHits = MARRIAGE_HOUSES.filter(h => mdSig.includes(h));
+    const adDeny = DENY_HOUSES.filter(h => adSig.includes(h));
+    return { adHits, mdHits, adDeny, adSig, mdSig };
+  }
+
+  function getPlanetLabel(p, sig, name) {
+    const hits = MARRIAGE_HOUSES.filter(h => sig.includes(h));
+    const deny = DENY_HOUSES.filter(h => sig.includes(h));
+    const hitHtml = hits.length
+      ? hits.map(h => `<span class="sig-hit">H${h}</span>`).join(' ')
+      : '<span class="sig-miss">none</span>';
+    const denyHtml = deny.length
+      ? deny.map(h => `<span class="sig-miss">H${h}</span>`).join(' ')
+      : '—';
+    return `<div class="window-planet-row">
+      <span class="window-planet">${p}</span>
+      <span class="window-planet-sigs">marriage: ${hitHtml} &nbsp;|&nbsp; deny: ${denyHtml}</span>
+    </div>`;
+  }
+
+  const ms = getMarriageScore(m, mDBA);
+  const fs = getMarriageScore(f, fDBA);
+
+  // Current window verdict
+  const mOpen   = ms.adHits.length >= 1 && ms.adDeny.length === 0;
+  const fOpen   = fs.adHits.length >= 1 && fs.adDeny.length === 0;
+  const mPartial = ms.adHits.length >= 1 && ms.adDeny.length > 0;
+  const fPartial = fs.adHits.length >= 1 && fs.adDeny.length > 0;
+  const bothOpen = mOpen && fOpen;
+  const oneOpen  = (mOpen || mPartial) && (fOpen || fPartial);
+
+  let statusClass, statusText;
+  if (bothOpen) {
+    statusClass = 'good';
+    statusText  = `<strong>Both charts are in a favourable window right now.</strong> ${mName}'s Antardasha (${mDBA.ad}) and ${fName}'s Antardasha (${fDBA.ad}) both activate marriage houses. This is an active and open timing window — if other life conditions align, this period supports moving forward.`;
+  } else if (oneOpen) {
+    const openName   = mOpen || mPartial ? mName : fName;
+    const closedName = mOpen || mPartial ? fName : mName;
+    const closedAD   = mOpen || mPartial ? fDBA.ad : mDBA.ad;
+    statusClass = 'caution';
+    statusText  = `<strong>${openName}'s chart is active for marriage; ${closedName}'s is not fully open.</strong> ${closedName}'s current Antardasha (${closedAD}) does not strongly activate the marriage axis. Movement is possible but one partner is in a more receptive phase than the other. A stronger combined window will come when ${closedName}'s Antardasha changes.`;
+  } else {
+    statusClass = 'wait';
+    statusText  = `<strong>Neither chart is currently in its peak marriage window.</strong> The current Antardashas (${mDBA.ad} for ${mName}, ${fDBA.ad} for ${fName}) do not strongly activate the marriage axis (houses 2, 7, 11) in both charts simultaneously. The promise is present in the charts — the timing simply needs to align. Watch for when both Antardashas change to planets signifying houses 2, 7, or 11.`;
+  }
+
+  // What to watch for
+  const watchHtml = `<div class="window-advice">
+    <strong>What to watch for:</strong> In KP, a strong marriage window opens when both charts simultaneously have their <em>Antardasha lord</em> signifying at least one of houses 2, 7, or 11 — without obstruction from houses 1, 6, 10, or 12. When that alignment occurs in both charts at the same time, that is the window to act. The Pratyantar (sub-sub period) at that time provides the final confirmation.
+  </div>`;
+
+  const html = `
+    <div class="window-status ${statusClass}">${statusText}</div>
+    <div class="window-grid">
+      <div class="window-card">
+        <div class="window-card-label">${mName} — Current Period</div>
+        ${getPlanetLabel(mDBA.md, ms.mdSig, mName)}
+        ${getPlanetLabel(mDBA.ad + ' (AD)', ms.adSig, mName)}
+        <div class="window-verdict ${mOpen ? 'open' : mPartial ? 'partial' : 'closed'}">
+          ${mOpen ? '✓ Window Open' : mPartial ? '~ Partial — friction present' : '✗ Window Not Open'}
+        </div>
+      </div>
+      <div class="window-card">
+        <div class="window-card-label">${fName} — Current Period</div>
+        ${getPlanetLabel(fDBA.md, fs.mdSig, fName)}
+        ${getPlanetLabel(fDBA.ad + ' (AD)', fs.adSig, fName)}
+        <div class="window-verdict ${fOpen ? 'open' : fPartial ? 'partial' : 'closed'}">
+          ${fOpen ? '✓ Window Open' : fPartial ? '~ Partial — friction present' : '✗ Window Not Open'}
+        </div>
+      </div>
+    </div>
+    ${watchHtml}`;
+
+  document.getElementById('best-window-body').innerHTML = html;
+  document.getElementById('best-window-section').style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════
+// WHY THESE SCORES
+// ══════════════════════════════════════════════════════════
+function renderWhyScores(result, m, f, mDBA, fDBA) {
+  const sig  = key => (key && (m.planet_sig[key] || []));
+  const fsig = key => (key && (f.planet_sig[key] || []));
+
+  const dims = [
+    {
+      label: 'Marriage & Union',
+      score: result.union.score,
+      logic: `The union score measures whether both charts independently promise marriage and whether their significations overlap on the marriage axis (houses <strong>2, 7, 11</strong>). Denial from houses 1, 6, 10, 12 reduces the score. Cross-chart overlap of SL significations on the marriage axis boosts it. The current Antardasha gate in each chart is checked — a closed AD gate lowers the score even when the promise is present.`,
+      formula: ['His H7-SL sigs', '+', 'Her H7-SL sigs', '+', 'Cross-overlap on 2/7/11', '−', 'Denial houses 1/6/10/12', '+', 'AD gate open (both)']
+    },
+    {
+      label: 'Emotional Compatibility',
+      score: result.emotional.score,
+      logic: `Emotional compatibility measures Moon sign and element alignment (same element = strong resonance; complementary elements = functional; opposite = friction), plus house 4 and house 5 overlap between charts. House 4 represents emotional security and what each person considers home. House 5 represents creative and romantic resonance. The score also checks whether current DBA lords activate emotional houses in either chart.`,
+      formula: ['Moon element match', '+', 'H4 SL-sig overlap', '+', 'H5 SL-sig overlap', '+', 'Emotional AD active']
+    },
+    {
+      label: 'Physical Attraction',
+      score: result.physical.score,
+      logic: `Physical attraction in KP is measured by checking how strongly each person's chart connects to the other's 7th house SL significations. Venus placement and its significations play a role. House 8 overlap (shared transformation and intimacy) adds depth to physical connection. A high score here means the physical draw is part of the chart architecture — not just situational.`,
+      formula: ['His Venus sig → Her H7', '+', 'Her Venus sig → His H7', '+', 'H8 sig overlap', '+', 'Mutual 7th connection']
+    },
+    {
+      label: 'Financial Compatibility',
+      score: result.financial.score,
+      logic: `Financial compatibility checks whether both charts activate the wealth axis (houses <strong>2, 6, 10, 11</strong>) and whether those activations align or conflict. Shared house 2 and house 11 significations in both charts indicate financial harmony — both build and accumulate in similar rhythms. Conflict arises when one chart's 8th or 12th house activation clashes with the other's accumulation signal. Current DBA lords are checked for active earning phases.`,
+      formula: ['H2 sig overlap', '+', 'H11 sig overlap', '+', 'H6/H10 alignment', '−', 'H8/H12 conflict', '+', 'DBA earning phase']
+    },
+    {
+      label: 'Longevity of Union',
+      score: result.longevity.score,
+      logic: `Longevity checks the separation axis (houses <strong>1, 6, 10, 12</strong> for independence and departure) against the bonding axis (houses <strong>2, 4, 7, 11</strong> for commitment and home). A high score means the bonding axis dominates in both charts — the pull to stay together is stronger than the pull toward independence. Multiple-marriage indicators (H9 in 7th SL sig without H2/H11) reduce the score. Current DBA separation energy is also factored.`,
+      formula: ['Bonding axis strength (2/4/7/11)', '−', 'Separation axis (1/6/10/12)', '−', 'Multiple-marriage flags', '−', 'DBA separation energy active']
+    }
+  ];
+
+  const html = dims.map(d => `
+    <div class="why-dim">
+      <div class="why-dim-title">${d.label} — Score ${d.score}/10</div>
+      <div class="why-dim-body">${d.logic}</div>
+      <div class="why-formula">
+        ${d.formula.map((f,i) => i % 2 === 0
+          ? `<span class="why-formula-item">${f}</span>`
+          : `<span class="why-formula-op">${f}</span>`
+        ).join('')}
+      </div>
+    </div>`).join('');
+
+  document.getElementById('why-scores-body').innerHTML = html;
+  document.getElementById('why-scores-section').style.display = 'block';
+}
+
 function toggleDropdown(csId) {
   const cs = document.getElementById(csId);
   const trigger = cs.querySelector('.custom-select-trigger');
