@@ -592,25 +592,44 @@ async function parsePDF(file) {
   }
 
   // ── Planet significations ──
-  // The section looks like: "Planet Signification Planet   House Sun Moon Mars ... Ketu 4 7 9 2 3 4 9 ..."
-  // Numbers appear in planet order (Sun first), each group ascending, new group starts when number decreases
+  // Strategy 1: exact AstroSage header match
+  let sigParsed = false;
   const sigMatch = fullText.match(/Planet\s+Signification\s+Planet\s+House\s+Sun\s+Moon\s+Mars\s+Mercury\s+Jupiter\s+Venus\s+Saturn\s+Rahu\s+Ketu\s+([\d\s]+?)(?=\s+(?:SUN|MON|RAH|JUP|SAT|MER|KET|VEN|MAR)\s+-?\d+\s+Years|$)/);
   if (sigMatch) {
     const allNums = sigMatch[1].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
-    // Split into 9 groups: new group when number < previous number (descending transition)
     const groups = [];
     let cur = [allNums[0]];
     for (let i = 1; i < allNums.length; i++) {
-      if (allNums[i] < cur[cur.length - 1]) {
-        groups.push(cur);
-        cur = [allNums[i]];
-      } else {
-        cur.push(allNums[i]);
-      }
+      if (allNums[i] < cur[cur.length - 1]) { groups.push(cur); cur = [allNums[i]]; }
+      else cur.push(allNums[i]);
     }
     groups.push(cur);
     if (groups.length === 9) {
       PLANETS.forEach((p, i) => { data.planet_sig[p] = groups[i]; });
+      sigParsed = true;
+    }
+  }
+
+  // Strategy 2: look for labelled rows like "Sun 1 4 7 9" after the header block
+  if (!sigParsed) {
+    const ABBR2 = {Sun:'Sun',Moon:'Moon',Mars:'Mars',Mercury:'Mercury',Jupiter:'Jupiter',Venus:'Venus',Saturn:'Saturn',Rahu:'Rahu',Ketu:'Ketu'};
+    for (const planet of PLANETS) {
+      const pm = fullText.match(new RegExp(`\\b${planet}\\s+((\\d{1,2}\\s+){1,12})`, 'i'));
+      if (pm) {
+        const nums = pm[1].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
+        if (nums.length >= 1) { data.planet_sig[planet] = nums; sigParsed = true; }
+      }
+    }
+  }
+
+  // Strategy 3: scan for abbreviated planet rows like "SUN 1 4 7 9"
+  if (!sigParsed) {
+    for (const [abbr, planet] of Object.entries(ABBR)) {
+      const pm = fullText.match(new RegExp(`\\b${abbr}\\s+((\\d{1,2}\\s+){1,12})`));
+      if (pm) {
+        const nums = pm[1].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
+        if (nums.length >= 1) data.planet_sig[planet] = nums;
+      }
     }
   }
 
@@ -625,23 +644,36 @@ async function handlePDF(gender, input) {
   document.getElementById(`fname-${gender}`).textContent = file.name;
   document.getElementById(`zone-${gender}`).classList.add('has-file');
   document.getElementById('loading-msg').style.display = 'block';
+  document.getElementById('loading-msg').textContent = 'Parsing PDF…';
 
   try {
     const data = await parsePDF(file);
+
+    // Warn if critical data is missing but still allow proceeding
+    const hasCusps   = Object.keys(data.cusps).length >= 6;
+    const hasSigs    = Object.keys(data.planet_sig).length >= 7;
+    const warnings   = [];
+    if (!hasCusps)  warnings.push('cusp sub-lords missing (check PDF format)');
+    if (!hasSigs)   warnings.push('planet significations missing (check PDF format)');
+
     charts[gender] = data;
 
-    // Show parsed info
-    const info = `<span>${data.name || 'Unknown'}</span> · ${data.dob || ''} · ${data.place || ''} · Lagna: <span>${data.lagna || '?'}</span> · Moon: <span>${data.moon_sign || '?'}</span>`;
+    const warnHtml = warnings.length
+      ? `<br><span style="color:var(--nature-mixed);font-size:10px;">⚠ ${warnings.join(' · ')}</span>`
+      : `<span style="color:var(--nature-support);font-size:10px;"> ✓ Parsed</span>`;
+
+    const info = `<span>${data.name || 'Unknown'}</span> · ${data.dob || ''} · ${data.place || ''} · Lagna: <span>${data.lagna || '?'}</span> · Moon: <span>${data.moon_sign || '?'}</span>${warnHtml}`;
     document.getElementById(`parsed-${gender}-text`).innerHTML = info;
     document.getElementById(`parsed-${gender}`).style.display = 'block';
 
-    // DBA options pre-populated in HTML
-
     checkReady();
   } catch(e) {
+    console.error('PDF parse error:', e);
     showError('Could not parse PDF: ' + e.message);
+  } finally {
+    document.getElementById('loading-msg').style.display = 'none';
+    document.getElementById('loading-msg').textContent = 'Analysing compatibility…';
   }
-  document.getElementById('loading-msg').style.display = 'none';
 }
 
 function checkReady() {
@@ -1143,6 +1175,16 @@ function analyseLongevity(m, f, mDBA, fDBA, ctx) {
 // MASTER
 // ══════════════════════════════════════════════════════════
 function computeAllFactors(m, f, mDBA, fDBA, mStatus, fStatus) {
+  // Guard: if planet_sig is empty the analysis will be meaningless
+  const mSigCount = Object.keys(m.planet_sig || {}).length;
+  const fSigCount = Object.keys(f.planet_sig || {}).length;
+  if (mSigCount < 3 || fSigCount < 3) {
+    throw new Error(
+      `Planet significations could not be read from the PDF. ` +
+      `His chart: ${mSigCount} planets parsed, Her chart: ${fSigCount} planets parsed. ` +
+      `Please ensure you are uploading an AstroSage KP chart PDF with a Planet Signification table.`
+    );
+  }
   const ctx=getMaritalCtx(mStatus,fStatus);
   const union     =analyseUnion(m,f,mDBA,fDBA,ctx);
   const emotional =analyseEmotional(m,f,mDBA,fDBA,ctx);
