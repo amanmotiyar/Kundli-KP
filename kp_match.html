@@ -592,29 +592,19 @@ async function parsePDF(file) {
   }
 
   // ── Planet significations ──
-  // Strategy 1: exact AstroSage header match
+  // AstroSage PDFs are multi-column: the Planet Signification table
+  // is interleaved with Dasha table text. We locate the "Planet House"
+  // label and then match each planet by name from that section.
   let sigParsed = false;
-  const sigMatch = fullText.match(/Planet\s+Signification\s+Planet\s+House\s+Sun\s+Moon\s+Mars\s+Mercury\s+Jupiter\s+Venus\s+Saturn\s+Rahu\s+Ketu\s+([\d\s]+?)(?=\s+(?:SUN|MON|RAH|JUP|SAT|MER|KET|VEN|MAR)\s+-?\d+\s+Years|$)/);
-  if (sigMatch) {
-    const allNums = sigMatch[1].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
-    const groups = [];
-    let cur = [allNums[0]];
-    for (let i = 1; i < allNums.length; i++) {
-      if (allNums[i] < cur[cur.length - 1]) { groups.push(cur); cur = [allNums[i]]; }
-      else cur.push(allNums[i]);
-    }
-    groups.push(cur);
-    if (groups.length === 9) {
-      PLANETS.forEach((p, i) => { data.planet_sig[p] = groups[i]; });
-      sigParsed = true;
-    }
-  }
 
-  // Strategy 2: look for labelled rows like "Sun 1 4 7 9" after the header block
-  if (!sigParsed) {
-    const ABBR2 = {Sun:'Sun',Moon:'Moon',Mars:'Mars',Mercury:'Mercury',Jupiter:'Jupiter',Venus:'Venus',Saturn:'Saturn',Rahu:'Rahu',Ketu:'Ketu'};
+  const phIdx = fullText.indexOf('Planet House');
+  const sigStart = phIdx >= 0 ? phIdx : fullText.indexOf('Planet Signification');
+
+  if (sigStart >= 0) {
+    const sigSection = fullText.slice(sigStart, sigStart + 700);
     for (const planet of PLANETS) {
-      const pm = fullText.match(new RegExp(`\\b${planet}\\s+((\\d{1,2}\\s+){1,12})`, 'i'));
+      // Match "PlanetName digit digit ..." immediately after the planet name
+      const pm = sigSection.match(new RegExp(`\\b${planet}\\s+((\\d{1,2}\\s+)+)`, 'i'));
       if (pm) {
         const nums = pm[1].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
         if (nums.length >= 1) { data.planet_sig[planet] = nums; sigParsed = true; }
@@ -622,9 +612,10 @@ async function parsePDF(file) {
     }
   }
 
-  // Strategy 3: scan for abbreviated planet rows like "SUN 1 4 7 9"
-  if (!sigParsed) {
+  // Fallback: abbreviated planet rows e.g. "SUN 1 4 7 9" (if full-name strategy failed)
+  if (!sigParsed || Object.keys(data.planet_sig).length < 5) {
     for (const [abbr, planet] of Object.entries(ABBR)) {
+      if (data.planet_sig[planet]) continue; // already parsed
       const pm = fullText.match(new RegExp(`\\b${abbr}\\s+((\\d{1,2}\\s+){1,12})`));
       if (pm) {
         const nums = pm[1].trim().split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
