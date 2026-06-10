@@ -1164,6 +1164,36 @@
   .payslip-filled-badge.visible { display: flex; }
   .payslip-clear-btn { font-family: var(--mono); font-size: 10px; color: var(--ink-mute); background: none; border: 1px solid var(--hairline); padding: 3px 8px; cursor: pointer; margin-left: auto; letter-spacing: 0.08em; text-transform: uppercase; }
   .payslip-clear-btn:hover { color: #EF4444; border-color: #EF4444; }
+
+  /* ─── PAYSLIP CONFIRM MODAL ─── */
+  .ps-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
+  .ps-modal-overlay.open { display: flex; }
+  .ps-modal { background: #fff; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+  .ps-modal-head { background: var(--ink); color: #fff; padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; }
+  .ps-modal-head h3 { font-family: var(--serif); font-size: 20px; font-weight: 600; }
+  .ps-modal-head p { font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 2px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .ps-close { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; opacity: 0.6; line-height: 1; padding: 0; }
+  .ps-close:hover { opacity: 1; }
+  .ps-modal-body { padding: 20px 22px; }
+  .ps-notice { font-family: var(--mono); font-size: 10.5px; color: #1D4ED8; background: #DBEAFE; border-left: 3px solid #2563EB; padding: 8px 12px; margin-bottom: 16px; line-height: 1.5; }
+  .ps-field-group { margin-bottom: 6px; }
+  .ps-field-group label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); display: block; margin-bottom: 3px; }
+  .ps-field-group input { width: 100%; border: none; border-bottom: 1.5px solid var(--hairline); padding: 6px 0 6px 18px; font-family: var(--mono); font-size: 15px; color: var(--ink); background: transparent; font-variant-numeric: tabular-nums; }
+  .ps-field-group input:focus { outline: none; border-bottom-color: #2563EB; }
+  .ps-field-group input.ps-found { border-bottom-color: #10B981; }
+  .ps-field-group input.ps-missing { border-bottom-color: #E2E8F0; color: #94A3B8; }
+  .ps-field-wrap { position: relative; }
+  .ps-field-wrap .ps-prefix { position: absolute; left: 0; top: 6px; font-size: 15px; color: #94A3B8; font-family: var(--serif); }
+  .ps-field-wrap .ps-tag { position: absolute; right: 0; top: 7px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }
+  .ps-tag.found { color: #10B981; }
+  .ps-tag.missing { color: #CBD5E1; }
+  .ps-divider { border: none; border-top: 1px dashed var(--hairline); margin: 14px 0; }
+  .ps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+  .ps-modal-foot { padding: 16px 22px; border-top: 1px solid var(--hairline); display: flex; gap: 10px; }
+  .ps-btn-apply { flex: 1; background: var(--ink); color: #fff; border: none; padding: 12px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; cursor: pointer; }
+  .ps-btn-apply:hover { background: #2563EB; }
+  .ps-btn-cancel { background: none; border: 1px solid var(--hairline); padding: 12px 18px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); cursor: pointer; }
+  .ps-btn-cancel:hover { border-color: var(--ink); color: var(--ink); }
 </style>
 </head>
 <body>
@@ -2012,17 +2042,24 @@ eval(atob("Ci8vIFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1M
 (function() {
   const dropZone = document.getElementById('payslipDropZone');
   const fileInput = document.getElementById('payslipFile');
-  const statusEl = document.getElementById('payslipStatus');
-  const badgeEl  = document.getElementById('payslipBadge');
-  const clearBtn = document.getElementById('payslipClearBtn');
+  const statusEl  = document.getElementById('payslipStatus');
+  const badgeEl   = document.getElementById('payslipBadge');
+  const clearBtn  = document.getElementById('payslipClearBtn');
+  const overlay   = document.getElementById('psModalOverlay');
+  const applyBtn  = document.getElementById('psModalApply');
+  const cancelBtn = document.getElementById('psModalCancel');
+  const closeBtn  = document.getElementById('psModalClose');
 
   dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-  dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
+  dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
   fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
   clearBtn.addEventListener('click', () => { badgeEl.classList.remove('visible'); statusEl.className = 'payslip-status'; statusEl.textContent = ''; fileInput.value = ''; });
-
-  const PROMPT = 'You are reading an Indian employee payslip. Extract ONLY the following monthly figures and return a JSON object with no markdown, no explanation, no backticks. Fields (monthly INR numbers only, no commas, no rupee symbol): basic (Basic Pay), hra (HRA), special (Special Allowance + all other allowances combined), pf (Employee PF deduction), profTax (Professional Tax), tds (TDS / Income Tax this month). If not found use null. Return exactly: {"basic":number|null,"hra":number|null,"special":number|null,"pf":number|null,"profTax":number|null,"tds":number|null}';
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  applyBtn.addEventListener('click', applyToCalculator);
+  function closeModal() { overlay.classList.remove('open'); }
 
   async function handleFile(file) {
     if (!file.type.startsWith('image/') && file.type !== 'application/pdf') { showStatus('error', 'Please upload a PDF or image file (JPG, PNG).'); return; }
@@ -2030,44 +2067,141 @@ eval(atob("Ci8vIFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1M
     badgeEl.classList.remove('visible');
     try {
       const base64 = await toBase64(file);
-      const msgContent = file.type === 'application/pdf'
-        ? [{ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }, { type: 'text', text: PROMPT }]
-        : [{ type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } }, { type: 'text', text: PROMPT }];
       const res = await fetch('/.netlify/functions/parse-payslip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mediaType: file.type, base64Data: base64 })
       });
-      if (!res.ok) throw new Error('API ' + res.status);
-      const text = await res.text();
-      fillFields(JSON.parse(text.replace(/```json|```/g, '').trim()));
-    } catch(err) { console.error(err); showStatus('error', '⚠️ Could not read payslip. Try a clearer image or enter values manually below.'); }
+      if (!res.ok) throw new Error('Server error ' + res.status);
+      const d = await res.json();
+      showModal(d);
+      statusEl.className = 'payslip-status';
+    } catch(err) {
+      console.error(err);
+      showStatus('error', '⚠️ Could not read payslip. Try a clearer image or enter values manually below.');
+    }
   }
 
-  function fillFields(d) {
-    let filled = [];
-    function set(id, val) { if (val != null && !isNaN(val) && val > 0) { const el = document.getElementById(id); if (el) { el.value = Math.round(val); filled.push(id); } } }
-    // Switch to Full Breakup mode
-    const modeToggle = document.getElementById('incomeModeToggle');
-    const breakupBtn = modeToggle && modeToggle.querySelector('[data-mode="breakup"]');
+  function showModal(d) {
+    function fill(inputId, tagId, val) {
+      const inp = document.getElementById(inputId);
+      const tag = document.getElementById(tagId);
+      if (val != null && val > 0) {
+        inp.value = Math.round(val); inp.className = 'ps-found';
+        tag.textContent = '✓ found'; tag.className = 'ps-tag found';
+      } else {
+        inp.value = ''; inp.className = 'ps-missing';
+        tag.textContent = 'not found'; tag.className = 'ps-tag missing';
+      }
+    }
+    fill('psBasic',   'psBasicTag',   d.basic);
+    fill('psHra',     'psHraTag',     d.hra);
+    fill('psSpecial', 'psSpecialTag', d.special);
+    fill('psPf',      'psPfTag',      d.pf);
+    fill('psProfTax', 'psProfTaxTag', d.profTax);
+    fill('psTds',     'psTdsTag',     d.tds);
+    overlay.classList.add('open');
+  }
+
+  function applyToCalculator() {
+    const get = id => { const v = parseFloat(document.getElementById(id).value); return (!isNaN(v) && v > 0) ? v : null; };
+    const basic = get('psBasic'), hra = get('psHra'), special = get('psSpecial');
+    const pf = get('psPf'), profTax = get('psProfTax'), tds = get('psTds');
+    const breakupBtn = document.querySelector('#incomeModeToggle [data-mode="breakup"]');
     if (breakupBtn) breakupBtn.click();
-    set('basic', d.basic); set('hra', d.hra); set('special', d.special);
-    if (d.pf && d.basic > 0) { const pct = Math.round(d.pf / d.basic * 100); if (pct >= 1 && pct <= 20) set('pfPct', pct); }
-    if (d.profTax) set('profTax', d.profTax * 12);
-    if (d.tds) {
-      const tdsToggle = document.getElementById('tdsToggle');
-      const manBtn = tdsToggle && tdsToggle.querySelector('[data-mode="manual"]');
+    function set(id, val) { if (val != null) { const el = document.getElementById(id); if (el) el.value = Math.round(val); } }
+    set('basic', basic); set('hra', hra); set('special', special);
+    if (pf && basic > 0) { const pct = Math.round(pf / basic * 100); if (pct >= 1 && pct <= 20) set('pfPct', pct); }
+    if (profTax) set('profTax', profTax * 12);
+    if (tds) {
+      const manBtn = document.querySelector('#tdsToggle [data-mode="manual"]');
       if (manBtn) manBtn.click();
-      set('tdsAmount', d.tds * 12);
+      set('tdsAmount', tds * 12);
     }
     if (typeof update === 'function') update();
-    if (filled.length > 0) { showStatus('success', '✓ Filled: ' + filled.join(', ') + '. Review below and adjust if anything looks off.'); badgeEl.classList.add('visible'); }
-    else { showStatus('error', '⚠️ Could not find salary data. Try a clearer image or enter manually.'); }
+    closeModal();
+    showStatus('success', '✓ Values applied from payslip. Review the Income section below.');
+    badgeEl.classList.add('visible');
+    fileInput.value = '';
   }
 
   function showStatus(type, msg) { statusEl.className = 'payslip-status ' + type; statusEl.textContent = msg; }
   function toBase64(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = () => rej(new Error('read failed')); r.readAsDataURL(file); }); }
 })();
 </script>
+
+<!-- PAYSLIP CONFIRM MODAL -->
+<div class="ps-modal-overlay" id="psModalOverlay">
+  <div class="ps-modal">
+    <div class="ps-modal-head">
+      <div>
+        <h3>Review Extracted Values</h3>
+        <p>Edit any field before applying · Monthly amounts</p>
+      </div>
+      <button class="ps-close" id="psModalClose" type="button">&times;</button>
+    </div>
+    <div class="ps-modal-body">
+      <div class="ps-notice">Green = found in payslip &nbsp;·&nbsp; Grey = not found, leave blank or fill manually</div>
+      <div class="ps-grid">
+        <div class="ps-field-group">
+          <label>Basic Pay</label>
+          <div class="ps-field-wrap">
+            <span class="ps-prefix">₹</span>
+            <input type="number" id="psBasic" placeholder="0">
+            <span class="ps-tag" id="psBasicTag"></span>
+          </div>
+        </div>
+        <div class="ps-field-group">
+          <label>HRA</label>
+          <div class="ps-field-wrap">
+            <span class="ps-prefix">₹</span>
+            <input type="number" id="psHra" placeholder="0">
+            <span class="ps-tag" id="psHraTag"></span>
+          </div>
+        </div>
+        <div class="ps-field-group" style="grid-column:span 2">
+          <label>Special / Other Allowances (combined)</label>
+          <div class="ps-field-wrap">
+            <span class="ps-prefix">₹</span>
+            <input type="number" id="psSpecial" placeholder="0">
+            <span class="ps-tag" id="psSpecialTag"></span>
+          </div>
+        </div>
+      </div>
+      <hr class="ps-divider">
+      <div class="ps-grid">
+        <div class="ps-field-group">
+          <label>Employee PF (monthly ₹)</label>
+          <div class="ps-field-wrap">
+            <span class="ps-prefix">₹</span>
+            <input type="number" id="psPf" placeholder="0">
+            <span class="ps-tag" id="psPfTag"></span>
+          </div>
+        </div>
+        <div class="ps-field-group">
+          <label>Professional Tax (monthly)</label>
+          <div class="ps-field-wrap">
+            <span class="ps-prefix">₹</span>
+            <input type="number" id="psProfTax" placeholder="0">
+            <span class="ps-tag" id="psProfTaxTag"></span>
+          </div>
+        </div>
+        <div class="ps-field-group" style="grid-column:span 2">
+          <label>Income Tax / TDS (monthly)</label>
+          <div class="ps-field-wrap">
+            <span class="ps-prefix">₹</span>
+            <input type="number" id="psTds" placeholder="0">
+            <span class="ps-tag" id="psTdsTag"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ps-modal-foot">
+      <button class="ps-btn-cancel" id="psModalCancel" type="button">Cancel</button>
+      <button class="ps-btn-apply" id="psModalApply" type="button">Apply to Calculator →</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
