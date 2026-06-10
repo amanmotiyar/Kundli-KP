@@ -2033,14 +2033,13 @@ eval(atob("Ci8vIFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1M
       const msgContent = file.type === 'application/pdf'
         ? [{ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }, { type: 'text', text: PROMPT }]
         : [{ type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } }, { type: 'text', text: PROMPT }];
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/.netlify/functions/parse-payslip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: msgContent }] })
+        body: JSON.stringify({ mediaType: file.type, base64Data: base64 })
       });
       if (!res.ok) throw new Error('API ' + res.status);
-      const data = await res.json();
-      const text = (data.content || []).map(b => b.text || '').join('');
+      const text = await res.text();
       fillFields(JSON.parse(text.replace(/```json|```/g, '').trim()));
     } catch(err) { console.error(err); showStatus('error', '⚠️ Could not read payslip. Try a clearer image or enter values manually below.'); }
   }
