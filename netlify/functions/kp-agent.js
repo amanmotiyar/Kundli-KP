@@ -1,8 +1,8 @@
 /**
  * KP JARVIS — Multi-Agent Netlify Function
- * POST /api/kp-agent
- *
- * Body: { agent: 'orchestrator'|'chart'|'dasha'|'match'|'transit', question: string, chartData: object }
+ * POST /.netlify/functions/kp-agent
+ * Body: { agent, question, chartData, tts? }
+ * If tts=true, also returns base64 audio via ElevenLabs
  */
 
 const AGENTS = {
@@ -20,6 +20,7 @@ Rules:
 - Check if current MD/AD/PD lords activate that house.
 - Give a clear VERDICT: Promised / Timing Favourable / Not Promised / Timing Unfavourable.
 - Be concise. No generic astrology filler.
+- finalAnswer must be 2-3 sentences, plain English, no jargon. This will be spoken aloud.
 
 Question: "${question}"
 
@@ -30,7 +31,7 @@ Respond in this JSON format (no markdown, no backticks):
   "promiseReason": "...",
   "timingVerdict": "Favourable / Unfavourable / Neutral",
   "timingReason": "...",
-  "finalAnswer": "2-3 sentence plain-English verdict",
+  "finalAnswer": "2-3 sentence plain-English verdict spoken aloud",
   "agentsConsulted": ["chart", "dasha"]
 }`,
 
@@ -39,12 +40,6 @@ You are the KP Chart Analyst agent. Analyse the cuspal sub-lord chain for houses
 
 KP Chart JSON:
 ${JSON.stringify(chartData, null, 2)}
-
-Rules:
-- For each relevant house: identify Sign, Star Lord (NL), Sub Lord (SL).
-- Check SL's significators (houses it signifies via occupation + lordship of its own NL's houses).
-- State clearly: does the SL signify the house in question? (This is "Promise".)
-- Be technical and precise. KP terminology only.
 
 Question: "${question}"
 
@@ -67,15 +62,8 @@ Respond in JSON (no markdown):
   dasha: (chartData, question) => `
 You are the KP Dasha Interpreter agent. Assess whether the current Mahadasha / Antardasha / PD period activates the houses relevant to the question.
 
-KP Chart JSON (focus on dba field):
+KP Chart JSON:
 ${JSON.stringify(chartData, null, 2)}
-
-Rules:
-- Extract MD, AD, PD lords from chartData.dba.
-- For each lord, state which houses they signify (via planetSig).
-- Check if they signify the relevant houses for the question.
-- Mention approximate period dates if available.
-- Give a Timing Verdict: Active / Inactive / Partial.
 
 Question: "${question}"
 
@@ -98,13 +86,6 @@ You are the KP Match Advisor agent. Analyse Kundli compatibility using KP princi
 KP Chart JSON:
 ${JSON.stringify(chartData, null, 2)}
 
-Rules:
-- Focus on house 7 (partner), 2 (family), 11 (fulfilment), 4 (happiness).
-- Check if 7th CSL signifies 7th house (marriage promise).
-- Check Lagna lord strength and its connection to 7th.
-- Check if 6, 8, 12 lords afflict the 7th house (obstacles).
-- In KP, Dosha is secondary — focus on CSL-based promise.
-
 Question: "${question}"
 
 Respond in JSON (no markdown):
@@ -122,25 +103,53 @@ You are the KP Transit Watcher agent. Analyse current planetary transits in cont
 KP Chart JSON:
 ${JSON.stringify(chartData, null, 2)}
 
-Rules:
-- In KP, transits are secondary confirmation — Dasha must agree first.
-- Check if any transiting planets are over the natal sub-lord positions of relevant house cusps.
-- Jupiter and Saturn transits over 7th, 2nd, 11th are significant for marriage.
-- Note any major transit support or obstruction.
-
 Question: "${question}"
-
-Note: You may not have live transit data — if so, explain what transits to watch for and why, based on the natal chart's sensitive points.
 
 Respond in JSON (no markdown):
 {
-  "sensitivePoints": ["7th cusp SL degree in Libra 12°30'", "..."],
+  "sensitivePoints": ["7th cusp SL degree in Libra 12 degrees"],
   "transitNote": "Watch for Jupiter transiting over these degrees...",
-  "transitVerdict": "Supportive / Obstructive / Neutral / Unknown (no live data)",
+  "transitVerdict": "Supportive / Obstructive / Neutral / Unknown",
   "reason": "..."
 }`
 };
 
+// ── ElevenLabs TTS ────────────────────────────────────────────────
+async function generateSpeech(text) {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const voiceId = process.env.ELEVENLABS_VOICE_ID || '9375G6zswFk7v9bKTVQF';
+  if (!apiKey) return null;
+
+  try {
+    const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg'
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.75,
+          similarity_boost: 0.85,
+          style: 0.35,
+          use_speaker_boost: true
+        }
+      })
+    });
+
+    if (!resp.ok) return null;
+    const arrayBuffer = await resp.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    return base64;
+  } catch {
+    return null;
+  }
+}
+
+// ── Main handler ──────────────────────────────────────────────────
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -148,7 +157,7 @@ exports.handler = async (event) => {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'API key not configured' }) };
+    return { statusCode: 500, body: JSON.stringify({ error: 'Anthropic API key not configured' }) };
   }
 
   let body;
@@ -158,7 +167,17 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON body' }) };
   }
 
-  const { agent = 'orchestrator', question, chartData } = body;
+  const { agent = 'orchestrator', question, chartData, tts = false } = body;
+
+  // TTS-only mode (for greeting)
+  if (agent === 'tts_only' && tts) {
+    const audio = await generateSpeech(question); // question field holds the text to speak
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audio })
+    };
+  }
 
   if (!question || !chartData) {
     return { statusCode: 400, body: JSON.stringify({ error: 'question and chartData are required' }) };
@@ -180,7 +199,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
-        system: `You are a KP (Krishnamurti Paddhati) Astrology expert agent. Always respond in strict JSON as instructed. No markdown, no backticks, no preamble.`,
+        system: 'You are a KP Astrology expert agent. Always respond in strict JSON as instructed. No markdown, no backticks, no preamble.',
         messages: [{ role: 'user', content: promptFn(chartData, question) }]
       })
     });
@@ -198,10 +217,17 @@ exports.handler = async (event) => {
       parsed = { raw };
     }
 
+    // Generate ElevenLabs audio for the final answer if requested
+    let audio = null;
+    if (tts && parsed.finalAnswer) {
+      const spokenText = `${parsed.finalAnswer} Promise is ${parsed.promise || 'unclear'}. Timing looks ${parsed.timingVerdict || 'uncertain'}.`;
+      audio = await generateSpeech(spokenText);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agent, result: parsed })
+      body: JSON.stringify({ agent, result: parsed, audio })
     };
 
   } catch (err) {
