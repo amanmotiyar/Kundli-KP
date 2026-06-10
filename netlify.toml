@@ -1,12 +1,10 @@
-# ─────────────────────────────────────────────
-#  myartha.in — Netlify Configuration
-#  Security headers + HTTPS enforcement
-# ─────────────────────────────────────────────
-
 [build]
   publish = "."
 
-# ── Force HTTPS (HTTP → HTTPS redirect) ──
+[functions]
+  node_bundler = "esbuild"
+
+# ── Force HTTPS ──
 [[redirects]]
   from  = "http://myartha.in/*"
   to    = "https://myartha.in/:splat"
@@ -25,29 +23,27 @@
   status = 301
   force  = true
 
-# ── Security Headers (applied to every page) ──
+# ── Security Headers for pages only (not functions) ──
 [[headers]]
-  for = "/*"
+  for = "/*.html"
 
   [headers.values]
-
-    # Forces HTTPS for 1 year — browser will never load HTTP version
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-
-    # Blocks your site from being embedded in iframes on other sites (anti-clickjacking)
     X-Frame-Options = "SAMEORIGIN"
-
-    # Stops browsers from guessing file types — prevents MIME-type attacks
     X-Content-Type-Options = "nosniff"
-
-    # Enables browser's built-in XSS filter
     X-XSS-Protection = "1; mode=block"
-
-    # Controls what info is shared when clicking links out of your site
     Referrer-Policy = "strict-origin-when-cross-origin"
-
-    # Blocks access to camera, mic, location — your finance app needs none of these
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    Cache-Control = "no-store, no-cache, must-revalidate, proxy-revalidate"
 
-    # Cache control — don't cache sensitive pages
+[[headers]]
+  for = "/"
+
+  [headers.values]
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
     Cache-Control = "no-store, no-cache, must-revalidate, proxy-revalidate"
