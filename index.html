@@ -2061,19 +2061,33 @@ eval(atob("Ci8vIFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1MFx1MjU1M
   applyBtn.addEventListener('click', applyToCalculator);
   function closeModal() { overlay.classList.remove('open'); }
 
+  const PROMPT = 'You are reading an Indian employee payslip. Extract monthly salary figures and return ONLY a JSON object, no markdown, no explanation. Fields (monthly INR numbers only): basic=Basic Pay, hra=House Rent Allowance, special=ALL other allowances combined (supplementary/conveyance/LTA/medical etc), grossEarnings=Total Earnings, netPay=Net Pay, pf=Employee Provident Fund deduction, profTax=Professional Tax, tds=Income Tax deducted this month. Use null for anything not found. Return exactly: {"basic":null,"hra":null,"special":null,"grossEarnings":null,"netPay":null,"pf":null,"profTax":null,"tds":null}';
+
   async function handleFile(file) {
     if (!file.type.startsWith('image/') && file.type !== 'application/pdf') { showStatus('error', 'Please upload a PDF or image file (JPG, PNG).'); return; }
     showStatus('loading', '⏳ Reading your payslip… takes a few seconds.');
     badgeEl.classList.remove('visible');
     try {
       const base64 = await toBase64(file);
-      const res = await fetch('/.netlify/functions/parse-payslip', {
+      // Build message content based on file type
+      const msgContent = file.type === 'application/pdf'
+        ? [{ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }, { type: 'text', text: PROMPT }]
+        : [{ type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } }, { type: 'text', text: PROMPT }];
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mediaType: file.type, base64Data: base64 })
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': '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',
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 500, messages: [{ role: 'user', content: msgContent }] })
       });
-      if (!res.ok) throw new Error('Server error ' + res.status);
-      const d = await res.json();
+      if (!res.ok) { const e = await res.text(); throw new Error('API ' + res.status + ': ' + e); }
+      const data = await res.json();
+      const raw = (data.content || []).map(b => b.text || '').join('');
+      const d = JSON.parse(raw.replace(/```json|```/g, '').trim());
       showModal(d);
       statusEl.className = 'payslip-status';
     } catch(err) {
