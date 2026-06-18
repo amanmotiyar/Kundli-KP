@@ -3733,38 +3733,14 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
   var story = houseStories[channelHouse];
   if (!story) return '';
 
-  // Prefix with verdict context when story would contradict the verdict
+  // Always lead with the verdict-appropriate hedge when the chart does not
+  // actually promise this house -- never rely on detecting confident wording
+  // after the fact (that approach has gaps, e.g. "auspicious"/"blessing of
+  // tradition and higher dharma" weren't on the old trigger-phrase list).
   var notPromised = (houseVerdict === 'Not Promised');
   var isObstructive = (houseNature === 'Obstructive');
 
-  // Houses where "not promised" prefix matters most (avoid contradicting)
-  var contradictPhrases = [
-    'directly and strongly activated',
-    'clearly promised',
-    'desires are fulfilled',
-    'strongly promised',
-    'clearly confirmed',
-    'union will happen',
-    'this is the clearest confirmation',
-    'strongest possible position',
-    'most direct fortune indicator',
-    'directly activated',
-    'central to the marriage',
-    'supporting pillars of the marriage promise',
-    'love will happen',
-    'you achieve',
-    'clearly indicated',
-    'fully activated',
-    'victory over enemies',
-    'hospitalisation',
-    'surgery and hospitalisation',
-    'moksha'
-  ];
-  var wouldContradict = false;
-  var storyLower = story.toLowerCase();
-  contradictPhrases.forEach(function(p){ if(storyLower.indexOf(p.toLowerCase())>=0) wouldContradict=true; });
-
-  if ((notPromised || isObstructive) && wouldContradict) {
+  if (notPromised || isObstructive) {
     var notPromisedStories = {
       1: 'The personality and sense of self develop gradually and quietly in this chart. There is no dramatic statement of identity — instead, character builds through lived experience over time.',
       2: 'Consistent wealth accumulation is not the primary promise of this chart. Financial life tends to fluctuate rather than build steadily. Conscious effort and discipline around money are essential.',
@@ -3779,7 +3755,9 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
       11: 'Significant gains and easy desire fulfilment are not the strongest promise here. What the native wants, they must work deliberately towards. Income comes through effort, not fortune.',
       12: 'Foreign settlement and major spiritual renunciation are not the primary story in this chart. Life tends to stay anchored closer to home. Foreign and spiritual themes play a supporting role rather than a defining one.'
     };
-    return notPromisedStories[house] || 'This area is not strongly promised in this chart. Results here depend on exceptional conditions and the right timing.';
+    var hedge = notPromisedStories[house] ||
+      'This area is not strongly promised in this chart. Results here depend on exceptional conditions and the right timing.';
+    return hedge + ' Where this does connect, expect the flavour to lean this way -- ' + story;
   }
 
   return story;
@@ -4452,38 +4430,14 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
   var story = houseStories[channelHouse];
   if (!story) return '';
 
-  // Prefix with verdict context when story would contradict the verdict
+  // Always lead with the verdict-appropriate hedge when the chart does not
+  // actually promise this house -- never rely on detecting confident wording
+  // after the fact (that approach has gaps, e.g. "auspicious"/"blessing of
+  // tradition and higher dharma" weren't on the old trigger-phrase list).
   var notPromised = (houseVerdict === 'Not Promised');
   var isObstructive = (houseNature === 'Obstructive');
 
-  // Houses where "not promised" prefix matters most (avoid contradicting)
-  var contradictPhrases = [
-    'directly and strongly activated',
-    'clearly promised',
-    'desires are fulfilled',
-    'strongly promised',
-    'clearly confirmed',
-    'union will happen',
-    'this is the clearest confirmation',
-    'strongest possible position',
-    'most direct fortune indicator',
-    'directly activated',
-    'central to the marriage',
-    'supporting pillars of the marriage promise',
-    'love will happen',
-    'you achieve',
-    'clearly indicated',
-    'fully activated',
-    'victory over enemies',
-    'hospitalisation',
-    'surgery and hospitalisation',
-    'moksha'
-  ];
-  var wouldContradict = false;
-  var storyLower = story.toLowerCase();
-  contradictPhrases.forEach(function(p){ if(storyLower.indexOf(p.toLowerCase())>=0) wouldContradict=true; });
-
-  if ((notPromised || isObstructive) && wouldContradict) {
+  if (notPromised || isObstructive) {
     var notPromisedStories = {
       1: 'The personality and sense of self develop gradually and quietly in this chart. There is no dramatic statement of identity — instead, character builds through lived experience over time.',
       2: 'Consistent wealth accumulation is not the primary promise of this chart. Financial life tends to fluctuate rather than build steadily. Conscious effort and discipline around money are essential.',
@@ -4498,7 +4452,9 @@ function generateHouseSummary(house, name, slPlanet, nlPlanet, slSig,
       11: 'Significant gains and easy desire fulfilment are not the strongest promise here. What the native wants, they must work deliberately towards. Income comes through effort, not fortune.',
       12: 'Foreign settlement and major spiritual renunciation are not the primary story in this chart. Life tends to stay anchored closer to home. Foreign and spiritual themes play a supporting role rather than a defining one.'
     };
-    return notPromisedStories[house] || 'This area is not strongly promised in this chart. Results here depend on exceptional conditions and the right timing.';
+    var hedge = notPromisedStories[house] ||
+      'This area is not strongly promised in this chart. Results here depend on exceptional conditions and the right timing.';
+    return hedge + ' Where this does connect, expect the flavour to lean this way -- ' + story;
   }
 
   return story;
